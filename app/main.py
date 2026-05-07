@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from app.routers import home
+from app.routers import home, lessons
 
 
 app = FastAPI(
@@ -13,3 +13,4 @@ app = FastAPI(
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 app.include_router(home.router)
+app.include_router(lessons.router)

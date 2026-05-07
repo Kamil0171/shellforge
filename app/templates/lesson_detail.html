@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}{{ lesson.title }} — ShellForge{% endblock %}
+
+{% block content %}
+
+<section class="py-5 bg-light border-bottom">
+    <div class="container">
+
+        <div class="mb-3">
+            <span class="badge text-bg-dark">
+                {{ lesson.module }}
+            </span>
+            <span class="badge text-bg-secondary">
+                {{ lesson.level }}
+            </span>
+            <span class="badge text-bg-light border">
+                {{ lesson.duration }}
+            </span>
+        </div>
+
+        <h1 class="fw-bold">
+            {{ lesson.title }}
+        </h1>
+
+        <p class="lead text-muted">
+            {{ lesson.description }}
+        </p>
+
+        <a href="/lessons" class="btn btn-outline-secondary">
+            Wróć do listy lekcji
+        </a>
+
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container lesson-content">
+
+        <div class="row g-5">
+            <div class="col-lg-8">
+
+                <article class="mb-5">
+                    <h2 class="fw-bold mb-3">
+                        1. Krótka teoria
+                    </h2>
+
+                    <p>
+                        {{ lesson.theory }}
+                    </p>
+                </article>
+
+                <article class="mb-5">
+                    <h2 class="fw-bold mb-3">
+                        2. Przykłady komend
+                    </h2>
+
+                    {% for item in lesson.commands %}
+                    <div class="command-box mb-4">
+                        <h5 class="fw-bold">
+                            <code>{{ item.command }}</code>
+                        </h5>
+
+                        <p class="mb-3">
+                            {{ item.description }}
+                        </p>
+
+                        <pre><code>{{ item.example }}</code></pre>
+                    </div>
+                    {% endfor %}
+                </article>
+
+                <article class="mb-5">
+                    <h2 class="fw-bold mb-3">
+                        3. Zadanie praktyczne
+                    </h2>
+
+                    <div class="alert alert-dark">
+                        {{ lesson.practice_task | safe }}
+                    </div>
+                </article>
+
+                <article class="mb-5">
+                    <h2 class="fw-bold mb-3">
+                        4. Typowe błędy
+                    </h2>
+
+                    <ul class="list-group">
+                        {% for mistake in lesson.common_mistakes %}
+                        <li class="list-group-item">
+                            {{ mistake | safe }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </article>
+
+                <article class="mb-5">
+                    <h2 class="fw-bold mb-3">
+                        5. Podsumowanie
+                    </h2>
+
+                    <p>
+                        {{ lesson.summary | safe }}
+                    </p>
+                </article>
+
+                <div class="d-flex gap-3">
+                    <a href="/quiz/1" class="btn btn-dark">
+                        Przejdź do quizu
+                    </a>
+
+                    <a href="/lessons" class="btn btn-outline-secondary">
+                        Lista lekcji
+                    </a>
+                </div>
+
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-sm lesson-sidebar">
+                    <div class="card-body">
+                        <h5 class="fw-bold">
+                            Flow nauki
+                        </h5>
+
+                        <ol class="small text-muted mb-0">
+                            <li>Teoria</li>
+                            <li>Przykład</li>
+                            <li>Ćwiczenie</li>
+                            <li>Quiz</li>
+                            <li>Praktyka</li>
+                            <li>Podsumowanie</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</section>
+
+{% endblock %}
