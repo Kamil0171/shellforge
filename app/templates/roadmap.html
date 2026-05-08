@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Roadmapa — ShellForge{% endblock %}
+
+{% block content %}
+
+<section class="py-5 bg-light border-bottom">
+    <div class="container">
+        <span class="badge text-bg-dark mb-3">Roadmapa</span>
+
+        <h1 class="fw-bold">
+            Plan rozwoju ShellForge
+        </h1>
+
+        <p class="lead text-muted">
+            Projekt rozwijany jest etapami: od prostego MVP, przez deployment na VPS, aż po konteneryzację, CI/CD, monitoring i funkcje zaawansowane.
+        </p>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+
+        <div class="roadmap-list">
+            {% for stage in stages %}
+            <article class="roadmap-item {% if stage.active %}roadmap-item-active{% endif %}">
+                <div class="roadmap-marker">
+                    {{ loop.index }}
+                </div>
+
+                <div class="roadmap-card card shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between gap-3 flex-wrap mb-3">
+                            <h2 class="h4 fw-bold mb-0">
+                                {{ stage.title }}
+                            </h2>
+
+                            <span class="roadmap-status {% if stage.active %}roadmap-status-active{% endif %}">
+                                {{ stage.status }}
+                            </span>
+                        </div>
+
+                        <ul class="roadmap-items mb-0">
+                            {% for item in stage["items"] %}
+                            <li>
+                                {{ item }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+
+    </div>
+</section>
+
+{% endblock %}

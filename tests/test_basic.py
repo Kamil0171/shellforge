@@ -116,3 +116,10 @@ def test_health_check_returns_200():
     assert response.json()["service"] == "ShellForge"
     assert response.json()["version"] == "0.1.0"
     assert response.json()["environment"] == "development"
+
+
+def test_roadmap_page_returns_200():
+    response = client.get("/roadmap/")
+
+    assert response.status_code == 200
+    assert "Plan rozwoju ShellForge" in response.text

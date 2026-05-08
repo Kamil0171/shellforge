@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import APP_DESCRIPTION, APP_NAME, APP_VERSION
 from app.database import create_db_and_tables
-from app.routers import dashboard, flashcards, health, home, lessons, quizzes
+from app.routers import dashboard, flashcards, health, home, lessons, quizzes, roadmap
 from app.seed import seed_database
 
 
@@ -31,3 +31,4 @@ app.include_router(quizzes.router)
 app.include_router(dashboard.router)
 app.include_router(flashcards.router)
 app.include_router(health.router)
+app.include_router(roadmap.router)
