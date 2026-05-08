@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Fiszki — {{ lesson.title }} — ShellForge{% endblock %}
+
+{% block content %}
+
+<section class="py-5 bg-light border-bottom">
+    <div class="container">
+        <span class="badge text-bg-dark mb-3">Fiszki</span>
+
+        <h1 class="fw-bold">
+            Fiszki do lekcji
+        </h1>
+
+        <p class="lead text-muted">
+            {{ lesson.title }}
+        </p>
+
+        <a href="/lessons/{{ lesson.id }}" class="btn btn-outline-secondary">
+            Wróć do lekcji
+        </a>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+
+        {% if flashcards %}
+        <div class="row g-4">
+            {% for flashcard in flashcards %}
+            <div class="col-md-6 col-lg-4">
+                <div class="flashcard">
+                    <div class="flashcard-inner">
+                        <div class="flashcard-front">
+                            <span class="flashcard-label">
+                                Pytanie
+                            </span>
+
+                            <h2>
+                                {{ flashcard.question }}
+                            </h2>
+
+                            <p>
+                                Kliknij kartę, aby zobaczyć odpowiedź.
+                            </p>
+                        </div>
+
+                        <div class="flashcard-back">
+                            <span class="flashcard-label">
+                                Odpowiedź
+                            </span>
+
+                            <h2>
+                                {{ flashcard.answer }}
+                            </h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            Brak fiszek dla tej lekcji.
+        </div>
+        {% endif %}
+
+    </div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', path='js/flashcards.js') }}"></script>
+{% endblock %}

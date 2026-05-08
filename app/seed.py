@@ -3,7 +3,7 @@ import json
 from sqlmodel import Session, select
 
 from app.database import engine
-from app.models import LearningModule, Lesson, Quiz, QuizAnswer, QuizQuestion
+from app.models import Flashcard, LearningModule, Lesson, Quiz, QuizAnswer, QuizQuestion
 
 
 def seed_database():
@@ -168,5 +168,42 @@ def seed_database():
                     is_correct=is_correct,
                 )
                 session.add(answer)
+
+        flashcards_data = [
+            {
+                "question": "Co robi komenda pwd?",
+                "answer": "Wyświetla aktualny katalog roboczy.",
+            },
+            {
+                "question": "Co robi komenda ls?",
+                "answer": "Wyświetla zawartość katalogu.",
+            },
+            {
+                "question": "Co robi komenda ls -la?",
+                "answer": "Wyświetla szczegółową listę plików, w tym pliki ukryte.",
+            },
+            {
+                "question": "Co robi komenda cd?",
+                "answer": "Zmienia aktualny katalog.",
+            },
+            {
+                "question": "Co robi komenda cd ..?",
+                "answer": "Przechodzi katalog wyżej.",
+            },
+            {
+                "question": "Co robi komenda cd ~?",
+                "answer": "Przechodzi do katalogu domowego użytkownika.",
+            },
+        ]
+
+        for index, flashcard_data in enumerate(flashcards_data, start=1):
+            flashcard = Flashcard(
+                lesson_id=lesson.id,
+                question=flashcard_data["question"],
+                answer=flashcard_data["answer"],
+                position=index,
+            )
+
+            session.add(flashcard)
 
         session.commit()

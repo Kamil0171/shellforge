@@ -67,3 +67,16 @@ def test_dashboard_page_returns_200():
 
     assert response.status_code == 200
     assert "Postępy w nauce" in response.text
+
+
+def test_flashcards_page_returns_200():
+    response = client.get("/flashcards/1")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
+
+
+def test_missing_flashcards_lesson_returns_404():
+    response = client.get("/flashcards/999")
+
+    assert response.status_code == 404

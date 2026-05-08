@@ -43,3 +43,11 @@ class QuizAnswer(SQLModel, table=True):
     text: str
     option_key: str
     is_correct: bool = False
+
+
+class Flashcard(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    lesson_id: int = Field(foreign_key="lesson.id")
+    question: str
+    answer: str
+    position: int
