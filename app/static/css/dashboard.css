@@ -1,0 +1,49 @@
+.dashboard-card,
+.dashboard-panel {
+    border-radius: 16px;
+}
+
+.dashboard-label {
+    display: inline-flex;
+    color: #6c757d;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 10px;
+}
+
+.dashboard-value {
+    color: #212529;
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 12px;
+}
+
+.dashboard-stage-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.dashboard-stage {
+    padding: 12px 14px;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    color: #6c757d;
+    background-color: #ffffff;
+    font-weight: 600;
+}
+
+.dashboard-stage-done {
+    color: #198754;
+    background-color: #eaf7ef;
+    border-color: #198754;
+}
+
+.dashboard-stage-active {
+    color: #0c447c;
+    background-color: #e6f1fb;
+    border-color: #378add;
+}

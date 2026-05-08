@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Postępy — ShellForge{% endblock %}
+
+{% block content %}
+
+<section class="py-5 bg-light border-bottom">
+    <div class="container">
+        <span class="badge text-bg-dark mb-3">Dashboard</span>
+
+        <h1 class="fw-bold">
+            Postępy w nauce
+        </h1>
+
+        <p class="lead text-muted">
+            Podstawowy widok postępów projektu ShellForge. Na tym etapie pokazuje ogólne statystyki dostępnych materiałów edukacyjnych.
+        </p>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+
+        <div class="row g-4 mb-5">
+            <div class="col-md-6 col-lg-3">
+                <div class="card shadow-sm dashboard-card h-100">
+                    <div class="card-body">
+                        <span class="dashboard-label">Moduły</span>
+                        <div class="dashboard-value">
+                            {{ modules_count }}
+                        </div>
+                        <p class="text-muted mb-0">
+                            Dostępne obszary nauki.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card shadow-sm dashboard-card h-100">
+                    <div class="card-body">
+                        <span class="dashboard-label">Lekcje</span>
+                        <div class="dashboard-value">
+                            {{ lessons_count }}
+                        </div>
+                        <p class="text-muted mb-0">
+                            Materiały teoretyczne i praktyczne.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card shadow-sm dashboard-card h-100">
+                    <div class="card-body">
+                        <span class="dashboard-label">Quizy</span>
+                        <div class="dashboard-value">
+                            {{ quizzes_count }}
+                        </div>
+                        <p class="text-muted mb-0">
+                            Testy sprawdzające wiedzę.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card shadow-sm dashboard-card h-100">
+                    <div class="card-body">
+                        <span class="dashboard-label">Pytania</span>
+                        <div class="dashboard-value">
+                            {{ questions_count }}
+                        </div>
+                        <p class="text-muted mb-0">
+                            Pytania dostępne w quizach.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <div class="card shadow-sm dashboard-panel h-100">
+                    <div class="card-body">
+                        <h2 class="fw-bold h4 mb-3">
+                            Aktualny etap projektu
+                        </h2>
+
+                        <p class="text-muted">
+                            ShellForge znajduje się obecnie na etapie lokalnego MVP. Aplikacja posiada stronę główną, listę lekcji, widok lekcji, quiz, bazę SQLite oraz podstawowe testy.
+                        </p>
+
+                        <div class="dashboard-stage-list">
+                            <div class="dashboard-stage dashboard-stage-done">
+                                Strona główna
+                            </div>
+
+                            <div class="dashboard-stage dashboard-stage-done">
+                                Lekcje
+                            </div>
+
+                            <div class="dashboard-stage dashboard-stage-done">
+                                Quiz
+                            </div>
+
+                            <div class="dashboard-stage dashboard-stage-done">
+                                SQLite
+                            </div>
+
+                            <div class="dashboard-stage dashboard-stage-active">
+                                Dashboard MVP
+                            </div>
+
+                            <div class="dashboard-stage">
+                                Deployment na Rocky Linux 9 VPS
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card shadow-sm dashboard-panel h-100">
+                    <div class="card-body">
+                        <h2 class="fw-bold h4 mb-3">
+                            Szybkie akcje
+                        </h2>
+
+                        <p class="text-muted">
+                            Wróć do nauki albo sprawdź swoją wiedzę w pierwszym quizie.
+                        </p>
+
+                        <div class="d-grid gap-3">
+                            <a href="/lessons" class="btn btn-dark">
+                                Przejdź do lekcji
+                            </a>
+
+                            <a href="/quiz/1" class="btn btn-outline-secondary">
+                                Rozwiąż pierwszy quiz
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+{% endblock %}

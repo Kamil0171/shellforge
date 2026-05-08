@@ -60,3 +60,10 @@ def test_quiz_submit_returns_result():
     assert response.status_code == 200
     assert "Wynik quizu" in response.text
     assert "100%" in response.text
+
+
+def test_dashboard_page_returns_200():
+    response = client.get("/dashboard/")
+
+    assert response.status_code == 200
+    assert "Postępy w nauce" in response.text
