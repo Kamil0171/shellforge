@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}{{ quiz.title }} — ShellForge{% endblock %}
+
+{% block content %}
+
+<section class="py-5 bg-light border-bottom quiz-header-section">
+    <div class="container">
+        <span class="badge text-bg-dark mb-3">Quiz</span>
+
+        <h1 class="fw-bold">
+            {{ quiz.title }}
+        </h1>
+
+        <p class="lead text-muted">
+            {{ quiz.description }}
+        </p>
+
+        <a href="/lessons/{{ quiz.lesson_id }}" class="btn btn-outline-secondary">
+            Wróć do lekcji
+        </a>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+
+        {% if result %}
+        <div id="quiz-result" class="quiz-result mb-5">
+            <div class="card shadow-sm quiz-result-card">
+                <div class="card-body">
+                    <h2 class="fw-bold mb-2">
+                        Wynik quizu
+                    </h2>
+
+                    <p class="quiz-result-subtitle">
+                        {{ result.correct_count }} poprawnych odpowiedzi na {{ result.total_count }}
+                    </p>
+
+                    <div class="quiz-modern-progress">
+                        <div class="quiz-modern-track">
+                            <div
+                                class="
+                                    quiz-modern-fill
+                                    {% if result.percentage >= 85 %}quiz-modern-fill-excellent{% elif result.percentage >= 60 %}quiz-modern-fill-good{% elif result.percentage >= 40 %}quiz-modern-fill-medium{% else %}quiz-modern-fill-low{% endif %}
+                                "
+                                data-progress="{{ result.percentage }}"
+                            ></div>
+                        </div>
+
+                        <div class="quiz-modern-labels">
+                            <span>0%</span>
+                            <span>50%</span>
+                            <span>100%</span>
+                        </div>
+                    </div>
+
+                    <div class="quiz-score">
+                        {{ result.percentage }}%
+                    </div>
+
+                    {% if result.percentage >= 85 %}
+                    <div class="quiz-result-badge quiz-result-badge-excellent">
+                        Doskonały wynik
+                    </div>
+                    {% elif result.percentage >= 60 %}
+                    <div class="quiz-result-badge quiz-result-badge-good">
+                        Dobry wynik
+                    </div>
+                    {% elif result.percentage >= 40 %}
+                    <div class="quiz-result-badge quiz-result-badge-medium">
+                        Niezły start
+                    </div>
+                    {% else %}
+                    <div class="quiz-result-badge quiz-result-badge-low">
+                        Spróbuj jeszcze raz
+                    </div>
+                    {% endif %}
+
+                    {% if result.percentage == 100 %}
+                    <div class="alert alert-success mt-4 mb-0">
+                        Świetnie. Masz komplet poprawnych odpowiedzi.
+                    </div>
+                    {% elif result.percentage >= 75 %}
+                    <div class="alert alert-info mt-4 mb-0">
+                        Bardzo dobry wynik. Warto jeszcze raz przejrzeć drobne szczegóły.
+                    </div>
+                    {% elif result.percentage >= 50 %}
+                    <div class="alert alert-warning mt-4 mb-0">
+                        Jest dobrze, ale wróć jeszcze do lekcji i powtórz komendy.
+                    </div>
+                    {% else %}
+                    <div class="alert alert-danger mt-4 mb-0">
+                        Warto wrócić do lekcji i spokojnie przećwiczyć komendy w terminalu.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <form method="post" class="quiz-form">
+            <div class="row g-4">
+                {% for question in quiz.questions %}
+                <div class="col-12">
+                    <div class="card shadow-sm quiz-question">
+                        <div class="card-body">
+                            <h5 class="fw-bold mb-3">
+                                {{ loop.index }}. {{ question.text }}
+                            </h5>
+
+                            <div class="vstack gap-2">
+                                {% for answer in question.answers %}
+                                {% set is_selected = selected_answers.get(question.id) == answer.id %}
+                                {% set is_correct = answer.id == question.correct_answer %}
+
+                                <label
+                                    class="
+                                        quiz-answer
+                                        {% if result and is_selected and is_correct %}quiz-answer-correct{% endif %}
+                                        {% if result and is_selected and not is_correct %}quiz-answer-wrong{% endif %}
+                                        {% if result and not is_selected and is_correct %}quiz-answer-expected{% endif %}
+                                    "
+                                >
+                                    <input
+                                        type="radio"
+                                        name="question_{{ question.id }}"
+                                        value="{{ answer.id }}"
+                                        {% if is_selected %}checked{% endif %}
+                                    >
+
+                                    <span>
+                                        {{ answer.text }}
+                                    </span>
+                                </label>
+                                {% endfor %}
+                            </div>
+
+                            {% if result %}
+                            <div class="mt-3">
+                                {% if selected_answers.get(question.id) == question.correct_answer %}
+                                <div class="quiz-feedback quiz-feedback-correct">
+                                    <strong>Poprawna odpowiedź.</strong>
+                                    Dobrze rozumiesz to pytanie.
+                                </div>
+                                {% else %}
+                                <div class="quiz-feedback quiz-feedback-wrong">
+                                    <strong>Niepoprawna odpowiedź.</strong>
+                                    Poprawna odpowiedź to: <strong>{{ question.correct_answer | upper }}</strong>.
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="d-flex gap-3 mt-4">
+                <button type="submit" class="btn btn-dark">
+                    Sprawdź odpowiedzi
+                </button>
+
+                <a href="/lessons/{{ quiz.lesson_id }}" class="btn btn-outline-secondary">
+                    Wróć do lekcji
+                </a>
+            </div>
+        </form>
+
+    </div>
+</section>
+
+{% endblock %}
