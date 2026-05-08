@@ -80,3 +80,24 @@ def test_missing_flashcards_lesson_returns_404():
     response = client.get("/flashcards/999")
 
     assert response.status_code == 404
+
+
+def test_second_lesson_detail_page_returns_200():
+    response = client.get("/lessons/2")
+
+    assert response.status_code == 200
+    assert "Pliki i katalogi" in response.text
+
+
+def test_second_quiz_page_returns_200():
+    response = client.get("/quiz/2")
+
+    assert response.status_code == 200
+    assert "Quiz: pliki i katalogi" in response.text
+
+
+def test_second_flashcards_page_returns_200():
+    response = client.get("/flashcards/2")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
