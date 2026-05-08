@@ -1,0 +1,82 @@
+.lesson-card {
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+.page-loaded .lesson-card {
+    opacity: 1;
+    transform: translateY(0);
+    transition:
+        opacity 0.6s ease,
+        transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.35s ease;
+}
+
+.page-loaded .lesson-card:nth-child(1) {
+    transition-delay: 0.03s;
+}
+
+.page-loaded .lesson-card:nth-child(2) {
+    transition-delay: 0.08s;
+}
+
+.page-loaded .lesson-card:nth-child(3) {
+    transition-delay: 0.13s;
+}
+
+.page-loaded .lesson-card:hover {
+    transform: translateY(-2px);
+}
+
+.lesson-content p {
+    font-size: 1.05rem;
+    line-height: 1.8;
+}
+
+.lesson-sidebar {
+    top: auto;
+}
+
+.command-box {
+    border: 1px solid #dee2e6;
+    border-radius: 14px;
+    padding: 20px;
+    background-color: #ffffff;
+    opacity: 0;
+    transform: translateY(8px);
+}
+
+.page-loaded .command-box {
+    opacity: 1;
+    transform: translateY(0);
+    transition:
+        opacity 0.55s ease,
+        transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.35s ease;
+}
+
+.page-loaded .command-box:hover {
+    transform: translateY(-2px);
+}
+
+.command-box pre {
+    background-color: #111827;
+    color: #e5e7eb;
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 0;
+    white-space: pre-wrap;
+}
+
+.lesson-content article {
+    opacity: 0;
+    transform: translateY(8px);
+}
+
+.page-loaded .lesson-content article {
+    opacity: 1;
+    transform: translateY(0);
+    transition:
+        opacity 0.55s ease,
+        transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
