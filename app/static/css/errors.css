@@ -1,0 +1,15 @@
+.error-page {
+    display: flex;
+    align-items: center;
+    min-height: 60vh;
+}
+
+.error-card {
+    max-width: 680px;
+    margin: 0 auto;
+    border-radius: 18px;
+}
+
+.error-card .card-body {
+    padding: 48px 32px;
+}

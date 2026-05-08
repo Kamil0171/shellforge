@@ -123,3 +123,10 @@ def test_roadmap_page_returns_200():
 
     assert response.status_code == 200
     assert "Plan rozwoju ShellForge" in response.text
+
+
+def test_custom_404_page_returns_404():
+    response = client.get("/nieistniejaca-strona")
+
+    assert response.status_code == 404
+    assert "Nie znaleziono strony" in response.text
