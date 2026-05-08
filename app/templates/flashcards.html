@@ -26,37 +26,68 @@
     <div class="container">
 
         {% if flashcards %}
-        <div class="row g-4">
-            {% for flashcard in flashcards %}
-            <div class="col-md-6 col-lg-4">
-                <div class="flashcard">
-                    <div class="flashcard-inner">
-                        <div class="flashcard-front">
-                            <span class="flashcard-label">
-                                Pytanie
-                            </span>
+        <div class="flashcards-review">
+            <div class="flashcards-meta">
+                <span class="flashcards-tag">
+                    Fiszki
+                </span>
 
-                            <h2>
-                                {{ flashcard.question }}
-                            </h2>
+                <span class="flashcards-counter">
+                    <span id="flashcard-current">1</span> / <span id="flashcard-total">{{ flashcards|length }}</span>
+                </span>
+            </div>
 
-                            <p>
-                                Kliknij kartę, aby zobaczyć odpowiedź.
-                            </p>
-                        </div>
+            <div class="flashcards-progress">
+                <div class="flashcards-progress-bar" id="flashcards-progress-bar"></div>
+            </div>
 
-                        <div class="flashcard-back">
-                            <span class="flashcard-label">
-                                Odpowiedź
-                            </span>
+            <div class="flashcards-scene" id="flashcards-scene">
+                <div class="flashcards-card" id="flashcards-card">
+                    <div class="flashcards-face flashcards-front">
+                        <span class="flashcards-face-label" id="flashcard-label">
+                            Pytanie 1
+                        </span>
 
-                            <h2>
-                                {{ flashcard.answer }}
-                            </h2>
-                        </div>
+                        <h2 class="flashcards-face-text" id="flashcard-question">
+                            {{ flashcards[0].question }}
+                        </h2>
+
+                        <p class="flashcards-face-hint">
+                            Kliknij kartę, aby zobaczyć odpowiedź.
+                        </p>
+                    </div>
+
+                    <div class="flashcards-face flashcards-back">
+                        <span class="flashcards-face-label">
+                            Odpowiedź
+                        </span>
+
+                        <h2 class="flashcards-face-text" id="flashcard-answer">
+                            {{ flashcards[0].answer }}
+                        </h2>
                     </div>
                 </div>
             </div>
+
+            <div class="flashcards-nav">
+                <button type="button" id="flashcard-prev">
+                    ← Poprzednia
+                </button>
+
+                <div class="flashcards-dots" id="flashcards-dots"></div>
+
+                <button type="button" id="flashcard-next">
+                    Następna →
+                </button>
+            </div>
+        </div>
+
+        <div id="flashcards-data" class="d-none">
+            {% for flashcard in flashcards %}
+            <div
+                data-question="{{ flashcard.question }}"
+                data-answer="{{ flashcard.answer }}"
+            ></div>
             {% endfor %}
         </div>
         {% else %}
