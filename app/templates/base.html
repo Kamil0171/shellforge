@@ -21,16 +21,27 @@
         <div class="collapse navbar-collapse" id="mainNavbar">
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item">
-                    <a class="nav-link" href="/">Start</a>
+                    <a class="nav-link {% if request.url.path == '/' %}active{% endif %}" href="/">
+                        Start
+                    </a>
                 </li>
+
                 <li class="nav-item">
-                    <a class="nav-link" href="/lessons">Lekcje</a>
+                    <a class="nav-link {% if request.url.path.startswith('/lessons') or request.url.path.startswith('/quiz') or request.url.path.startswith('/flashcards') %}active{% endif %}" href="/lessons">
+                        Lekcje
+                    </a>
                 </li>
-                <li clas="nav-item">
-                    <a class="nav-link" href="/roadmap/">Roadmapa</a>
-                </li>
+
                 <li class="nav-item">
-                    <a class="nav-link" href="/dashboard">Postępy</a>
+                    <a class="nav-link {% if request.url.path.startswith('/roadmap') %}active{% endif %}" href="/roadmap/">
+                        Roadmapa
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link {% if request.url.path.startswith('/dashboard') %}active{% endif %}" href="/dashboard/">
+                        Postępy
+                    </a>
                 </li>
             </ul>
         </div>

@@ -55,6 +55,29 @@
     white-space: pre-wrap;
 }
 
+.navbar .nav-link {
+    position: relative;
+    transition:
+        color 0.25s ease,
+        opacity 0.25s ease;
+}
+
+.navbar .nav-link.active {
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.navbar .nav-link.active::after {
+    content: "";
+    position: absolute;
+    left: 0.5rem;
+    right: 0.5rem;
+    bottom: 2px;
+    height: 2px;
+    border-radius: 999px;
+    background-color: #ffffff;
+}
+
 .app-footer {
     padding: 8px 0;
     margin-top: 0;
@@ -65,4 +88,10 @@
 
 .app-footer small {
     opacity: 0.7;
+}
+
+@media (max-width: 991.98px) {
+    .navbar .nav-link.active::after {
+        display: none;
+    }
 }
