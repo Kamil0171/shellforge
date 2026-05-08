@@ -6,5 +6,7 @@ DATA_DIR = BASE_DIR / "data"
 DATABASE_PATH = DATA_DIR / "shellforge.db"
 
 DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
+
 APP_NAME = "ShellForge"
 APP_VERSION = "0.1.0"
+APP_DESCRIPTION = "Edukacyjna aplikacja webowa do nauki Linuxa i DevOps."

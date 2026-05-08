@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
+from app.config import APP_DESCRIPTION, APP_NAME, APP_VERSION
 from app.database import create_db_and_tables
 from app.routers import dashboard, flashcards, health, home, lessons, quizzes
 from app.seed import seed_database
@@ -16,9 +17,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="ShellForge",
-    description="Edukacyjna aplikacja webowa do nauki Linuxa i DevOps.",
-    version="0.1.0",
+    title=APP_NAME,
+    description=APP_DESCRIPTION,
+    version=APP_VERSION,
     lifespan=lifespan,
 )
 
