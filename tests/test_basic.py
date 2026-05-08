@@ -109,3 +109,5 @@ def test_health_check_returns_200():
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
     assert response.json()["service"] == "ShellForge"
+    assert response.json()["version"] == "0.1.0"
+    assert response.json()["environment"] == "development"

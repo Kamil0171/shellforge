@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.config import APP_NAME, APP_VERSION
+from app.config import APP_ENV, APP_NAME, APP_VERSION
 
 
 router = APIRouter(tags=["health"])
@@ -12,4 +12,5 @@ def health_check():
         "status": "ok",
         "service": APP_NAME,
         "version": APP_VERSION,
+        "environment": APP_ENV,
     }
