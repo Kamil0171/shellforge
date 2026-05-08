@@ -105,9 +105,11 @@
                 </article>
 
                 <div class="d-flex gap-3">
-                    <a href="/quiz/1" class="btn btn-dark">
+                    {% if lesson.quiz_id %}
+                    <a href="/quiz/{{ lesson.quiz_id }}" class="btn btn-dark">
                         Przejdź do quizu
                     </a>
+                    {% endif %}
 
                     <a href="/lessons" class="btn btn-outline-secondary">
                         Lista lekcji

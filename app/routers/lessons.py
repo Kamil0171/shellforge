@@ -1,5 +1,11 @@
-from fastapi import APIRouter, HTTPException, Request
+import json
+
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.templating import Jinja2Templates
+from sqlmodel import Session, select
+
+from app.database import get_session
+from app.models import LearningModule, Lesson, Quiz
 
 
 router = APIRouter(prefix="/lessons", tags=["lessons"])
@@ -7,78 +13,41 @@ router = APIRouter(prefix="/lessons", tags=["lessons"])
 templates = Jinja2Templates(directory="app/templates")
 
 
-lessons_data = [
-    {
-        "id": 1,
-        "title": "Gdzie jestem? Komendy pwd, ls i cd",
-        "module": "Podstawy terminala",
-        "level": "Podstawowy",
-        "duration": "20 min",
-        "description": (
-            "Poznasz podstawowe komendy do sprawdzania aktualnego katalogu, "
-            "wyświetlania plików oraz poruszania się po systemie plików."
-        ),
-        "theory": (
-            "Terminal pozwala wykonywać polecenia tekstowe w systemie Linux. "
-            "Jedną z pierwszych umiejętności jest poruszanie się po systemie plików. "
-            "System plików można wyobrazić sobie jako drzewo katalogów. "
-            "Użytkownik znajduje się zawsze w jakimś aktualnym katalogu roboczym."
-        ),
-        "commands": [
-            {
-                "command": "pwd",
-                "description": "Wyświetla aktualny katalog roboczy.",
-                "example": "$ pwd\n/home/student",
-            },
-            {
-                "command": "ls",
-                "description": "Wyświetla pliki i katalogi w bieżącym katalogu.",
-                "example": "$ ls\nDocuments Downloads Pictures",
-            },
-            {
-                "command": "ls -la",
-                "description": "Wyświetla szczegółową listę plików, także ukrytych.",
-                "example": "$ ls -la\n-rw-r--r-- 1 student student 120 notes.txt",
-            },
-            {
-                "command": "cd Documents",
-                "description": "Przechodzi do katalogu Documents.",
-                "example": "$ cd Documents",
-            },
-            {
-                "command": "cd ..",
-                "description": "Przechodzi katalog wyżej.",
-                "example": "$ cd ..",
-            },
-            {
-                "command": "cd ~",
-                "description": "Przechodzi do katalogu domowego użytkownika.",
-                "example": "$ cd ~",
-            },
-        ],
-        "practice_task": (
-            "Otwórz terminal i wykonaj kolejno: <code>pwd</code>, <code>ls</code>, "
-            "<code>cd Documents</code>, <code>pwd</code>, <code>cd ..</code>, "
-            "<code>pwd</code>, <code>cd ~</code>, <code>pwd</code>. "
-            "Zwróć uwagę, jak zmienia się aktualny katalog roboczy."
-        ),
-        "common_mistakes": [
-            "Wpisanie <code>cdDocuments</code> zamiast <code>cd Documents</code>.",
-            "Mylenie komendy <code>pwd</code> z <code>cd</code>.",
-            "Próba wejścia do katalogu, który nie istnieje.",
-            "Nieuwzględnianie wielkości liter w nazwach katalogów.",
-        ],
-        "summary": (
-            "Komendy <code>pwd</code>, <code>ls</code> i <code>cd</code> są podstawą pracy "
-            "w terminalu. Dzięki nim wiesz, gdzie jesteś, co znajduje się w katalogu "
-            "i jak przechodzić między katalogami."
-        ),
+def lesson_to_dict(lesson: Lesson, module: LearningModule, quiz: Quiz | None = None):
+    return {
+        "id": lesson.id,
+        "title": lesson.title,
+        "module": module.title,
+        "level": lesson.level,
+        "duration": lesson.duration,
+        "description": lesson.description,
+        "theory": lesson.theory,
+        "commands": json.loads(lesson.commands_json),
+        "practice_task": lesson.practice_task,
+        "common_mistakes": json.loads(lesson.common_mistakes_json),
+        "summary": lesson.summary,
+        "quiz_id": quiz.id if quiz else None,
     }
-]
 
 
 @router.get("/")
-def lessons_page(request: Request):
+def lessons_page(request: Request, session: Session = Depends(get_session)):
+    lessons = session.exec(select(Lesson)).all()
+
+    lessons_data = []
+
+    for lesson in lessons:
+        module = session.get(LearningModule, lesson.module_id)
+
+        if module is None:
+            continue
+
+        quiz = session.exec(
+            select(Quiz).where(Quiz.lesson_id == lesson.id)
+        ).first()
+
+        lessons_data.append(lesson_to_dict(lesson, module, quiz))
+
     return templates.TemplateResponse(
         request=request,
         name="lessons.html",
@@ -89,11 +58,12 @@ def lessons_page(request: Request):
 
 
 @router.get("/{lesson_id}")
-def lesson_detail_page(request: Request, lesson_id: int):
-    lesson = next(
-        (item for item in lessons_data if item["id"] == lesson_id),
-        None,
-    )
+def lesson_detail_page(
+    request: Request,
+    lesson_id: int,
+    session: Session = Depends(get_session),
+):
+    lesson = session.get(Lesson, lesson_id)
 
     if lesson is None:
         raise HTTPException(
@@ -101,10 +71,22 @@ def lesson_detail_page(request: Request, lesson_id: int):
             detail="Lekcja nie została znaleziona.",
         )
 
+    module = session.get(LearningModule, lesson.module_id)
+
+    if module is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Moduł lekcji nie został znaleziony.",
+        )
+
+    quiz = session.exec(
+        select(Quiz).where(Quiz.lesson_id == lesson.id)
+    ).first()
+
     return templates.TemplateResponse(
         request=request,
         name="lesson_detail.html",
         context={
-            "lesson": lesson,
+            "lesson": lesson_to_dict(lesson, module, quiz),
         },
     )

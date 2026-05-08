@@ -1,5 +1,9 @@
-from fastapi import APIRouter, Form, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.templating import Jinja2Templates
+from sqlmodel import Session, select
+
+from app.database import get_session
+from app.models import Quiz, QuizAnswer, QuizQuestion
 
 
 router = APIRouter(prefix="/quiz", tags=["quizzes"])
@@ -7,65 +11,61 @@ router = APIRouter(prefix="/quiz", tags=["quizzes"])
 templates = Jinja2Templates(directory="app/templates")
 
 
-quizzes_data = {
-    1: {
-        "id": 1,
-        "lesson_id": 1,
-        "title": "Quiz: pwd, ls i cd",
-        "description": "Sprawdź, czy rozumiesz podstawowe komendy poruszania się po terminalu.",
-        "questions": [
+def get_quiz_data(session: Session, quiz_id: int):
+    quiz = session.get(Quiz, quiz_id)
+
+    if quiz is None:
+        return None
+
+    questions = session.exec(
+        select(QuizQuestion)
+        .where(QuizQuestion.quiz_id == quiz.id)
+        .order_by(QuizQuestion.position)
+    ).all()
+
+    questions_data = []
+
+    for question in questions:
+        answers = session.exec(
+            select(QuizAnswer).where(QuizAnswer.question_id == question.id)
+        ).all()
+
+        correct_answer = next(
+            (answer.option_key for answer in answers if answer.is_correct),
+            None,
+        )
+
+        questions_data.append(
             {
-                "id": 1,
-                "text": "Do czego służy komenda pwd?",
+                "id": question.id,
+                "text": question.text,
                 "answers": [
-                    {"id": "a", "text": "Do usuwania katalogów"},
-                    {"id": "b", "text": "Do wyświetlania aktualnego katalogu roboczego"},
-                    {"id": "c", "text": "Do tworzenia nowych użytkowników"},
-                    {"id": "d", "text": "Do restartowania systemu"},
+                    {
+                        "id": answer.option_key,
+                        "text": answer.text,
+                    }
+                    for answer in answers
                 ],
-                "correct_answer": "b",
-            },
-            {
-                "id": 2,
-                "text": "Która komenda wyświetla zawartość katalogu?",
-                "answers": [
-                    {"id": "a", "text": "ls"},
-                    {"id": "b", "text": "cd"},
-                    {"id": "c", "text": "pwd"},
-                    {"id": "d", "text": "mkdir"},
-                ],
-                "correct_answer": "a",
-            },
-            {
-                "id": 3,
-                "text": "Co robi komenda cd ..?",
-                "answers": [
-                    {"id": "a", "text": "Przechodzi do katalogu domowego"},
-                    {"id": "b", "text": "Usuwa aktualny katalog"},
-                    {"id": "c", "text": "Przechodzi katalog wyżej"},
-                    {"id": "d", "text": "Wyświetla pliki ukryte"},
-                ],
-                "correct_answer": "c",
-            },
-            {
-                "id": 4,
-                "text": "Która komenda przechodzi do katalogu domowego użytkownika?",
-                "answers": [
-                    {"id": "a", "text": "cd /"},
-                    {"id": "b", "text": "cd home"},
-                    {"id": "c", "text": "cd ~"},
-                    {"id": "d", "text": "pwd ~"},
-                ],
-                "correct_answer": "c",
-            },
-        ],
+                "correct_answer": correct_answer,
+            }
+        )
+
+    return {
+        "id": quiz.id,
+        "lesson_id": quiz.lesson_id,
+        "title": quiz.title,
+        "description": quiz.description,
+        "questions": questions_data,
     }
-}
 
 
 @router.get("/{quiz_id}")
-def quiz_page(request: Request, quiz_id: int):
-    quiz = quizzes_data.get(quiz_id)
+def quiz_page(
+    request: Request,
+    quiz_id: int,
+    session: Session = Depends(get_session),
+):
+    quiz = get_quiz_data(session, quiz_id)
 
     if quiz is None:
         raise HTTPException(
@@ -85,15 +85,12 @@ def quiz_page(request: Request, quiz_id: int):
 
 
 @router.post("/{quiz_id}")
-def check_quiz(
+async def check_quiz(
     request: Request,
     quiz_id: int,
-    question_1: str = Form(default=""),
-    question_2: str = Form(default=""),
-    question_3: str = Form(default=""),
-    question_4: str = Form(default=""),
+    session: Session = Depends(get_session),
 ):
-    quiz = quizzes_data.get(quiz_id)
+    quiz = get_quiz_data(session, quiz_id)
 
     if quiz is None:
         raise HTTPException(
@@ -101,22 +98,27 @@ def check_quiz(
             detail="Quiz nie został znaleziony.",
         )
 
-    selected_answers = {
-        1: question_1,
-        2: question_2,
-        3: question_3,
-        4: question_4,
-    }
+    form_data = await request.form()
+
+    selected_answers = {}
+
+    for question in quiz["questions"]:
+        question_id = question["id"]
+        selected_answers[question_id] = form_data.get(
+            f"question_{question_id}",
+            "",
+        )
 
     correct_count = 0
 
     for question in quiz["questions"]:
         question_id = question["id"]
+
         if selected_answers.get(question_id) == question["correct_answer"]:
             correct_count += 1
 
     total_count = len(quiz["questions"])
-    percentage = round((correct_count / total_count) * 100)
+    percentage = round((correct_count / total_count) * 100) if total_count else 0
 
     result = {
         "correct_count": correct_count,
