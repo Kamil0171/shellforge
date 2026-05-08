@@ -1,7 +1,12 @@
 from fastapi.testclient import TestClient
 
+from app.database import create_db_and_tables
 from app.main import app
+from app.seed import seed_database
 
+
+create_db_and_tables()
+seed_database()
 
 client = TestClient(app)
 
