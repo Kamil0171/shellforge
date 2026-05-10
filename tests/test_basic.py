@@ -137,3 +137,24 @@ def test_about_page_returns_200():
 
     assert response.status_code == 200
     assert "Czym jest ShellForge?" in response.text
+
+
+def test_third_lesson_detail_page_returns_200():
+    response = client.get("/lessons/3")
+
+    assert response.status_code == 200
+    assert "Uprawnienia plików" in response.text
+
+
+def test_third_quiz_page_returns_200():
+    response = client.get("/quiz/3")
+
+    assert response.status_code == 200
+    assert "Quiz: uprawnienia plików" in response.text
+
+
+def test_third_flashcards_page_returns_200():
+    response = client.get("/flashcards/3")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text

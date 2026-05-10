@@ -2,6 +2,7 @@ import json
 
 from sqlmodel import Session, select
 
+from app.content.file_permissions import FILE_PERMISSIONS
 from app.content.files_and_directories import FILES_AND_DIRECTORIES
 from app.content.terminal_navigation import TERMINAL_NAVIGATION
 from app.database import engine
@@ -11,6 +12,7 @@ from app.models import Flashcard, LearningModule, Lesson, Quiz, QuizAnswer, Quiz
 LESSONS = [
     TERMINAL_NAVIGATION,
     FILES_AND_DIRECTORIES,
+    FILE_PERMISSIONS,
 ]
 
 
