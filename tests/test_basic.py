@@ -179,3 +179,24 @@ def test_fourth_flashcards_page_returns_200():
 
     assert response.status_code == 200
     assert "Fiszki do lekcji" in response.text
+
+
+def test_fifth_lesson_detail_page_returns_200():
+    response = client.get("/lessons/5")
+
+    assert response.status_code == 200
+    assert "Procesy w Linuxie" in response.text
+
+
+def test_fifth_quiz_page_returns_200():
+    response = client.get("/quiz/5")
+
+    assert response.status_code == 200
+    assert "Quiz: procesy w Linuxie" in response.text
+
+
+def test_fifth_flashcards_page_returns_200():
+    response = client.get("/flashcards/5")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
