@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}O projekcie — ShellForge{% endblock %}
+
+{% block content %}
+
+<section class="py-5 bg-light border-bottom">
+    <div class="container">
+        <span class="badge text-bg-dark mb-3">O projekcie</span>
+
+        <h1 class="fw-bold">
+            Czym jest ShellForge?
+        </h1>
+
+        <p class="lead text-muted">
+            ShellForge to edukacyjna aplikacja webowa tworzona do praktycznej nauki Linuxa, administracji systemami oraz podstaw DevOps.
+        </p>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+
+        <div class="row g-4 mb-5">
+            <div class="col-lg-7">
+                <div class="card shadow-sm about-card h-100">
+                    <div class="card-body">
+                        <h2 class="fw-bold h4 mb-3">
+                            Idea projektu
+                        </h2>
+
+                        <p class="text-muted">
+                            ShellForge powstaje jako projekt edukacyjny i portfolio. Jego celem jest nauka przez budowanie realnej aplikacji webowej, która rozwija się krok po kroku razem z wiedzą autora.
+                        </p>
+
+                        <p class="text-muted mb-0">
+                            Projekt nie jest komercyjnym SaaS-em. To praktyczne laboratorium do nauki backendu, Linuxa, DevOps, deploymentu, testów, automatyzacji i utrzymywania aplikacji na VPS.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card shadow-sm about-card h-100">
+                    <div class="card-body">
+                        <h2 class="fw-bold h4 mb-3">
+                            Podejście
+                        </h2>
+
+                        <div class="about-highlight">
+                            ucz się przez budowanie
+                        </div>
+
+                        <p class="text-muted mb-0">
+                            Najważniejszy jest prosty, działający fundament, a dopiero później stopniowa rozbudowa o deployment, kontenery, CI/CD, monitoring i funkcje zaawansowane.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-5">
+            <div class="col-md-6 col-lg-3">
+                <div class="card shadow-sm about-card h-100">
+                    <div class="card-body">
+                        <h3 class="h5 fw-bold">
+                            Linux
+                        </h3>
+
+                        <p class="text-muted mb-0">
+                            Terminal, pliki, katalogi, procesy, uprawnienia, użytkownicy i usługi systemowe.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card shadow-sm about-card h-100">
+                    <div class="card-body">
+                        <h3 class="h5 fw-bold">
+                            SysAdmin
+                        </h3>
+
+                        <p class="text-muted mb-0">
+                            SSH, systemd, firewalld, SELinux, logi, backupy i utrzymywanie środowiska.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card shadow-sm about-card h-100">
+                    <div class="card-body">
+                        <h3 class="h5 fw-bold">
+                            DevOps
+                        </h3>
+
+                        <p class="text-muted mb-0">
+                            Git, testy, CI/CD, deployment, konteneryzacja i automatyzacja pracy.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card shadow-sm about-card h-100">
+                    <div class="card-body">
+                        <h3 class="h5 fw-bold">
+                            VPS
+                        </h3>
+
+                        <p class="text-muted mb-0">
+                            Docelowe wdrożenie na Rocky Linux 9 z Nginx, HTTPS i usługą systemd.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm about-card">
+            <div class="card-body">
+                <h2 class="fw-bold h4 mb-3">
+                    Aktualny etap
+                </h2>
+
+                <p class="text-muted">
+                    Aplikacja posiada obecnie lokalne MVP: lekcje, quizy, fiszki, dashboard, roadmapę, testy automatyczne, GitHub Actions, endpoint zdrowia oraz podstawową konfigurację środowiskową.
+                </p>
+
+                <div class="d-flex gap-3 flex-wrap">
+                    <a href="/lessons" class="btn btn-dark">
+                        Przejdź do lekcji
+                    </a>
+
+                    <a href="/roadmap/" class="btn btn-outline-secondary">
+                        Zobacz roadmapę
+                    </a>
+
+                    <a href="/dashboard/" class="btn btn-outline-secondary">
+                        Zobacz postępy
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+{% endblock %}

@@ -130,3 +130,10 @@ def test_custom_404_page_returns_404():
 
     assert response.status_code == 404
     assert "Nie znaleziono strony" in response.text
+
+
+def test_about_page_returns_200():
+    response = client.get("/about/")
+
+    assert response.status_code == 200
+    assert "Czym jest ShellForge?" in response.text

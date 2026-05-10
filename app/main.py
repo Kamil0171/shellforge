@@ -8,7 +8,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import APP_DESCRIPTION, APP_NAME, APP_VERSION
 from app.database import create_db_and_tables
-from app.routers import dashboard, flashcards, health, home, lessons, quizzes, roadmap
+from app.routers import about, dashboard, flashcards, health, home, lessons, quizzes, roadmap
 from app.seed import seed_database
 
 
@@ -58,3 +58,4 @@ app.include_router(dashboard.router)
 app.include_router(flashcards.router)
 app.include_router(health.router)
 app.include_router(roadmap.router)
+app.include_router(about.router)
