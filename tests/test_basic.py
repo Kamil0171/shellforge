@@ -158,3 +158,24 @@ def test_third_flashcards_page_returns_200():
 
     assert response.status_code == 200
     assert "Fiszki do lekcji" in response.text
+
+
+def test_fourth_lesson_detail_page_returns_200():
+    response = client.get("/lessons/4")
+
+    assert response.status_code == 200
+    assert "Użytkownicy i grupy" in response.text
+
+
+def test_fourth_quiz_page_returns_200():
+    response = client.get("/quiz/4")
+
+    assert response.status_code == 200
+    assert "Quiz: użytkownicy i grupy" in response.text
+
+
+def test_fourth_flashcards_page_returns_200():
+    response = client.get("/flashcards/4")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
