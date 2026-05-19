@@ -12,10 +12,10 @@ provider: VPS provider
 public address: <SERVER_IP_OR_DOMAIN>
 domain: <DOMAIN>
 SSH port: <SSH_PORT>
-app user: shellforge
-app directory: /opt/shellforge/app
-venv directory: /opt/shellforge/venv
-env file: /opt/shellforge/.env
+app user: <APP_USER>
+app directory: /opt/<app-name>/app
+venv directory: /opt/<app-name>/venv
+env file: /opt/<app-name>/.env
 Python: 3.12
 app server: Uvicorn
 app bind: 127.0.0.1:8000
@@ -30,7 +30,7 @@ firewall: firewalld
 
 ## Ogólny przebieg deploymentu
 
-Pierwszy deployment ShellForge zakłada ręczne przygotowanie VPS-a, instalację wymaganych pakietów, utworzenie osobnego użytkownika systemowego dla aplikacji oraz pobranie kodu z repozytorium Git.
+Pierwszy deployment aplikacji zakłada ręczne przygotowanie VPS-a, instalację wymaganych pakietów, utworzenie osobnego użytkownika systemowego dla aplikacji oraz pobranie kodu z repozytorium Git.
 
 Aplikacja jest uruchamiana przez Uvicorn wewnętrznie na adresie `127.0.0.1:8000`, a publiczny ruch HTTP/HTTPS jest obsługiwany przez Nginx działający jako reverse proxy.
 
@@ -49,7 +49,7 @@ Nginx
   ↓
 Uvicorn
   ↓
-FastAPI / ShellForge
+FastAPI / aplikacja
 ```
 
 ## Usługa systemd
@@ -59,7 +59,7 @@ Aplikacja działa jako usługa systemowa zarządzana przez `systemd`.
 Przykładowa ścieżka usługi:
 
 ```text
-/etc/systemd/system/shellforge.service
+/etc/systemd/system/<app-name>.service
 ```
 
 Usługa korzysta z osobnego użytkownika aplikacyjnego, katalogu aplikacji oraz pliku środowiskowego.
@@ -71,7 +71,7 @@ Nginx pełni rolę reverse proxy. Publicznie dostępny jest ruch HTTP/HTTPS, nat
 Przykładowa ścieżka konfiguracji Nginx dla aplikacji:
 
 ```text
-/etc/nginx/conf.d/shellforge.conf
+/etc/nginx/conf.d/<app-name>.conf
 ```
 
 W konfiguracji Nginx należy ustawić domenę główną oraz wariant `www`.
@@ -185,10 +185,10 @@ Po zmergowaniu zmian do brancha `main` aktualizacja aplikacji na VPS polega na p
 Ogólny schemat:
 
 ```bash
-cd /opt/shellforge/app
-runuser -u shellforge -- git pull origin main
-systemctl restart shellforge
-systemctl status shellforge --no-pager
+cd /opt/<app-name>/app
+runuser -u <APP_USER> -- git pull origin main
+systemctl restart <app-name>
+systemctl status <app-name> --no-pager
 curl https://<DOMAIN>/health
 ```
 
@@ -199,7 +199,7 @@ Jeżeli zmieniana była wyłącznie dokumentacja, restart aplikacji nie jest kon
 Status aplikacji:
 
 ```bash
-systemctl status shellforge --no-pager
+systemctl status <app-name> --no-pager
 ```
 
 Status Nginx:
