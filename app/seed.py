@@ -6,6 +6,7 @@ from app.content.file_permissions import FILE_PERMISSIONS
 from app.content.files_and_directories import FILES_AND_DIRECTORIES
 from app.content.processes import PROCESSES
 from app.content.terminal_navigation import TERMINAL_NAVIGATION
+from app.content.text_files import TEXT_FILES
 from app.content.users_and_groups import USERS_AND_GROUPS
 from app.database import engine
 from app.models import Flashcard, LearningModule, Lesson, Quiz, QuizAnswer, QuizQuestion
@@ -17,6 +18,7 @@ LESSONS = [
     FILE_PERMISSIONS,
     USERS_AND_GROUPS,
     PROCESSES,
+    TEXT_FILES,
 ]
 
 
