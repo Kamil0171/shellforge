@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}ShellForge — Nauka Linuxa i DevOps{% endblock %}
+{% block title %}ShellForge — Praktyczna nauka Linuxa i DevOps{% endblock %}
 
 {% block content %}
 
@@ -8,29 +8,29 @@
     <div class="container">
         <div class="row align-items-center g-5">
             <div class="col-lg-7">
-                <span class="badge text-bg-dark mb-3">Linux · DevOps · SysAdmin</span>
+                <span class="badge text-bg-dark mb-3">Linux · SysAdmin · DevOps</span>
 
                 <h1 class="display-4 fw-bold">
-                    ShellForge
+                    Ucz się Linuxa przez praktykę
                 </h1>
 
                 <p class="lead mt-3">
-                    Edukacyjna aplikacja webowa do praktycznej nauki Linuxa,
-                    administracji systemami, sieci oraz podstaw DevOps.
+                    ShellForge to platforma edukacyjna do nauki pracy w terminalu,
+                    administracji systemami Linux oraz podstaw nowoczesnego DevOps.
                 </p>
 
                 <p class="text-muted">
-                    Ucz się przez budowanie: terminal, komendy, uprawnienia,
-                    procesy, SSH, firewalld, SELinux, Docker, Podman,
-                    monitoring i deployment aplikacji.
+                    Zacznij od podstawowych komend, plików, uprawnień, użytkowników
+                    i procesów. Następnie rozwijaj umiejętności w kierunku usług
+                    systemowych, sieci, bezpieczeństwa, deploymentu i automatyzacji.
                 </p>
 
                 <div class="d-flex gap-3 flex-wrap">
                     <a href="/lessons" class="btn btn-dark">
                         Rozpocznij naukę
                     </a>
-                    <a href="/about/" class="btn btn-shell-secondary">
-                        O projekcie
+                    <a href="/roadmap/" class="btn btn-shell-secondary">
+                        Zobacz ścieżkę nauki
                     </a>
                 </div>
             </div>
@@ -46,10 +46,13 @@
 student
 
 $ pwd
-/home/student/shellforge
+/home/student
 
-$ echo "Uczę się Linuxa przez praktykę"
-Uczę się Linuxa przez praktykę</code></pre>
+$ grep NAME /etc/os-release
+NAME="Rocky Linux"
+
+$ echo "Linux staje się prostszy przez praktykę"
+Linux staje się prostszy przez praktykę</code></pre>
                 </div>
             </div>
         </div>
@@ -64,10 +67,11 @@ Uczę się Linuxa przez praktykę</code></pre>
             <div class="col-md-4">
                 <div class="card h-100 shadow-sm">
                     <div class="card-body">
-                        <h5 class="card-title">Linux od podstaw</h5>
+                        <h5 class="card-title">Podstawy Linuxa</h5>
                         <p class="card-text">
-                            Nauczysz się poruszać po terminalu, zarządzać plikami,
-                            katalogami, użytkownikami, procesami i usługami systemowymi.
+                            Poznasz terminal, strukturę katalogów, pracę z plikami,
+                            uprawnienia, użytkowników, procesy i podstawowe narzędzia
+                            tekstowe.
                         </p>
                     </div>
                 </div>
@@ -78,8 +82,9 @@ Uczę się Linuxa przez praktykę</code></pre>
                     <div class="card-body">
                         <h5 class="card-title">Administracja systemem</h5>
                         <p class="card-text">
-                            Poznasz praktyczne zagadnienia SysAdmin: SSH, systemd,
-                            firewalld, SELinux, logi, backupy i bezpieczeństwo.
+                            Nauczysz się rozumieć usługi systemowe, logi, pakiety,
+                            konfigurację, sieć, SSH, firewalla oraz podstawy
+                            bezpieczeństwa.
                         </p>
                     </div>
                 </div>
@@ -88,10 +93,10 @@ Uczę się Linuxa przez praktykę</code></pre>
             <div class="col-md-4">
                 <div class="card h-100 shadow-sm">
                     <div class="card-body">
-                        <h5 class="card-title">DevOps w praktyce</h5>
+                        <h5 class="card-title">DevOps krok po kroku</h5>
                         <p class="card-text">
-                            Stopniowo przejdziesz do Dockera, Podmana, deploymentu,
-                            CI/CD, monitoringu oraz utrzymywania aplikacji na VPS.
+                            Stopniowo przejdziesz do deploymentu aplikacji, Nginx,
+                            domen, HTTPS, konteneryzacji, CI/CD oraz monitoringu.
                         </p>
                     </div>
                 </div>

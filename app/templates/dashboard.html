@@ -1,19 +1,19 @@
 {% extends "base.html" %}
 
-{% block title %}Postępy — ShellForge{% endblock %}
+{% block title %}Centrum nauki — ShellForge{% endblock %}
 
 {% block content %}
 
 <section class="py-5 bg-light border-bottom">
     <div class="container">
-        <span class="badge text-bg-dark mb-3">Dashboard</span>
+        <span class="badge text-bg-dark mb-3">Centrum nauki</span>
 
         <h1 class="fw-bold">
-            Postępy w nauce
+            Twoje miejsce startowe w ShellForge
         </h1>
 
         <p class="lead text-muted">
-            Podstawowy widok postępów projektu ShellForge. Na tym etapie pokazuje ogólne statystyki dostępnych materiałów edukacyjnych.
+            Sprawdź dostępne materiały, przejdź do lekcji i utrwalaj wiedzę przez quizy oraz fiszki.
         </p>
     </div>
 </section>
@@ -30,7 +30,7 @@
                             {{ modules_count }}
                         </div>
                         <p class="text-muted mb-0">
-                            Dostępne obszary nauki.
+                            Obszary tematyczne dostępne w ścieżce nauki.
                         </p>
                     </div>
                 </div>
@@ -58,7 +58,7 @@
                             {{ quizzes_count }}
                         </div>
                         <p class="text-muted mb-0">
-                            Testy sprawdzające wiedzę.
+                            Krótkie testy sprawdzające zrozumienie materiału.
                         </p>
                     </div>
                 </div>
@@ -72,7 +72,7 @@
                             {{ questions_count }}
                         </div>
                         <p class="text-muted mb-0">
-                            Pytania dostępne w quizach.
+                            Pytania pomagające utrwalić najważniejsze pojęcia.
                         </p>
                     </div>
                 </div>
@@ -84,36 +84,38 @@
                 <div class="card shadow-sm dashboard-panel h-100">
                     <div class="card-body">
                         <h2 class="fw-bold h4 mb-3">
-                            Aktualny etap projektu
+                            Aktualna ścieżka nauki
                         </h2>
 
                         <p class="text-muted">
-                            ShellForge znajduje się obecnie na etapie lokalnego MVP. Aplikacja posiada stronę główną, listę lekcji, widok lekcji, quiz, bazę SQLite oraz podstawowe testy.
+                            ShellForge rozwija się jako praktyczna platforma edukacyjna.
+                            Obecny etap koncentruje się na solidnych podstawach pracy
+                            w terminalu i zrozumieniu najważniejszych mechanizmów systemu Linux.
                         </p>
 
                         <div class="dashboard-stage-list">
                             <div class="dashboard-stage dashboard-stage-done">
-                                Strona główna
+                                Nawigacja po systemie plików
                             </div>
 
                             <div class="dashboard-stage dashboard-stage-done">
-                                Lekcje
+                                Pliki, katalogi i uprawnienia
                             </div>
 
                             <div class="dashboard-stage dashboard-stage-done">
-                                Quiz
-                            </div>
-
-                            <div class="dashboard-stage dashboard-stage-done">
-                                SQLite
+                                Użytkownicy, grupy i procesy
                             </div>
 
                             <div class="dashboard-stage dashboard-stage-active">
-                                Dashboard MVP
+                                Pliki tekstowe, wyszukiwanie i edycja
                             </div>
 
                             <div class="dashboard-stage">
-                                Deployment na Rocky Linux 9 VPS
+                                Pakiety, usługi i logi systemowe
+                            </div>
+
+                            <div class="dashboard-stage">
+                                Sieć, bezpieczeństwo i deployment
                             </div>
                         </div>
                     </div>
@@ -128,7 +130,8 @@
                         </h2>
 
                         <p class="text-muted">
-                            Wróć do nauki albo sprawdź swoją wiedzę w pierwszym quizie.
+                            Wybierz lekcję, rozwiąż quiz albo wróć do roadmapy, aby zobaczyć,
+                            jak rozwija się ścieżka nauki.
                         </p>
 
                         <div class="d-grid gap-3">
@@ -138,6 +141,10 @@
 
                             <a href="/quiz/1" class="btn btn-outline-secondary">
                                 Rozwiąż pierwszy quiz
+                            </a>
+
+                            <a href="/roadmap/" class="btn btn-outline-secondary">
+                                Zobacz roadmapę
                             </a>
                         </div>
                     </div>

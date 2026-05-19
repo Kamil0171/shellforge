@@ -71,7 +71,7 @@ def test_dashboard_page_returns_200():
     response = client.get("/dashboard/")
 
     assert response.status_code == 200
-    assert "Postępy w nauce" in response.text
+    assert "Twoje miejsce startowe w ShellForge" in response.text
 
 
 def test_flashcards_page_returns_200():
@@ -122,7 +122,7 @@ def test_roadmap_page_returns_200():
     response = client.get("/roadmap/")
 
     assert response.status_code == 200
-    assert "Plan rozwoju ShellForge" in response.text
+    assert "Ścieżka rozwoju w ShellForge" in response.text
 
 
 def test_custom_404_page_returns_404():
