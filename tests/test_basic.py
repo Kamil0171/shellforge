@@ -122,7 +122,7 @@ def test_roadmap_page_returns_200():
     response = client.get("/roadmap/")
 
     assert response.status_code == 200
-    assert "Ścieżka rozwoju w ShellForge" in response.text
+    assert "Ścieżka nauki" in response.text
 
 
 def test_custom_404_page_returns_404():

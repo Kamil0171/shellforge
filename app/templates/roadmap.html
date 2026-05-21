@@ -1,21 +1,26 @@
 {% extends "base.html" %}
 
-{% block title %}Roadmapa nauki — ShellForge{% endblock %}
+{% block title %}Ścieżka nauki — ShellForge{% endblock %}
 
 {% block content %}
 
 <section class="py-5 bg-light border-bottom">
     <div class="container">
-        <span class="badge text-bg-dark mb-3">Roadmapa nauki</span>
+        <span class="badge text-bg-dark mb-3">Ścieżka nauki</span>
 
         <h1 class="fw-bold">
-            Ścieżka rozwoju w ShellForge
+            Ucz się Linuxa krok po kroku
         </h1>
 
         <p class="lead text-muted">
-            Roadmapa pokazuje, w jakiej kolejności rozwijane są materiały edukacyjne:
-            od podstaw terminala, przez administrację systemem, aż po deployment,
-            automatyzację i monitoring.
+            ShellForge prowadzi od podstaw terminala do praktycznej administracji systemem,
+            deploymentu aplikacji, automatyzacji i monitoringu.
+        </p>
+
+        <p class="text-muted mb-0">
+            Ścieżka nauki pokazuje sugerowaną kolejność materiałów. Zacznij od poziomu
+            podstawowego, a następnie przechodź do kolejnych obszarów, gdy poczujesz się
+            pewniej w pracy z Linuxem.
         </p>
     </div>
 </section>
@@ -27,11 +32,11 @@
             <div class="col-lg-4">
                 <div class="card h-100 shadow-sm border-0">
                     <div class="card-body">
-                        <span class="badge text-bg-dark mb-3">01</span>
+                        <span class="badge text-bg-dark mb-3">Start</span>
                         <h2 class="h4 fw-bold">Podstawy</h2>
                         <p class="text-muted mb-0">
                             Terminal, pliki, katalogi, uprawnienia, użytkownicy,
-                            procesy i podstawowa praca z tekstem.
+                            procesy, praca z tekstem i pakiety.
                         </p>
                     </div>
                 </div>
@@ -40,11 +45,11 @@
             <div class="col-lg-4">
                 <div class="card h-100 shadow-sm border-0">
                     <div class="card-body">
-                        <span class="badge text-bg-secondary mb-3">02</span>
+                        <span class="badge text-bg-secondary mb-3">Dalej</span>
                         <h2 class="h4 fw-bold">Administracja</h2>
                         <p class="text-muted mb-0">
-                            Pakiety, usługi systemowe, logi, sieć, SSH, firewall
-                            i bezpieczeństwo serwera.
+                            Usługi systemowe, logi, sieć, SSH, firewall, SELinux
+                            i diagnostyka problemów.
                         </p>
                     </div>
                 </div>
@@ -53,11 +58,11 @@
             <div class="col-lg-4">
                 <div class="card h-100 shadow-sm border-0">
                     <div class="card-body">
-                        <span class="badge text-bg-secondary mb-3">03</span>
+                        <span class="badge text-bg-secondary mb-3">Później</span>
                         <h2 class="h4 fw-bold">DevOps</h2>
                         <p class="text-muted mb-0">
-                            Deployment aplikacji, Nginx, HTTPS, kontenery, CI/CD,
-                            monitoring i utrzymanie środowiska.
+                            Deployment aplikacji, Nginx, HTTPS, kontenery,
+                            CI/CD, monitoring i utrzymanie.
                         </p>
                     </div>
                 </div>
@@ -65,7 +70,7 @@
         </div>
 
         <div class="roadmap-list">
-            {% for stage in stages %}
+            {% for stage in learning_path %}
             <article class="roadmap-item {% if stage.status_type == 'active' %}roadmap-item-active{% endif %}">
                 <div class="roadmap-marker">
                     {{ loop.index }}
@@ -75,13 +80,13 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
                             <div>
+                                <span class="text-muted small">
+                                    {{ stage.level }}
+                                </span>
+
                                 <h2 class="h4 fw-bold mb-1">
                                     {{ stage.title }}
                                 </h2>
-
-                                <p class="text-muted mb-0">
-                                    {{ stage.subtitle }}
-                                </p>
                             </div>
 
                             <span class="roadmap-status {% if stage.status_type == 'active' %}roadmap-status-active{% endif %}">
@@ -93,14 +98,46 @@
                             {{ stage.description }}
                         </p>
 
-                        <div class="row g-2">
-                            {% for item in stage["items"] %}
-                            <div class="col-md-6">
-                                <div class="border rounded px-3 py-2 bg-light h-100">
-                                    {{ item }}
-                                </div>
+                        <div class="row g-4">
+                            <div class="col-lg-6">
+                                <h3 class="h6 fw-bold">
+                                    Czego się nauczysz?
+                                </h3>
+
+                                <ul class="roadmap-items mb-0">
+                                    {% for skill in stage.skills %}
+                                    <li>
+                                        {{ skill }}
+                                    </li>
+                                    {% endfor %}
+                                </ul>
                             </div>
-                            {% endfor %}
+
+                            <div class="col-lg-6">
+                                <h3 class="h6 fw-bold">
+                                    Materiały w tym etapie
+                                </h3>
+
+                                <ul class="roadmap-items mb-0">
+                                    {% for lesson in stage.lessons %}
+                                    <li>
+                                        {{ lesson }}
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            {% if stage.cta_url %}
+                            <a href="{{ stage.cta_url }}" class="btn btn-dark">
+                                {{ stage.cta_label }}
+                            </a>
+                            {% else %}
+                            <span class="btn btn-outline-secondary disabled">
+                                {{ stage.cta_label }}
+                            </span>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
