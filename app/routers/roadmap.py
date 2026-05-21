@@ -9,135 +9,178 @@ templates = Jinja2Templates(directory="app/templates")
 
 @router.get("/")
 def roadmap_page(request: Request):
-    stages = [
+    learning_path = [
         {
-            "title": "Etap 1 — Fundamenty platformy",
-            "subtitle": "Pierwsza działająca wersja aplikacji edukacyjnej",
-            "status": "Ukończone",
-            "status_type": "done",
-            "description": (
-                "Ten etap obejmował przygotowanie podstawowej struktury aplikacji, "
-                "widoków publicznych, lekcji, quizów, fiszek, dashboardu, roadmapy "
-                "oraz automatycznych testów."
-            ),
-            "items": [
-                "strona główna",
-                "lista lekcji",
-                "widok szczegółowy lekcji",
-                "quizy",
-                "fiszki",
-                "dashboard",
-                "roadmapa",
-                "testy pytest",
-                "GitHub Actions",
-            ],
-        },
-        {
-            "title": "Etap 2 — Publiczne uruchomienie",
-            "subtitle": "Aplikacja dostępna przez domenę i HTTPS",
-            "status": "Ukończone",
-            "status_type": "done",
-            "description": (
-                "Ten etap obejmował przygotowanie serwera VPS, uruchomienie aplikacji "
-                "jako usługi systemowej, konfigurację Nginx, podpięcie domeny, "
-                "włączenie HTTPS oraz podstawowe uporządkowanie konfiguracji serwera."
-            ),
-            "items": [
-                "deployment na VPS",
-                "użytkownik aplikacyjny",
-                "Python virtual environment",
-                "systemd service",
-                "Nginx reverse proxy",
-                "domena",
-                "HTTPS",
-                "automatyczne odnawianie certyfikatu",
-                "podstawowy hardening Nginx",
-            ],
-        },
-        {
-            "title": "Etap 3 — Rozbudowa lekcji podstawowych",
-            "subtitle": "Solidne fundamenty pracy z Linuxem",
-            "status": "W trakcie",
+            "level": "Poziom 1",
+            "title": "Podstawy Linuxa",
+            "status": "Dostępne i rozwijane",
             "status_type": "active",
             "description": (
-                "Aktualny etap skupia się na domknięciu pierwszego bloku lekcji "
-                "podstawowych. Celem jest przygotowanie spójnej ścieżki dla osób, "
-                "które zaczynają naukę terminala, plików, procesów, pakietów, usług, "
-                "sieci i logów."
+                "Pierwszy etap uczy swobodnej pracy w terminalu. To fundament, "
+                "bez którego trudno przejść do administracji systemem, sieci, "
+                "deploymentu i automatyzacji."
             ),
-            "items": [
-                "nawigacja po systemie plików",
-                "pliki i katalogi",
-                "uprawnienia",
-                "użytkownicy i grupy",
-                "procesy",
+            "skills": [
+                "poruszanie się po systemie plików",
+                "tworzenie i usuwanie plików oraz katalogów",
+                "rozumienie uprawnień",
+                "sprawdzanie użytkowników i grup",
+                "analiza procesów",
                 "praca z plikami tekstowymi",
-                "pakiety i aktualizacje",
-                "usługi systemowe",
-                "sieć i diagnostyka",
-                "logi systemowe",
+                "zarządzanie pakietami",
             ],
+            "lessons": [
+                "Gdzie jestem? Komendy pwd, ls i cd",
+                "Pliki i katalogi: mkdir, touch, cp, mv i rm",
+                "Uprawnienia plików: chmod, rwx, 755 i 644",
+                "Użytkownicy i grupy: whoami, id i groups",
+                "Procesy w Linuxie: ps, top, kill i PID",
+                "Praca z plikami tekstowymi: cat, less, tail, grep i nano",
+                "Pakiety i aktualizacje: yum, rpm i repozytoria",
+            ],
+            "cta_label": "Przejdź do lekcji",
+            "cta_url": "/lessons",
         },
         {
-            "title": "Etap 4 — Administracja systemem",
-            "subtitle": "Codzienna praca z serwerem Linux",
+            "level": "Poziom 2",
+            "title": "Administracja systemem",
+            "status": "W przygotowaniu",
+            "status_type": "planned",
+            "description": (
+                "Ten etap rozwija podstawy w kierunku codziennej pracy administratora. "
+                "Użytkownik uczy się zarządzania usługami, logami, konfiguracją systemu "
+                "i diagnozowania typowych problemów."
+            ),
+            "skills": [
+                "zarządzanie usługami przez systemd",
+                "sprawdzanie statusu usług",
+                "restartowanie i włączanie usług",
+                "czytanie logów systemowych",
+                "rozumienie podstawowej struktury systemu",
+                "diagnozowanie problemów z usługami",
+            ],
+            "lessons": [
+                "Usługi systemowe: systemctl i systemd",
+                "Logi systemowe: journalctl i katalog /var/log",
+                "Struktura katalogów administracyjnych",
+                "Podstawowa diagnostyka systemu",
+            ],
+            "cta_label": "Planowane",
+            "cta_url": None,
+        },
+        {
+            "level": "Poziom 3",
+            "title": "Sieć i bezpieczeństwo",
             "status": "Planowane",
             "status_type": "planned",
             "description": (
-                "Ten etap będzie rozwijał tematy związane z administracją systemem: "
-                "usługami, logami, SSH, firewallem, SELinux, diagnostyką i podstawowym "
-                "bezpieczeństwem serwera."
+                "Ten etap skupia się na podstawach komunikacji sieciowej, zdalnym "
+                "logowaniu oraz zabezpieczaniu serwera Linux z użyciem standardowych "
+                "narzędzi administracyjnych."
             ),
-            "items": [
+            "skills": [
+                "korzystanie z SSH",
+                "sprawdzanie portów i połączeń",
+                "testowanie dostępności usług",
+                "podstawy DNS",
+                "podstawy firewalld",
+                "podstawy SELinux",
+                "bezpieczniejsza konfiguracja dostępu do serwera",
+            ],
+            "lessons": [
                 "SSH i zdalne logowanie",
-                "podstawowe zabezpieczenie SSH",
-                "firewalld",
-                "SELinux",
-                "diagnostyka usług",
-                "analiza logów",
-                "podstawy bezpieczeństwa",
+                "Sieć i diagnostyka: ping, curl, ss i DNS",
+                "Firewall: podstawy firewalld",
+                "SELinux w praktyce administracyjnej",
             ],
+            "cta_label": "Planowane",
+            "cta_url": None,
         },
         {
-            "title": "Etap 5 — Deployment i DevOps",
-            "subtitle": "Od aplikacji lokalnej do utrzymywanego wdrożenia",
+            "level": "Poziom 4",
+            "title": "Deployment aplikacji",
             "status": "Planowane",
             "status_type": "planned",
             "description": (
-                "Ten etap będzie pokazywał, jak uruchamiać i utrzymywać aplikacje "
-                "webowe na serwerze: przez systemd, Nginx, domenę, HTTPS, Git oraz "
-                "powtarzalne procedury aktualizacji."
+                "Ten etap pokazuje, jak uruchomić aplikację webową na serwerze. "
+                "Użytkownik poznaje praktyczny proces przejścia od aplikacji lokalnej "
+                "do publicznego wdrożenia dostępnego przez domenę i HTTPS."
             ),
-            "items": [
-                "systemd service dla aplikacji",
-                "zmienne środowiskowe",
-                "Nginx reverse proxy",
-                "DNS",
-                "HTTPS",
+            "skills": [
+                "przygotowanie katalogów aplikacji",
+                "konfiguracja środowiska Python",
+                "uruchamianie aplikacji przez systemd",
+                "konfiguracja Nginx jako reverse proxy",
+                "podpięcie domeny",
+                "konfiguracja HTTPS",
                 "aktualizacja aplikacji przez Git",
-                "procedury utrzymaniowe",
             ],
+            "lessons": [
+                "Aplikacja jako usługa systemowa",
+                "Nginx jako reverse proxy",
+                "Domena i rekordy DNS",
+                "HTTPS z Let's Encrypt i Certbot",
+                "Aktualizacja aplikacji na serwerze",
+            ],
+            "cta_label": "Planowane",
+            "cta_url": None,
         },
         {
-            "title": "Etap 6 — Automatyzacja i monitoring",
-            "subtitle": "Kontenery, CI/CD, metryki i dalszy rozwój",
+            "level": "Poziom 5",
+            "title": "DevOps i automatyzacja",
             "status": "Planowane",
             "status_type": "planned",
             "description": (
-                "Ostatni etap będzie dotyczył bardziej zaawansowanych tematów: "
-                "konteneryzacji, automatyzacji testów i wdrożeń, monitoringu, "
-                "metryk, alertów oraz funkcji interaktywnych."
+                "Po opanowaniu ręcznego deploymentu kolejnym krokiem jest automatyzacja. "
+                "Ten etap prowadzi przez konteneryzację, automatyczne testy, CI/CD "
+                "i bardziej powtarzalne wdrożenia."
             ),
-            "items": [
+            "skills": [
+                "podstawy kontenerów",
                 "Docker albo Podman",
-                "PostgreSQL",
+                "przygotowanie Dockerfile",
+                "praca z bazą PostgreSQL",
                 "GitHub Actions",
-                "CI/CD",
-                "automatyczny deployment",
+                "automatyzacja testów",
+                "automatyzacja wdrożeń",
+            ],
+            "lessons": [
+                "Podstawy konteneryzacji",
+                "Dockerfile dla aplikacji webowej",
+                "PostgreSQL w środowisku aplikacji",
+                "CI/CD z GitHub Actions",
+            ],
+            "cta_label": "Planowane",
+            "cta_url": None,
+        },
+        {
+            "level": "Poziom 6",
+            "title": "Monitoring i utrzymanie",
+            "status": "Planowane",
+            "status_type": "planned",
+            "description": (
+                "Ostatni etap koncentruje się na utrzymaniu aplikacji po wdrożeniu. "
+                "Użytkownik poznaje podstawy monitorowania, health checków, logów, "
+                "metryk, alertów i procedur operacyjnych."
+            ),
+            "skills": [
+                "health checki",
+                "analiza logów aplikacji i serwera",
+                "podstawy metryk",
+                "monitoring dostępności",
                 "Prometheus",
                 "Grafana",
-                "interaktywne zadania",
+                "alerty",
+                "backup i odtwarzanie",
             ],
+            "lessons": [
+                "Health checki i podstawy obserwowalności",
+                "Monitoring aplikacji",
+                "Metryki i alerty",
+                "Backup i procedury odtworzeniowe",
+            ],
+            "cta_label": "Planowane",
+            "cta_url": None,
         },
     ]
 
@@ -145,6 +188,6 @@ def roadmap_page(request: Request):
         request=request,
         name="roadmap.html",
         context={
-            "stages": stages,
+            "learning_path": learning_path,
         },
     )
