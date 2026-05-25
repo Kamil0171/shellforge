@@ -9,6 +9,7 @@ from app.content.terminal_navigation import TERMINAL_NAVIGATION
 from app.content.text_files import TEXT_FILES
 from app.content.package_management import PACKAGE_MANAGEMENT
 from app.content.users_and_groups import USERS_AND_GROUPS
+from app.content.system_services import SYSTEM_SERVICES
 from app.database import engine
 from app.models import Flashcard, LearningModule, Lesson, Quiz, QuizAnswer, QuizQuestion
 
@@ -21,6 +22,7 @@ LESSONS = [
     PROCESSES,
     TEXT_FILES,
     PACKAGE_MANAGEMENT,
+    SYSTEM_SERVICES,
 ]
 
 
