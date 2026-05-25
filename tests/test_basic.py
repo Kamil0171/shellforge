@@ -263,3 +263,24 @@ def test_eighth_flashcards_page_returns_200():
 
     assert response.status_code == 200
     assert "Fiszki do lekcji" in response.text
+
+
+def test_ninth_lesson_detail_page_returns_200():
+    response = client.get("/lessons/9")
+
+    assert response.status_code == 200
+    assert "Sieć i diagnostyka" in response.text
+
+
+def test_ninth_quiz_page_returns_200():
+    response = client.get("/quiz/9")
+
+    assert response.status_code == 200
+    assert "Quiz: sieć i diagnostyka" in response.text
+
+
+def test_ninth_flashcards_page_returns_200():
+    response = client.get("/flashcards/9")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
