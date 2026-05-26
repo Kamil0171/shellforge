@@ -7,7 +7,6 @@ from sqlmodel import Session, select
 from app.database import get_session
 from app.models import LearningModule, Lesson, Quiz
 
-
 router = APIRouter(prefix="/lessons", tags=["lessons"])
 
 templates = Jinja2Templates(directory="app/templates")

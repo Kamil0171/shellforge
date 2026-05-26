@@ -2,7 +2,6 @@ from sqlmodel import Session, SQLModel, create_engine
 
 from app.config import DATA_DIR, DATABASE_URL
 
-
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 engine = create_engine(

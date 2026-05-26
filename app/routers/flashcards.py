@@ -5,7 +5,6 @@ from sqlmodel import Session, select
 from app.database import get_session
 from app.models import Flashcard, Lesson
 
-
 router = APIRouter(prefix="/flashcards", tags=["flashcards"])
 
 templates = Jinja2Templates(directory="app/templates")
