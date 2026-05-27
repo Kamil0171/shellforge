@@ -52,6 +52,24 @@ Uvicorn
 FastAPI / aplikacja
 ```
 
+## Tryb lokalny i produkcyjny
+
+Plik `run.py` służy wyłącznie do lokalnego uruchamiania aplikacji w środowisku developerskim.
+
+W środowisku lokalnym dopuszczalne jest użycie trybu automatycznego przeładowania aplikacji, ponieważ ułatwia on pracę nad kodem i szybkie sprawdzanie zmian.
+
+Na VPS-ie aplikacja nie powinna być uruchamiana przez `run.py`, jeżeli używa on trybu `reload=True`.
+
+W środowisku produkcyjnym aplikacja powinna być uruchamiana przez `systemd` oraz Uvicorna bez trybu `reload`.
+
+Przykładowa komenda produkcyjna:
+
+```bash
+/opt/<app-name>/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+Uvicorn powinien nasłuchiwać lokalnie na `127.0.0.1`, a publiczny ruch HTTP/HTTPS powinien przechodzić przez Nginx jako reverse proxy.
+
 ## Usługa systemd
 
 Aplikacja działa jako usługa systemowa zarządzana przez `systemd`.
@@ -238,7 +256,6 @@ Do wykonania w kolejnych etapach:
 
 - logowanie SSH za pomocą klucza,
 - rozważenie fail2ban,
-- dodanie favicony,
 - konteneryzacja przez Docker albo Podman,
 - CI/CD,
 - monitoring.
