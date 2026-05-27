@@ -29,27 +29,27 @@ LESSONS = [
 ]
 
 
-def get_or_create_module(session, module_data):
+def sync_module(session, module_data):
     module = session.exec(
         select(LearningModule).where(LearningModule.title == module_data["title"])
     ).first()
 
-    if module:
-        return module
+    if not module:
+        module = LearningModule(
+            title=module_data["title"],
+            description=module_data["description"],
+        )
+        session.add(module)
+    else:
+        module.description = module_data["description"]
 
-    module = LearningModule(
-        title=module_data["title"],
-        description=module_data["description"],
-    )
-
-    session.add(module)
     session.commit()
     session.refresh(module)
 
     return module
 
 
-def get_or_create_lesson(session, module, lesson_data):
+def sync_lesson(session, module, lesson_data):
     lesson = session.exec(
         select(Lesson).where(
             Lesson.module_id == module.id,
@@ -57,36 +57,55 @@ def get_or_create_lesson(session, module, lesson_data):
         )
     ).first()
 
-    if lesson:
-        return lesson
-
-    lesson = Lesson(
-        module_id=module.id,
-        title=lesson_data["title"],
-        level=lesson_data["level"],
-        duration=lesson_data["duration"],
-        description=lesson_data["description"],
-        theory=lesson_data["theory"],
-        commands_json=json.dumps(lesson_data["commands"], ensure_ascii=False),
-        practice_task=lesson_data["practice_task"],
-        common_mistakes_json=json.dumps(
+    lesson_values = {
+        "module_id": module.id,
+        "title": lesson_data["title"],
+        "level": lesson_data["level"],
+        "duration": lesson_data["duration"],
+        "description": lesson_data["description"],
+        "theory": lesson_data["theory"],
+        "commands_json": json.dumps(lesson_data["commands"], ensure_ascii=False),
+        "practice_task": lesson_data["practice_task"],
+        "common_mistakes_json": json.dumps(
             lesson_data["common_mistakes"],
             ensure_ascii=False,
         ),
-        summary=lesson_data["summary"],
-    )
+        "summary": lesson_data["summary"],
+    }
 
-    session.add(lesson)
+    if not lesson:
+        lesson = Lesson(**lesson_values)
+        session.add(lesson)
+    else:
+        for field, value in lesson_values.items():
+            setattr(lesson, field, value)
+
     session.commit()
     session.refresh(lesson)
 
     return lesson
 
 
+def delete_quiz_questions(session, quiz):
+    questions = session.exec(
+        select(QuizQuestion).where(QuizQuestion.quiz_id == quiz.id)
+    ).all()
+
+    for question in questions:
+        answers = session.exec(
+            select(QuizAnswer).where(QuizAnswer.question_id == question.id)
+        ).all()
+
+        for answer in answers:
+            session.delete(answer)
+
+        session.delete(question)
+
+    session.commit()
+
+
 def sync_quiz(session, lesson, quiz_data):
-    quiz = session.exec(
-        select(Quiz).where(Quiz.lesson_id == lesson.id)
-    ).first()
+    quiz = session.exec(select(Quiz).where(Quiz.lesson_id == lesson.id)).first()
 
     if not quiz:
         quiz = Quiz(
@@ -94,29 +113,15 @@ def sync_quiz(session, lesson, quiz_data):
             title=quiz_data["title"],
             description=quiz_data["description"],
         )
-
         session.add(quiz)
-        session.commit()
-        session.refresh(quiz)
-
-    existing_questions = session.exec(
-        select(QuizQuestion).where(QuizQuestion.quiz_id == quiz.id)
-    ).all()
-
-    if len(existing_questions) == len(quiz_data["questions"]):
-        return quiz
-
-    for question in existing_questions:
-        existing_answers = session.exec(
-            select(QuizAnswer).where(QuizAnswer.question_id == question.id)
-        ).all()
-
-        for answer in existing_answers:
-            session.delete(answer)
-
-        session.delete(question)
+    else:
+        quiz.title = quiz_data["title"]
+        quiz.description = quiz_data["description"]
 
     session.commit()
+    session.refresh(quiz)
+
+    delete_quiz_questions(session, quiz)
 
     for index, question_data in enumerate(quiz_data["questions"], start=1):
         question = QuizQuestion(
@@ -124,7 +129,6 @@ def sync_quiz(session, lesson, quiz_data):
             text=question_data["text"],
             position=index,
         )
-
         session.add(question)
         session.commit()
         session.refresh(question)
@@ -136,7 +140,6 @@ def sync_quiz(session, lesson, quiz_data):
                 text=answer_text,
                 is_correct=is_correct,
             )
-
             session.add(answer)
 
     session.commit()
@@ -148,9 +151,6 @@ def sync_flashcards(session, lesson, flashcards_data):
     existing_flashcards = session.exec(
         select(Flashcard).where(Flashcard.lesson_id == lesson.id)
     ).all()
-
-    if len(existing_flashcards) == len(flashcards_data):
-        return
 
     for flashcard in existing_flashcards:
         session.delete(flashcard)
@@ -164,7 +164,6 @@ def sync_flashcards(session, lesson, flashcards_data):
             answer=flashcard_data["answer"],
             position=index,
         )
-
         session.add(flashcard)
 
     session.commit()
@@ -173,8 +172,8 @@ def sync_flashcards(session, lesson, flashcards_data):
 def seed_database():
     with Session(engine) as session:
         for lesson_bundle in LESSONS:
-            module = get_or_create_module(session, lesson_bundle["module"])
-            lesson = get_or_create_lesson(session, module, lesson_bundle["lesson"])
+            module = sync_module(session, lesson_bundle["module"])
+            lesson = sync_lesson(session, module, lesson_bundle["lesson"])
 
             sync_quiz(session, lesson, lesson_bundle["quiz"])
             sync_flashcards(session, lesson, lesson_bundle["flashcards"])
