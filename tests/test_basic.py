@@ -304,3 +304,22 @@ def test_tenth_flashcards_page_returns_200():
 
     assert response.status_code == 200
     assert "Fiszki do lekcji" in response.text
+
+
+def test_lessons_page_contains_filtering_ui():
+    response = client.get("/lessons")
+
+    assert response.status_code == 200
+    assert "lesson-search" in response.text
+    assert "lesson-level-filter" in response.text
+    assert "lesson-module-filter" in response.text
+    assert "lesson-visible-count" in response.text
+    assert "lesson-filters-reset" in response.text
+
+
+def test_lessons_page_contains_learning_block_summary():
+    response = client.get("/lessons")
+
+    assert response.status_code == 200
+    assert "Podstawy Linuxa i terminala" in response.text
+    assert "Pierwszy blok obejmuje podstawy Linuxa" in response.text

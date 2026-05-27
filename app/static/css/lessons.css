@@ -1,6 +1,39 @@
+.lesson-summary-card {
+    border-radius: 18px;
+}
+
+.lesson-filters {
+    border-radius: 18px;
+}
+
+.lesson-filters .form-control,
+.lesson-filters .form-select {
+    border-radius: 12px;
+}
+
+.lesson-number {
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    color: #6c757d;
+    font-size: 0.85rem;
+    font-weight: 700;
+    flex: 0 0 auto;
+}
+
+.lesson-card-wrapper.is-hidden {
+    display: none;
+}
+
 .lesson-card {
     opacity: 0;
     transform: translateY(10px);
+    border-radius: 18px;
 }
 
 .page-loaded .lesson-card {
