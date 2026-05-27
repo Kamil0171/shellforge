@@ -1,20 +1,21 @@
 {% extends "base.html" %}
 
-{% block title %}O ShellForge — praktyczna nauka Linuxa{% endblock %}
+{% block title %}Czym jest ShellForge? — praktyczna nauka Linuxa{% endblock %}
 
 {% block content %}
 
 <section class="py-5 bg-light border-bottom">
     <div class="container">
-        <span class="badge text-bg-dark mb-3">O ShellForge</span>
+        <span class="badge text-bg-dark mb-3">Czym jest ShellForge?</span>
 
         <h1 class="fw-bold">
-            Praktyczna ścieżka nauki Linuxa, administracji i DevOps
+            Praktyczna nauka Linuxa, administracji systemami i DevOps
         </h1>
 
         <p class="lead text-muted">
-            ShellForge pomaga uczyć się systemów Linux krok po kroku: od podstaw terminala,
-            przez administrację serwerem, aż po deployment i automatyzację.
+            ShellForge to polska aplikacja edukacyjna dla osób, które chcą uczyć się
+            technologii serwerowych krok po kroku — przez lekcje, praktyczne zadania,
+            quizy i fiszki.
         </p>
     </div>
 </section>
@@ -31,17 +32,18 @@
                         </h2>
 
                         <p class="text-muted">
-                            ShellForge to edukacyjna aplikacja webowa nastawiona na praktyczną naukę.
-                            Materiały są podzielone na lekcje, quizy i fiszki, aby użytkownik mógł
-                            nie tylko przeczytać teorię, ale również sprawdzić, czy rozumie poznane
-                            komendy i pojęcia.
+                            ShellForge pomaga budować praktyczne umiejętności związane z Linuxem,
+                            administracją systemami i podstawami DevOps. Aplikacja jest tworzona
+                            z myślą o osobach, które chcą rozumieć nie tylko pojedyncze komendy,
+                            ale również ich zastosowanie w realnych scenariuszach pracy z systemem
+                            i serwerem.
                         </p>
 
                         <p class="text-muted mb-0">
-                            Głównym celem jest budowanie solidnych podstaw pracy z Linuxem oraz
-                            stopniowe przechodzenie do tematów administracyjnych i DevOps:
-                            usług systemowych, sieci, firewalla, SELinux, Nginx, HTTPS,
-                            konteneryzacji, CI/CD i monitoringu.
+                            Materiały są układane w logiczną ścieżkę nauki — od podstaw pracy
+                            w terminalu, przez zarządzanie systemem i usługami, aż po tematy
+                            związane z wdrażaniem aplikacji, automatyzacją, konteneryzacją
+                            i utrzymaniem środowisk.
                         </p>
                     </div>
                 </div>
@@ -55,13 +57,19 @@
                         </h2>
 
                         <div class="about-highlight">
-                            teoria → praktyka → powtórka
+                            teoria → praktyka → quiz → fiszki
                         </div>
 
+                        <p class="text-muted">
+                            Każda lekcja skupia się na konkretnym zagadnieniu. Najpierw poznajesz
+                            najważniejsze pojęcia i zastosowanie komend, potem przechodzisz do
+                            zadania praktycznego, a następnie sprawdzasz wiedzę w quizie.
+                        </p>
+
                         <p class="text-muted mb-0">
-                            Każda lekcja skupia się na konkretnym zestawie umiejętności.
-                            Najpierw poznajesz zastosowanie komend, potem wykonujesz zadania
-                            praktyczne, a na końcu utrwalasz materiał przez quizy i fiszki.
+                            Fiszki pomagają szybko powtarzać definicje, komendy i zależności między
+                            pojęciami. Dzięki temu możesz wracać do materiału wtedy, gdy chcesz
+                            utrwalić konkretny temat.
                         </p>
                     </div>
                 </div>
@@ -78,7 +86,7 @@
 
                         <p class="text-muted mb-0">
                             Terminal, pliki, katalogi, procesy, uprawnienia, użytkownicy,
-                            pakiety i logi systemowe.
+                            pakiety, usługi i logi systemowe.
                         </p>
                     </div>
                 </div>
@@ -88,12 +96,12 @@
                 <div class="card shadow-sm about-card h-100">
                     <div class="card-body">
                         <h3 class="h5 fw-bold">
-                            SysAdmin
+                            Administracja
                         </h3>
 
                         <p class="text-muted mb-0">
-                            Usługi systemowe, SSH, firewalld, SELinux, konfiguracja serwera,
-                            diagnostyka i utrzymanie środowiska.
+                            Zarządzanie systemem, konfiguracja usług, praca z serwerem,
+                            diagnostyka problemów i podstawy bezpieczeństwa.
                         </p>
                     </div>
                 </div>
@@ -108,7 +116,7 @@
 
                         <p class="text-muted mb-0">
                             Git, testy, deployment, Nginx, HTTPS, konteneryzacja,
-                            CI/CD i automatyzacja pracy.
+                            CI/CD, automatyzacja i monitoring.
                         </p>
                     </div>
                 </div>
@@ -122,39 +130,60 @@
                         </h3>
 
                         <p class="text-muted mb-0">
-                            Nauka opiera się na realnych przykładach, komendach,
-                            scenariuszach administracyjnych i zadaniach do wykonania.
+                            Nauka opiera się na przykładach, zadaniach, scenariuszach
+                            administracyjnych i pracy z konkretnymi narzędziami.
                         </p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="card shadow-sm about-card">
+        <div class="card shadow-sm about-card mb-5">
             <div class="card-body">
                 <h2 class="fw-bold h4 mb-3">
                     Dla kogo jest ShellForge?
                 </h2>
 
                 <p class="text-muted">
-                    ShellForge jest przeznaczony dla osób, które chcą nauczyć się Linuxa
-                    w praktyczny sposób: studentów informatyki, początkujących administratorów,
-                    osób zainteresowanych DevOps oraz wszystkich, którzy chcą swobodniej
-                    pracować w terminalu.
+                    ShellForge jest przeznaczony dla osób, które chcą swobodniej pracować
+                    w terminalu, lepiej rozumieć Linuxa i stopniowo poznawać narzędzia używane
+                    w administracji systemami oraz DevOps.
                 </p>
 
-                <div class="d-flex gap-3 flex-wrap">
-                    <a href="/lessons" class="btn btn-dark">
-                        Przejdź do lekcji
-                    </a>
+                <p class="text-muted mb-0">
+                    Aplikacja może być pomocna dla początkujących, studentów informatyki,
+                    osób przygotowujących się do pracy w IT, administratorów na starcie kariery
+                    oraz wszystkich, którzy chcą uporządkować swoją wiedzę przez praktyczne ćwiczenia.
+                </p>
+            </div>
+        </div>
 
-                    <a href="/roadmap/" class="btn btn-outline-secondary">
-                        Zobacz roadmapę
-                    </a>
+        <div class="card shadow-sm about-card about-start-card">
+            <div class="card-body">
+                <div class="row align-items-center g-4">
+                    <div class="col-lg-8">
+                        <h2 class="fw-bold h4 mb-3">
+                            Ucz się we własnym tempie
+                        </h2>
 
-                    <a href="/dashboard/" class="btn btn-outline-secondary">
-                        Zobacz statystyki
-                    </a>
+                        <p class="text-muted mb-lg-0">
+                            Możesz przechodzić przez lekcje po kolei albo wracać do wybranych tematów,
+                            gdy potrzebujesz powtórki. ShellForge ma pomagać w regularnej, praktycznej
+                            nauce i stopniowym budowaniu pewności w pracy z systemami Linux.
+                        </p>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="d-grid gap-2">
+                            <a href="/lessons" class="btn btn-dark">
+                                Przejdź do lekcji
+                            </a>
+
+                            <a href="/roadmap/" class="btn btn-outline-secondary">
+                                Zobacz ścieżkę nauki
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

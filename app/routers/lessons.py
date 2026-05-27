@@ -41,17 +41,21 @@ def lessons_page(request: Request, session: Session = Depends(get_session)):
         if module is None:
             continue
 
-        quiz = session.exec(
-            select(Quiz).where(Quiz.lesson_id == lesson.id)
-        ).first()
+        quiz = session.exec(select(Quiz).where(Quiz.lesson_id == lesson.id)).first()
 
         lessons_data.append(lesson_to_dict(lesson, module, quiz))
+
+    lessons_data = sorted(lessons_data, key=lambda lesson: lesson["id"])
+    levels = sorted({lesson["level"] for lesson in lessons_data})
+    modules = sorted({lesson["module"] for lesson in lessons_data})
 
     return templates.TemplateResponse(
         request=request,
         name="lessons.html",
         context={
             "lessons": lessons_data,
+            "levels": levels,
+            "modules": modules,
         },
     )
 
@@ -78,9 +82,7 @@ def lesson_detail_page(
             detail="Moduł lekcji nie został znaleziony.",
         )
 
-    quiz = session.exec(
-        select(Quiz).where(Quiz.lesson_id == lesson.id)
-    ).first()
+    quiz = session.exec(select(Quiz).where(Quiz.lesson_id == lesson.id)).first()
 
     return templates.TemplateResponse(
         request=request,

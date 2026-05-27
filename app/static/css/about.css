@@ -11,3 +11,7 @@
     font-weight: 800;
     margin-bottom: 16px;
 }
+
+.about-start-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+}

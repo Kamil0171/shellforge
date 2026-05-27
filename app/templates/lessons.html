@@ -8,32 +8,144 @@
     <div class="container">
         <span class="badge text-bg-dark mb-3">Ścieżka nauki</span>
 
-        <h1 class="fw-bold">
-            Lekcje ShellForge
-        </h1>
+        <div class="row align-items-center g-4">
+            <div class="col-lg-8">
+                <h1 class="fw-bold">
+                    Lekcje ShellForge
+                </h1>
 
-        <p class="lead text-muted">
-            Zacznij od podstaw terminala, a następnie przechodź stopniowo do administracji systemem,
-            sieci, usług, bezpieczeństwa i DevOps.
-        </p>
+                <p class="lead text-muted mb-0">
+                    Zacznij od podstaw terminala, a następnie przechodź stopniowo do administracji systemem,
+                    sieci, usług, bezpieczeństwa i DevOps.
+                </p>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm lesson-summary-card">
+                    <div class="card-body">
+                        <p class="text-muted small mb-1">
+                            Aktualnie dostępne
+                        </p>
+                        <div class="d-flex align-items-end gap-2">
+                            <span class="display-6 fw-bold">
+                                {{ lessons|length }}
+                            </span>
+                            <span class="text-muted mb-2">
+                                lekcji
+                            </span>
+                        </div>
+                        <p class="small text-muted mb-0">
+                            Pierwszy blok obejmuje podstawy Linuxa, terminala, usług, sieci i logów.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-4 border-bottom">
+    <div class="container">
+        <div class="lesson-filters card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="row g-3 align-items-end">
+                    <div class="col-lg-5">
+                        <label for="lesson-search" class="form-label fw-semibold">
+                            Wyszukaj lekcję
+                        </label>
+                        <input
+                            id="lesson-search"
+                            type="search"
+                            class="form-control"
+                            placeholder="Np. systemd, logi, sieć, pliki"
+                            autocomplete="off"
+                        >
+                    </div>
+
+                    <div class="col-md-6 col-lg-3">
+                        <label for="lesson-level-filter" class="form-label fw-semibold">
+                            Poziom
+                        </label>
+                        <select id="lesson-level-filter" class="form-select">
+                            <option value="">Wszystkie poziomy</option>
+                            {% for level in levels %}
+                            <option value="{{ level }}">{{ level }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-6 col-lg-4">
+                        <label for="lesson-module-filter" class="form-label fw-semibold">
+                            Moduł
+                        </label>
+                        <select id="lesson-module-filter" class="form-select">
+                            <option value="">Wszystkie moduły</option>
+                            {% for module in modules %}
+                            <option value="{{ module }}">{{ module }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
+                    <p class="mb-0 text-muted small">
+                        Widoczne lekcje:
+                        <span id="lesson-visible-count" class="fw-semibold text-dark">
+                            {{ lessons|length }}
+                        </span>
+                        z
+                        <span class="fw-semibold text-dark">
+                            {{ lessons|length }}
+                        </span>
+                    </p>
+
+                    <button id="lesson-filters-reset" type="button" class="btn btn-outline-secondary btn-sm">
+                        Wyczyść filtry
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </section>
 
 <section class="py-5">
     <div class="container">
-        <div class="row g-4">
+        <div class="mb-4">
+            <h2 class="h4 fw-bold">
+                Podstawy Linuxa i terminala
+            </h2>
+            <p class="text-muted mb-0">
+                Ten blok prowadzi od pierwszych komend terminala do podstaw pracy z usługami,
+                diagnostyką sieci i logami systemowymi.
+            </p>
+        </div>
+
+        <div id="lessons-grid" class="row g-4">
 
             {% for lesson in lessons %}
-            <div class="col-md-6 col-lg-4">
+            <div
+                class="col-md-6 col-lg-4 lesson-card-wrapper"
+                data-lesson-card
+                data-title="{{ lesson.title }}"
+                data-description="{{ lesson.description }}"
+                data-module="{{ lesson.module }}"
+                data-level="{{ lesson.level }}"
+            >
                 <div class="card h-100 shadow-sm lesson-card">
                     <div class="card-body d-flex flex-column">
 
-                        <div class="mb-3">
-                            <span class="badge text-bg-secondary">
-                                {{ lesson.module }}
-                            </span>
-                            <span class="badge text-bg-light border">
-                                {{ lesson.level }}
+                        <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                            <div>
+                                <span class="badge text-bg-secondary">
+                                    {{ lesson.module }}
+                                </span>
+                                <span class="badge text-bg-light border">
+                                    {{ lesson.level }}
+                                </span>
+                            </div>
+
+                            <span class="lesson-number">
+                                {{ lesson.id }}
                             </span>
                         </div>
 
@@ -62,6 +174,10 @@
 
         </div>
 
+        <div id="lessons-empty-state" class="alert alert-info mt-4 d-none">
+            Nie znaleziono lekcji pasujących do wybranych filtrów.
+        </div>
+
         {% if lessons|length == 0 %}
         <div class="alert alert-info">
             Brak dostępnych lekcji.
@@ -69,5 +185,7 @@
         {% endif %}
     </div>
 </section>
+
+<script src="{{ url_for('static', path='js/lessons.js') }}"></script>
 
 {% endblock %}
