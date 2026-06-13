@@ -306,6 +306,48 @@ def test_tenth_flashcards_page_returns_200():
     assert "Fiszki do lekcji" in response.text
 
 
+def test_eleventh_lesson_detail_page_returns_200():
+    response = client.get("/lessons/11")
+
+    assert response.status_code == 200
+    assert "Struktura katalogów administracyjnych" in response.text
+
+
+def test_eleventh_quiz_page_returns_200():
+    response = client.get("/quiz/11")
+
+    assert response.status_code == 200
+    assert "Quiz: katalogi administracyjne" in response.text
+
+
+def test_eleventh_flashcards_page_returns_200():
+    response = client.get("/flashcards/11")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
+
+
+def test_twelfth_lesson_detail_page_returns_200():
+    response = client.get("/lessons/12")
+
+    assert response.status_code == 200
+    assert "Podstawowa diagnostyka systemu" in response.text
+
+
+def test_twelfth_quiz_page_returns_200():
+    response = client.get("/quiz/12")
+
+    assert response.status_code == 200
+    assert "Quiz: podstawowa diagnostyka systemu" in response.text
+
+
+def test_twelfth_flashcards_page_returns_200():
+    response = client.get("/flashcards/12")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
+
+
 def test_lessons_page_contains_filtering_ui():
     response = client.get("/lessons")
 

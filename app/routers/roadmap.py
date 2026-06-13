@@ -43,8 +43,8 @@ def roadmap_page(request: Request):
         {
             "level": "Poziom 2",
             "title": "Administracja systemem",
-            "status": "W przygotowaniu",
-            "status_type": "planned",
+            "status": "Dostępne i rozwijane",
+            "status_type": "active",
             "description": (
                 "Ten etap rozwija podstawy w kierunku codziennej pracy administratora. "
                 "Użytkownik uczy się zarządzania usługami, logami, konfiguracją systemu "
@@ -61,11 +61,11 @@ def roadmap_page(request: Request):
             "lessons": [
                 "Usługi systemowe: systemctl i systemd",
                 "Logi systemowe: journalctl i katalog /var/log",
-                "Struktura katalogów administracyjnych",
-                "Podstawowa diagnostyka systemu",
+                "Struktura katalogów administracyjnych: /etc, /var, /opt, /usr i /tmp",
+                "Podstawowa diagnostyka systemu: uptime, free, df, du i hostnamectl",
             ],
-            "cta_label": "Planowane",
-            "cta_url": None,
+            "cta_label": "Przejdź do lekcji",
+            "cta_url": "/lessons",
         },
         {
             "level": "Poziom 3",
