@@ -2,6 +2,8 @@ import json
 
 from sqlmodel import Session, select
 
+from app.content.admin_directories import ADMIN_DIRECTORIES
+from app.content.basic_system_diagnostics import BASIC_SYSTEM_DIAGNOSTICS
 from app.content.file_permissions import FILE_PERMISSIONS
 from app.content.files_and_directories import FILES_AND_DIRECTORIES
 from app.content.network_diagnostics import NETWORK_DIAGNOSTICS
@@ -26,6 +28,8 @@ LESSONS = [
     SYSTEM_SERVICES,
     NETWORK_DIAGNOSTICS,
     SYSTEM_LOGS,
+    ADMIN_DIRECTORIES,
+    BASIC_SYSTEM_DIAGNOSTICS,
 ]
 
 
