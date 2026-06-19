@@ -4,14 +4,18 @@ from sqlmodel import Session, select
 
 from app.content.admin_directories import ADMIN_DIRECTORIES
 from app.content.basic_system_diagnostics import BASIC_SYSTEM_DIAGNOSTICS
+from app.content.disk_space_cleanup import DISK_SPACE_CLEANUP
 from app.content.file_permissions import FILE_PERMISSIONS
 from app.content.files_and_directories import FILES_AND_DIRECTORIES
+from app.content.log_analysis import LOG_ANALYSIS
 from app.content.network_diagnostics import NETWORK_DIAGNOSTICS
 from app.content.package_management import PACKAGE_MANAGEMENT
 from app.content.processes import PROCESSES
+from app.content.scheduled_tasks import SCHEDULED_TASKS
 from app.content.sudo_administration import SUDO_ADMINISTRATION
 from app.content.system_logs import SYSTEM_LOGS
 from app.content.system_services import SYSTEM_SERVICES
+from app.content.systemd_diagnostics import SYSTEMD_DIAGNOSTICS
 from app.content.terminal_navigation import TERMINAL_NAVIGATION
 from app.content.text_files import TEXT_FILES
 from app.content.user_management import USER_MANAGEMENT
@@ -34,6 +38,10 @@ LESSONS = [
     BASIC_SYSTEM_DIAGNOSTICS,
     SUDO_ADMINISTRATION,
     USER_MANAGEMENT,
+    SYSTEMD_DIAGNOSTICS,
+    LOG_ANALYSIS,
+    DISK_SPACE_CLEANUP,
+    SCHEDULED_TASKS,
 ]
 
 
