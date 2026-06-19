@@ -348,6 +348,52 @@ def test_twelfth_flashcards_page_returns_200():
     assert "Fiszki do lekcji" in response.text
 
 
+def test_thirteenth_lesson_detail_page_returns_200():
+    response = client.get("/lessons/13")
+
+    assert response.status_code == 200
+    assert "Sudo i praca administratora" in response.text
+    assert "Podstawowy+" in response.text
+    assert "<code>sudo</code>" in response.text
+    assert "&lt;code&gt;sudo&lt;/code&gt;" not in response.text
+
+
+def test_thirteenth_quiz_page_returns_200():
+    response = client.get("/quiz/13")
+
+    assert response.status_code == 200
+    assert "Quiz: sudo i praca administratora" in response.text
+
+
+def test_thirteenth_flashcards_page_returns_200():
+    response = client.get("/flashcards/13")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
+
+
+def test_fourteenth_lesson_detail_page_returns_200():
+    response = client.get("/lessons/14")
+
+    assert response.status_code == 200
+    assert "Zarządzanie użytkownikami i grupami" in response.text
+    assert "Podstawowy+" in response.text
+
+
+def test_fourteenth_quiz_page_returns_200():
+    response = client.get("/quiz/14")
+
+    assert response.status_code == 200
+    assert "Quiz: zarządzanie użytkownikami i grupami" in response.text
+
+
+def test_fourteenth_flashcards_page_returns_200():
+    response = client.get("/flashcards/14")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
+
+
 def test_lessons_page_contains_filtering_ui():
     response = client.get("/lessons")
 
