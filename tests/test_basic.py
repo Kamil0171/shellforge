@@ -1,5 +1,9 @@
 from fastapi.testclient import TestClient
 
+from app.content.disk_space_cleanup import DISK_SPACE_CLEANUP
+from app.content.log_analysis import LOG_ANALYSIS
+from app.content.scheduled_tasks import SCHEDULED_TASKS
+from app.content.systemd_diagnostics import SYSTEMD_DIAGNOSTICS
 from app.database import create_db_and_tables
 from app.main import app
 from app.seed import seed_database
@@ -392,6 +396,124 @@ def test_fourteenth_flashcards_page_returns_200():
 
     assert response.status_code == 200
     assert "Fiszki do lekcji" in response.text
+
+
+def test_fifteenth_lesson_detail_page_returns_200():
+    response = client.get("/lessons/15")
+
+    assert response.status_code == 200
+    assert "Diagnostyka usług systemd" in response.text
+    assert "Podstawowy+" in response.text
+
+
+def test_fifteenth_quiz_page_returns_200():
+    response = client.get("/quiz/15")
+
+    assert response.status_code == 200
+    assert "Quiz: diagnostyka usług systemd" in response.text
+
+
+def test_fifteenth_flashcards_page_returns_200():
+    response = client.get("/flashcards/15")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
+
+
+def test_sixteenth_lesson_detail_page_returns_200():
+    response = client.get("/lessons/16")
+
+    assert response.status_code == 200
+    assert "Analiza logów w praktyce" in response.text
+    assert "Podstawowy+" in response.text
+
+
+def test_sixteenth_quiz_page_returns_200():
+    response = client.get("/quiz/16")
+
+    assert response.status_code == 200
+    assert "Quiz: analiza logów w praktyce" in response.text
+
+
+def test_sixteenth_flashcards_page_returns_200():
+    response = client.get("/flashcards/16")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
+
+
+def test_seventeenth_lesson_detail_page_returns_200():
+    response = client.get("/lessons/17")
+
+    assert response.status_code == 200
+    assert "Miejsce na dysku i porządkowanie systemu" in response.text
+    assert "Podstawowy+" in response.text
+
+
+def test_seventeenth_quiz_page_returns_200():
+    response = client.get("/quiz/17")
+
+    assert response.status_code == 200
+    assert "Quiz: miejsce na dysku i porządkowanie systemu" in response.text
+
+
+def test_seventeenth_flashcards_page_returns_200():
+    response = client.get("/flashcards/17")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
+
+
+def test_eighteenth_lesson_detail_page_returns_200():
+    response = client.get("/lessons/18")
+
+    assert response.status_code == 200
+    assert "Zadania cykliczne" in response.text
+    assert "Podstawowy+" in response.text
+
+
+def test_eighteenth_quiz_page_returns_200():
+    response = client.get("/quiz/18")
+
+    assert response.status_code == 200
+    assert "Quiz: cron i podstawy systemd timers" in response.text
+
+
+def test_eighteenth_flashcards_page_returns_200():
+    response = client.get("/flashcards/18")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
+
+
+def test_new_administration_lessons_have_required_structure():
+    lessons = [
+        SYSTEMD_DIAGNOSTICS,
+        LOG_ANALYSIS,
+        DISK_SPACE_CLEANUP,
+        SCHEDULED_TASKS,
+    ]
+
+    for lesson_bundle in lessons:
+        assert lesson_bundle["module"]["title"] == "Administracja systemem"
+        assert lesson_bundle["lesson"]["level"] == "Podstawowy+"
+        assert lesson_bundle["lesson"]["practice_task"]
+        assert lesson_bundle["lesson"]["common_mistakes"]
+        assert len(lesson_bundle["quiz"]["questions"]) == 6
+        assert len(lesson_bundle["flashcards"]) == 25
+
+        for question in lesson_bundle["quiz"]["questions"]:
+            assert len(question["answers"]) == 4
+            assert sum(answer[2] for answer in question["answers"]) == 1
+
+
+def test_roadmap_shows_complete_administration_stage_as_available():
+    response = client.get("/roadmap/")
+
+    assert response.status_code == 200
+    assert "Administracja systemem" in response.text
+    assert "Dostępne" in response.text
+    assert "Zadania cykliczne: cron i podstawy systemd timers" in response.text
 
 
 def test_lessons_page_contains_filtering_ui():

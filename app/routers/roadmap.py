@@ -12,7 +12,7 @@ def roadmap_page(request: Request):
         {
             "level": "Poziom 1",
             "title": "Podstawy Linuxa",
-            "status": "Dostępne i rozwijane",
+            "status": "Dostępne",
             "status_type": "active",
             "description": (
                 "Pierwszy etap uczy swobodnej pracy w terminalu. To fundament, "
@@ -43,12 +43,12 @@ def roadmap_page(request: Request):
         {
             "level": "Poziom 2",
             "title": "Administracja systemem",
-            "status": "Dostępne i rozwijane",
+            "status": "Dostępne",
             "status_type": "active",
             "description": (
-                "Ten etap rozwija podstawy w kierunku codziennej pracy administratora. "
-                "Użytkownik uczy się zarządzania usługami, logami, konfiguracją systemu "
-                "i diagnozowania typowych problemów."
+                "Kompletny etap rozwijający podstawy w kierunku codziennej pracy administratora. "
+                "Użytkownik uczy się zarządzania usługami, logami, kontami, miejscem na dysku "
+                "oraz zadaniami cyklicznymi."
             ),
             "skills": [
                 "zarządzanie usługami przez systemd",
@@ -59,6 +59,8 @@ def roadmap_page(request: Request):
                 "diagnozowanie problemów z usługami",
                 "bezpieczna praca z sudo i kontem root",
                 "zarządzanie użytkownikami i grupami",
+                "analiza zajętości dysku i bezpieczne porządkowanie systemu",
+                "planowanie zadań przez cron i systemd timers",
             ],
             "lessons": [
                 "Usługi systemowe: systemctl i systemd",
@@ -67,6 +69,10 @@ def roadmap_page(request: Request):
                 "Podstawowa diagnostyka systemu: uptime, free, df, du i hostnamectl",
                 "Sudo i praca administratora: sudo, su, root i dobre praktyki",
                 "Zarządzanie użytkownikami i grupami: useradd, passwd, usermod i userdel",
+                "Diagnostyka usług systemd: systemctl status, restart, enable i journalctl -u",
+                "Analiza logów w praktyce: journalctl, /var/log i filtrowanie zdarzeń",
+                "Miejsce na dysku i porządkowanie systemu: df, du, cache i logi",
+                "Zadania cykliczne: cron i podstawy systemd timers",
             ],
             "cta_label": "Przejdź do lekcji",
             "cta_url": "/lessons",
