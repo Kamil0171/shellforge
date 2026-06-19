@@ -1,50 +1,54 @@
-.about-hero {
-    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+.home-section {
+    scroll-margin-top: 90px;
 }
 
-.about-card {
+.home-section-heading {
+    max-width: 760px;
+}
+
+.home-card {
     position: relative;
     overflow: hidden;
     border: 1px solid rgba(33, 37, 41, 0.08);
-    border-radius: 16px;
+    border-radius: 18px;
     transition:
         transform 0.25s ease,
         box-shadow 0.25s ease,
         border-color 0.25s ease;
 }
 
-.about-card:hover {
-    transform: translateY(-3px);
+.home-card:hover {
+    transform: translateY(-4px);
     border-color: rgba(33, 37, 41, 0.16);
     box-shadow: 0 16px 40px rgba(33, 37, 41, 0.08) !important;
 }
 
-.about-card .card-body {
+.home-card .card-body {
     padding: 1.45rem;
 }
 
-.about-card-icon {
+.home-card-with-icon .card-body {
+    padding-right: 4.4rem;
+}
+
+.home-card-icon {
     z-index: 2;
     opacity: 0.72;
 }
 
-.about-card-icon svg {
+.home-card-icon svg {
     display: block;
     width: 18px;
     height: 18px;
 }
 
-.about-highlight {
-    display: inline-flex;
-    padding: 10px 14px;
-    margin-bottom: 16px;
-    border-radius: 12px;
-    background-color: #111827;
-    color: #ffffff;
+.home-step-number {
+    font-size: 0.9rem;
     font-weight: 800;
+    letter-spacing: 0.04em;
 }
 
-.about-card-label {
+.home-track-label {
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -56,7 +60,7 @@
     text-transform: uppercase;
 }
 
-.about-card-label::before {
+.home-track-label::before {
     content: "";
     width: 9px;
     height: 9px;
@@ -65,36 +69,24 @@
     background-color: #ffffff;
 }
 
-.about-section-heading {
-    max-width: 780px;
-}
-
-.about-start-card {
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-}
-
 @media (max-width: 767.98px) {
-    .about-card:hover {
+    .home-card:hover {
         transform: none;
     }
 
-    .about-card .card-body {
+    .home-card .card-body {
         padding: 1.25rem;
     }
 
-    .about-highlight {
-        display: flex;
-        width: 100%;
-        justify-content: center;
-        text-align: center;
-        line-height: 1.5;
+    .home-card-with-icon .card-body {
+        padding-right: 3.9rem;
     }
 
-    .about-card-icon {
+    .home-card-icon {
         opacity: 0.65;
     }
 
-    .about-card-icon svg {
+    .home-card-icon svg {
         width: 16px;
         height: 16px;
     }

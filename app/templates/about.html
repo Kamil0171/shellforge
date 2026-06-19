@@ -4,19 +4,23 @@
 
 {% block content %}
 
-<section class="py-5 bg-light border-bottom">
+<section class="about-hero py-5 bg-light border-bottom">
     <div class="container">
         <span class="badge text-bg-dark mb-3">Czym jest ShellForge?</span>
 
-        <h1 class="fw-bold">
-            Praktyczna nauka Linuxa, administracji systemami i DevOps
-        </h1>
+        <div class="row">
+            <div class="col-lg-9">
+                <h1 class="fw-bold">
+                    Praktyczna platforma do nauki Linuxa, administracji systemem i DevOps
+                </h1>
 
-        <p class="lead text-muted">
-            ShellForge to polska aplikacja edukacyjna dla osób, które chcą uczyć się
-            technologii serwerowych krok po kroku — przez lekcje, praktyczne zadania,
-            quizy i fiszki.
-        </p>
+                <p class="lead text-muted mb-0">
+                    ShellForge to polska aplikacja edukacyjna tworzona z myślą o osobach,
+                    które chcą uczyć się przez praktykę: krótkie lekcje, komendy, zadania,
+                    quizy i fiszki.
+                </p>
+            </div>
+        </div>
     </div>
 </section>
 
@@ -28,22 +32,20 @@
                 <div class="card shadow-sm about-card h-100">
                     <div class="card-body">
                         <h2 class="fw-bold h4 mb-3">
-                            Czym jest ShellForge?
+                            Idea projektu
                         </h2>
 
                         <p class="text-muted">
-                            ShellForge pomaga budować praktyczne umiejętności związane z Linuxem,
-                            administracją systemami i podstawami DevOps. Aplikacja jest tworzona
-                            z myślą o osobach, które chcą rozumieć nie tylko pojedyncze komendy,
-                            ale również ich zastosowanie w realnych scenariuszach pracy z systemem
-                            i serwerem.
+                            ShellForge pomaga stopniowo budować praktyczne umiejętności związane
+                            z pracą w terminalu, administracją systemami Linux oraz podstawami DevOps.
+                            Celem aplikacji nie jest samo zapamiętywanie poleceń, ale zrozumienie,
+                            kiedy i dlaczego używa się konkretnych narzędzi.
                         </p>
 
                         <p class="text-muted mb-0">
                             Materiały są układane w logiczną ścieżkę nauki — od podstaw pracy
-                            w terminalu, przez zarządzanie systemem i usługami, aż po tematy
-                            związane z wdrażaniem aplikacji, automatyzacją, konteneryzacją
-                            i utrzymaniem środowisk.
+                            z plikami, procesami i uprawnieniami, przez administrację systemem,
+                            aż po sieć, deployment aplikacji, automatyzację i monitoring.
                         </p>
                     </div>
                 </div>
@@ -57,36 +59,157 @@
                         </h2>
 
                         <div class="about-highlight">
-                            teoria → praktyka → quiz → fiszki
+                            teoria → komendy → zadanie → quiz → fiszki
                         </div>
 
                         <p class="text-muted">
-                            Każda lekcja skupia się na konkretnym zagadnieniu. Najpierw poznajesz
-                            najważniejsze pojęcia i zastosowanie komend, potem przechodzisz do
-                            zadania praktycznego, a następnie sprawdzasz wiedzę w quizie.
+                            Każda lekcja skupia się na jednym konkretnym zagadnieniu.
+                            Najpierw poznajesz krótkie wyjaśnienie, następnie widzisz przykłady
+                            komend i wykonujesz zadanie praktyczne.
                         </p>
 
                         <p class="text-muted mb-0">
-                            Fiszki pomagają szybko powtarzać definicje, komendy i zależności między
-                            pojęciami. Dzięki temu możesz wracać do materiału wtedy, gdy chcesz
-                            utrwalić konkretny temat.
+                            Quiz pozwala sprawdzić zrozumienie materiału, a fiszki pomagają
+                            szybko powtarzać najważniejsze pojęcia, komendy i zależności.
                         </p>
                     </div>
                 </div>
             </div>
+        </div>
+
+        <div class="about-section-heading mb-4">
+            <h2 class="fw-bold">
+                Co wyróżnia ShellForge?
+            </h2>
+            <p class="text-muted mb-0">
+                Projekt jest tworzony jako praktyczna, polskojęzyczna ścieżka nauki dla osób,
+                które chcą rozwijać się technicznie krok po kroku.
+            </p>
+        </div>
+
+        <div class="row g-4 mb-5">
+            <div class="col-md-6 col-lg-3">
+                <div class="card shadow-sm about-card h-100 position-relative">
+                    <div class="about-card-icon position-absolute top-0 end-0 mt-3 me-3 d-inline-flex align-items-center justify-content-center rounded-3 border bg-white text-dark" style="width: 34px; height: 34px;" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 5h8"/>
+                            <path d="M8 3v2c0 4-2 7-5 9"/>
+                            <path d="M5 9c1.5 2 3.5 3.5 6 4.5"/>
+                            <path d="M14 13h6"/>
+                            <path d="M17 10l3 8"/>
+                            <path d="M14 18l3-8"/>
+                        </svg>
+                    </div>
+
+                    <div class="card-body pe-5">
+                        <span class="about-card-label">Język</span>
+
+                        <h3 class="h5 fw-bold mt-2">
+                            Po polsku
+                        </h3>
+                        <p class="text-muted mb-0">
+                            Materiały są pisane po polsku, z technicznym słownictwem i przykładami
+                            dopasowanymi do nauki Linuxa oraz DevOps.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card shadow-sm about-card h-100 position-relative">
+                    <div class="about-card-icon position-absolute top-0 end-0 mt-3 me-3 d-inline-flex align-items-center justify-content-center rounded-3 border bg-white text-dark" style="width: 34px; height: 34px;" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 6h16v12H4z"/>
+                            <path d="M8 10l-2 2 2 2"/>
+                            <path d="M12 10l2 2-2 2"/>
+                        </svg>
+                    </div>
+
+                    <div class="card-body pe-5">
+                        <span class="about-card-label">Praktyka</span>
+
+                        <h3 class="h5 fw-bold mt-2">
+                            Przez komendy
+                        </h3>
+                        <p class="text-muted mb-0">
+                            Nauka opiera się na konkretnych poleceniach, zadaniach i scenariuszach,
+                            a nie na samej teorii oderwanej od praktyki.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card shadow-sm about-card h-100 position-relative">
+                    <div class="about-card-icon position-absolute top-0 end-0 mt-3 me-3 d-inline-flex align-items-center justify-content-center rounded-3 border bg-white text-dark" style="width: 34px; height: 34px;" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 7h10"/>
+                            <path d="M4 12h16"/>
+                            <path d="M4 17h10"/>
+                            <path d="M16 7h4"/>
+                            <path d="M16 17h4"/>
+                        </svg>
+                    </div>
+
+                    <div class="card-body pe-5">
+                        <span class="about-card-label">Kolejność</span>
+
+                        <h3 class="h5 fw-bold mt-2">
+                            Krok po kroku
+                        </h3>
+                        <p class="text-muted mb-0">
+                            Tematy są ułożone tak, aby użytkownik przechodził od podstaw do coraz
+                            bardziej praktycznych zadań administracyjnych.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card shadow-sm about-card h-100 position-relative">
+                    <div class="about-card-icon position-absolute top-0 end-0 mt-3 me-3 d-inline-flex align-items-center justify-content-center rounded-3 border bg-white text-dark" style="width: 34px; height: 34px;" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="5" y="4" width="14" height="16" rx="2"/>
+                            <path d="M9 8h6"/>
+                            <path d="M9 12h6"/>
+                            <path d="M9 16h4"/>
+                        </svg>
+                    </div>
+
+                    <div class="card-body pe-5">
+                        <span class="about-card-label">Utrwalanie</span>
+
+                        <h3 class="h5 fw-bold mt-2">
+                            Quizy i fiszki
+                        </h3>
+                        <p class="text-muted mb-0">
+                            Każda lekcja posiada mechanizmy powtórki, które pomagają sprawdzić
+                            wiedzę i wrócić do najważniejszych pojęć.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="about-section-heading mb-4">
+            <h2 class="fw-bold">
+                Dla kogo jest ShellForge?
+            </h2>
+            <p class="text-muted mb-0">
+                Aplikacja jest przeznaczona dla osób, które chcą uporządkować naukę Linuxa
+                i rozwijać praktyczne umiejętności techniczne.
+            </p>
         </div>
 
         <div class="row g-4 mb-5">
             <div class="col-md-6 col-lg-3">
                 <div class="card shadow-sm about-card h-100">
                     <div class="card-body">
-                        <h3 class="h5 fw-bold">
-                            Linux
+                        <h3 class="h5 fw-bold mb-3">
+                            Początkujący
                         </h3>
-
                         <p class="text-muted mb-0">
-                            Terminal, pliki, katalogi, procesy, uprawnienia, użytkownicy,
-                            pakiety, usługi i logi systemowe.
+                            Dla osób, które zaczynają pracę z terminalem i chcą zrozumieć podstawowe polecenia.
                         </p>
                     </div>
                 </div>
@@ -95,13 +218,11 @@
             <div class="col-md-6 col-lg-3">
                 <div class="card shadow-sm about-card h-100">
                     <div class="card-body">
-                        <h3 class="h5 fw-bold">
-                            Administracja
+                        <h3 class="h5 fw-bold mb-3">
+                            Studenci
                         </h3>
-
                         <p class="text-muted mb-0">
-                            Zarządzanie systemem, konfiguracja usług, praca z serwerem,
-                            diagnostyka problemów i podstawy bezpieczeństwa.
+                            Dla studentów informatyki i kierunków technicznych, którzy chcą utrwalić praktyczne podstawy.
                         </p>
                     </div>
                 </div>
@@ -110,13 +231,11 @@
             <div class="col-md-6 col-lg-3">
                 <div class="card shadow-sm about-card h-100">
                     <div class="card-body">
-                        <h3 class="h5 fw-bold">
-                            DevOps
+                        <h3 class="h5 fw-bold mb-3">
+                            SysAdmin i DevOps
                         </h3>
-
                         <p class="text-muted mb-0">
-                            Git, testy, deployment, Nginx, HTTPS, konteneryzacja,
-                            CI/CD, automatyzacja i monitoring.
+                            Dla osób rozwijających się w kierunku administracji systemami, DevOps i chmury.
                         </p>
                     </div>
                 </div>
@@ -125,36 +244,171 @@
             <div class="col-md-6 col-lg-3">
                 <div class="card shadow-sm about-card h-100">
                     <div class="card-body">
-                        <h3 class="h5 fw-bold">
-                            Praktyka
+                        <h3 class="h5 fw-bold mb-3">
+                            Nauka przez działanie
                         </h3>
-
                         <p class="text-muted mb-0">
-                            Nauka opiera się na przykładach, zadaniach, scenariuszach
-                            administracyjnych i pracy z konkretnymi narzędziami.
+                            Dla tych, którzy wolą konkretne przykłady, ćwiczenia, quizy i fiszki zamiast samej teorii.
                         </p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="card shadow-sm about-card mb-5">
-            <div class="card-body">
-                <h2 class="fw-bold h4 mb-3">
-                    Dla kogo jest ShellForge?
-                </h2>
+        <div class="about-section-heading mb-4">
+            <h2 class="fw-bold">
+                Zakres ścieżki nauki
+            </h2>
+            <p class="text-muted mb-0">
+                ShellForge rozwija się modułowo — od podstaw Linuxa do zagadnień związanych
+                z wdrażaniem, automatyzacją i utrzymaniem aplikacji.
+            </p>
+        </div>
 
-                <p class="text-muted">
-                    ShellForge jest przeznaczony dla osób, które chcą swobodniej pracować
-                    w terminalu, lepiej rozumieć Linuxa i stopniowo poznawać narzędzia używane
-                    w administracji systemami oraz DevOps.
-                </p>
+        <div class="row g-4 mb-5">
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow-sm about-card h-100 position-relative">
+                    <div class="about-card-icon position-absolute top-0 end-0 mt-3 me-3 d-inline-flex align-items-center justify-content-center rounded-3 border bg-white text-dark" style="width: 34px; height: 34px;" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 6h16v12H4z"/>
+                            <path d="M8 10l-2 2 2 2"/>
+                            <path d="M13 14h3"/>
+                        </svg>
+                    </div>
 
-                <p class="text-muted mb-0">
-                    Aplikacja może być pomocna dla początkujących, studentów informatyki,
-                    osób przygotowujących się do pracy w IT, administratorów na starcie kariery
-                    oraz wszystkich, którzy chcą uporządkować swoją wiedzę przez praktyczne ćwiczenia.
-                </p>
+                    <div class="card-body pe-5">
+                        <span class="about-card-label">Moduł 1</span>
+
+                        <h3 class="h5 fw-bold mt-2">
+                            Podstawy Linuxa
+                        </h3>
+                        <p class="text-muted mb-0">
+                            Terminal, pliki, katalogi, uprawnienia, procesy, użytkownicy,
+                            pakiety i podstawowe narzędzia tekstowe.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow-sm about-card h-100 position-relative">
+                    <div class="about-card-icon position-absolute top-0 end-0 mt-3 me-3 d-inline-flex align-items-center justify-content-center rounded-3 border bg-white text-dark" style="width: 34px; height: 34px;" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="4" y="5" width="16" height="5" rx="1.5"/>
+                            <rect x="4" y="14" width="16" height="5" rx="1.5"/>
+                            <path d="M8 7.5h.01"/>
+                            <path d="M8 16.5h.01"/>
+                        </svg>
+                    </div>
+
+                    <div class="card-body pe-5">
+                        <span class="about-card-label">Moduł 2</span>
+
+                        <h3 class="h5 fw-bold mt-2">
+                            Administracja systemem
+                        </h3>
+                        <p class="text-muted mb-0">
+                            Usługi, logi, diagnostyka, konta użytkowników, zadania cykliczne
+                            i codzienna praca administratora.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow-sm about-card h-100 position-relative">
+                    <div class="about-card-icon position-absolute top-0 end-0 mt-3 me-3 d-inline-flex align-items-center justify-content-center rounded-3 border bg-white text-dark" style="width: 34px; height: 34px;" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 3l7 4v5c0 5-3 7.5-7 9-4-1.5-7-4-7-9V7l7-4z"/>
+                            <path d="M9.5 12l1.7 1.7L15 10"/>
+                        </svg>
+                    </div>
+
+                    <div class="card-body pe-5">
+                        <span class="about-card-label">Moduł 3</span>
+
+                        <h3 class="h5 fw-bold mt-2">
+                            Sieć i bezpieczeństwo
+                        </h3>
+                        <p class="text-muted mb-0">
+                            SSH, porty, DNS, firewall, SELinux oraz bezpieczniejsza konfiguracja
+                            dostępu do systemu.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow-sm about-card h-100 position-relative">
+                    <div class="about-card-icon position-absolute top-0 end-0 mt-3 me-3 d-inline-flex align-items-center justify-content-center rounded-3 border bg-white text-dark" style="width: 34px; height: 34px;" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 16V4"/>
+                            <path d="M8 8l4-4 4 4"/>
+                            <path d="M5 20h14"/>
+                        </svg>
+                    </div>
+
+                    <div class="card-body pe-5">
+                        <span class="about-card-label">Moduł 4</span>
+
+                        <h3 class="h5 fw-bold mt-2">
+                            Deployment aplikacji
+                        </h3>
+                        <p class="text-muted mb-0">
+                            Uruchamianie aplikacji jako usługi, reverse proxy, domeny,
+                            certyfikaty HTTPS i aktualizacje.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow-sm about-card h-100 position-relative">
+                    <div class="about-card-icon position-absolute top-0 end-0 mt-3 me-3 d-inline-flex align-items-center justify-content-center rounded-3 border bg-white text-dark" style="width: 34px; height: 34px;" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M8 6l-4 6 4 6"/>
+                            <path d="M16 6l4 6-4 6"/>
+                            <path d="M10 19l4-14"/>
+                        </svg>
+                    </div>
+
+                    <div class="card-body pe-5">
+                        <span class="about-card-label">Moduł 5</span>
+
+                        <h3 class="h5 fw-bold mt-2">
+                            DevOps i automatyzacja
+                        </h3>
+                        <p class="text-muted mb-0">
+                            Git, kontenery, CI/CD, automatyczne testy i powtarzalne procesy
+                            wdrożeniowe.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow-sm about-card h-100 position-relative">
+                    <div class="about-card-icon position-absolute top-0 end-0 mt-3 me-3 d-inline-flex align-items-center justify-content-center rounded-3 border bg-white text-dark" style="width: 34px; height: 34px;" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 19h16"/>
+                            <path d="M7 16v-3"/>
+                            <path d="M12 16V8"/>
+                            <path d="M17 16v-6"/>
+                        </svg>
+                    </div>
+
+                    <div class="card-body pe-5">
+                        <span class="about-card-label">Moduł 6</span>
+
+                        <h3 class="h5 fw-bold mt-2">
+                            Monitoring i utrzymanie
+                        </h3>
+                        <p class="text-muted mb-0">
+                            Health checki, metryki, logi, alerty, backupy i podstawy codziennego
+                            utrzymania środowiska.
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -163,13 +417,12 @@
                 <div class="row align-items-center g-4">
                     <div class="col-lg-8">
                         <h2 class="fw-bold h4 mb-3">
-                            Ucz się we własnym tempie
+                            Zacznij od pierwszych lekcji albo przejdź do roadmapy
                         </h2>
 
                         <p class="text-muted mb-lg-0">
-                            Możesz przechodzić przez lekcje po kolei albo wracać do wybranych tematów,
-                            gdy potrzebujesz powtórki. ShellForge ma pomagać w regularnej, praktycznej
-                            nauce i stopniowym budowaniu pewności w pracy z systemami Linux.
+                            Możesz przechodzić przez materiał po kolei albo wracać do wybranych tematów,
+                            gdy potrzebujesz powtórki. Roadmapa pokazuje sugerowaną kolejność nauki.
                         </p>
                     </div>
 
@@ -179,7 +432,7 @@
                                 Przejdź do lekcji
                             </a>
 
-                            <a href="/roadmap/" class="btn btn-outline-secondary">
+                            <a href="/roadmap/" class="btn btn-shell-secondary">
                                 Zobacz ścieżkę nauki
                             </a>
                         </div>
