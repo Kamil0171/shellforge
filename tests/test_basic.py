@@ -1,8 +1,14 @@
 from fastapi.testclient import TestClient
 
 from app.content.disk_space_cleanup import DISK_SPACE_CLEANUP
+from app.content.dns_practice import DNS_PRACTICE
+from app.content.firewall_basics import FIREWALL_BASICS
+from app.content.ip_addressing import IP_ADDRESSING
 from app.content.log_analysis import LOG_ANALYSIS
+from app.content.network_ports_services import NETWORK_PORTS_SERVICES
 from app.content.scheduled_tasks import SCHEDULED_TASKS
+from app.content.selinux_basics import SELINUX_BASICS
+from app.content.ssh_administration import SSH_ADMINISTRATION
 from app.content.systemd_diagnostics import SYSTEMD_DIAGNOSTICS
 from app.database import create_db_and_tables
 from app.main import app
@@ -486,6 +492,142 @@ def test_eighteenth_flashcards_page_returns_200():
     assert "Fiszki do lekcji" in response.text
 
 
+def test_nineteenth_lesson_detail_page_returns_200():
+    response = client.get("/lessons/19")
+
+    assert response.status_code == 200
+    assert "Podstawy adresacji IP" in response.text
+    assert "Podstawowy+" in response.text
+
+
+def test_nineteenth_quiz_page_returns_200():
+    response = client.get("/quiz/19")
+
+    assert response.status_code == 200
+    assert "Quiz: podstawy adresacji IP" in response.text
+
+
+def test_nineteenth_flashcards_page_returns_200():
+    response = client.get("/flashcards/19")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
+
+
+def test_twentieth_lesson_detail_page_returns_200():
+    response = client.get("/lessons/20")
+
+    assert response.status_code == 200
+    assert "DNS w praktyce" in response.text
+    assert "Podstawowy+" in response.text
+
+
+def test_twentieth_quiz_page_returns_200():
+    response = client.get("/quiz/20")
+
+    assert response.status_code == 200
+    assert "Quiz: DNS w praktyce" in response.text
+
+
+def test_twentieth_flashcards_page_returns_200():
+    response = client.get("/flashcards/20")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
+
+
+def test_twenty_first_lesson_detail_page_returns_200():
+    response = client.get("/lessons/21")
+
+    assert response.status_code == 200
+    assert "Porty" in response.text
+    assert "sieciowe" in response.text
+    assert "Podstawowy+" in response.text
+
+
+def test_twenty_first_quiz_page_returns_200():
+    response = client.get("/quiz/21")
+
+    assert response.status_code == 200
+    assert "Quiz:" in response.text
+    assert "porty" in response.text
+
+
+def test_twenty_first_flashcards_page_returns_200():
+    response = client.get("/flashcards/21")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
+
+
+def test_twenty_second_lesson_detail_page_returns_200():
+    response = client.get("/lessons/22")
+
+    assert response.status_code == 200
+    assert "SSH w administracji systemem" in response.text
+    assert "Podstawowy+" in response.text
+
+
+def test_twenty_second_quiz_page_returns_200():
+    response = client.get("/quiz/22")
+
+    assert response.status_code == 200
+    assert "Quiz: SSH w administracji systemem" in response.text
+
+
+def test_twenty_second_flashcards_page_returns_200():
+    response = client.get("/flashcards/22")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
+
+
+def test_twenty_third_lesson_detail_page_returns_200():
+    response = client.get("/lessons/23")
+
+    assert response.status_code == 200
+    assert "Firewall" in response.text
+    assert "Podstawowy+" in response.text
+
+
+def test_twenty_third_quiz_page_returns_200():
+    response = client.get("/quiz/23")
+
+    assert response.status_code == 200
+    assert "Quiz:" in response.text
+    assert "firewall" in response.text
+
+
+def test_twenty_third_flashcards_page_returns_200():
+    response = client.get("/flashcards/23")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
+
+
+def test_twenty_fourth_lesson_detail_page_returns_200():
+    response = client.get("/lessons/24")
+
+    assert response.status_code == 200
+    assert "SELinux" in response.text
+    assert "Podstawowy+" in response.text
+
+
+def test_twenty_fourth_quiz_page_returns_200():
+    response = client.get("/quiz/24")
+
+    assert response.status_code == 200
+    assert "Quiz:" in response.text
+    assert "SELinux" in response.text
+
+
+def test_twenty_fourth_flashcards_page_returns_200():
+    response = client.get("/flashcards/24")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
+
+
 def test_new_administration_lessons_have_required_structure():
     lessons = [
         SYSTEMD_DIAGNOSTICS,
@@ -507,6 +649,29 @@ def test_new_administration_lessons_have_required_structure():
             assert sum(answer[2] for answer in question["answers"]) == 1
 
 
+def test_network_security_lessons_have_required_structure():
+    lessons = [
+        IP_ADDRESSING,
+        DNS_PRACTICE,
+        NETWORK_PORTS_SERVICES,
+        SSH_ADMINISTRATION,
+        FIREWALL_BASICS,
+        SELINUX_BASICS,
+    ]
+
+    for lesson_bundle in lessons:
+        assert lesson_bundle["module"]["title"] == "Sieć i bezpieczeństwo"
+        assert lesson_bundle["lesson"]["level"] == "Podstawowy+"
+        assert lesson_bundle["lesson"]["practice_task"]
+        assert lesson_bundle["lesson"]["common_mistakes"]
+        assert len(lesson_bundle["quiz"]["questions"]) == 6
+        assert len(lesson_bundle["flashcards"]) == 25
+
+        for question in lesson_bundle["quiz"]["questions"]:
+            assert len(question["answers"]) == 4
+            assert sum(answer[2] for answer in question["answers"]) == 1
+
+
 def test_roadmap_shows_complete_administration_stage_as_available():
     response = client.get("/roadmap/")
 
@@ -514,6 +679,15 @@ def test_roadmap_shows_complete_administration_stage_as_available():
     assert "Administracja systemem" in response.text
     assert "Dostępne" in response.text
     assert "Zadania cykliczne: cron i podstawy systemd timers" in response.text
+
+
+def test_roadmap_shows_network_security_stage_as_available():
+    response = client.get("/roadmap/")
+
+    assert response.status_code == 200
+    assert "DNS w praktyce" in response.text
+    assert "SSH w administracji systemem" in response.text
+    assert "SELinux" in response.text
 
 
 def test_lessons_page_contains_filtering_ui():

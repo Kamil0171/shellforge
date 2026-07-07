@@ -80,30 +80,31 @@ def roadmap_page(request: Request):
         {
             "level": "Poziom 3",
             "title": "Sieć i bezpieczeństwo",
-            "status": "Planowane",
-            "status_type": "planned",
+            "status": "Dostępne",
+            "status_type": "active",
             "description": (
-                "Ten etap skupia się na podstawach komunikacji sieciowej, zdalnym "
-                "logowaniu oraz zabezpieczaniu serwera Linux z użyciem standardowych "
-                "narzędzi administracyjnych."
+                "Pierwsza część etapu skupia się na podstawach komunikacji sieciowej, "
+                "DNS, portach, zdalnym logowaniu oraz podstawowych warstwach ochrony "
+                "serwera Linux."
             ),
             "skills": [
-                "korzystanie z SSH",
-                "sprawdzanie portów i połączeń",
-                "testowanie dostępności usług",
+                "rozumienie podstaw adresacji IPv4",
                 "podstawy DNS",
+                "sprawdzanie portów i usług sieciowych",
+                "korzystanie z SSH i kluczy",
                 "podstawy firewalld",
-                "podstawy SELinux",
-                "bezpieczniejsza konfiguracja dostępu do serwera",
+                "rozpoznawanie trybów i kontekstów SELinux",
             ],
             "lessons": [
-                "SSH i zdalne logowanie",
-                "Sieć i diagnostyka: ping, curl, ss i DNS",
-                "Firewall: podstawy firewalld",
-                "SELinux w praktyce administracyjnej",
+                "Podstawy adresacji IP",
+                "DNS w praktyce",
+                "Porty i usługi sieciowe",
+                "SSH w administracji systemem",
+                "Firewall — podstawy",
+                "SELinux — podstawowe pojęcia",
             ],
-            "cta_label": "Planowane",
-            "cta_url": None,
+            "cta_label": "Przejdź do lekcji",
+            "cta_url": "/lessons",
         },
         {
             "level": "Poziom 4",

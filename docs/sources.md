@@ -82,6 +82,12 @@ Ten plik zawiera główne źródła dokumentacji, z których korzystam podczas b
 - NetworkManager Documentation  
   https://networkmanager.dev/docs/
 
+- RFC 1918 — Address Allocation for Private Internets  
+  https://www.rfc-editor.org/rfc/rfc1918
+
+- IANA Service Name and Transport Protocol Port Number Registry  
+  https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml
+
 ## SELinux
 
 - SELinux Project Wiki  

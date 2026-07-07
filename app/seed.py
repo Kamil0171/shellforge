@@ -5,13 +5,19 @@ from sqlmodel import Session, select
 from app.content.admin_directories import ADMIN_DIRECTORIES
 from app.content.basic_system_diagnostics import BASIC_SYSTEM_DIAGNOSTICS
 from app.content.disk_space_cleanup import DISK_SPACE_CLEANUP
+from app.content.dns_practice import DNS_PRACTICE
 from app.content.file_permissions import FILE_PERMISSIONS
 from app.content.files_and_directories import FILES_AND_DIRECTORIES
+from app.content.firewall_basics import FIREWALL_BASICS
+from app.content.ip_addressing import IP_ADDRESSING
 from app.content.log_analysis import LOG_ANALYSIS
 from app.content.network_diagnostics import NETWORK_DIAGNOSTICS
+from app.content.network_ports_services import NETWORK_PORTS_SERVICES
 from app.content.package_management import PACKAGE_MANAGEMENT
 from app.content.processes import PROCESSES
 from app.content.scheduled_tasks import SCHEDULED_TASKS
+from app.content.selinux_basics import SELINUX_BASICS
+from app.content.ssh_administration import SSH_ADMINISTRATION
 from app.content.sudo_administration import SUDO_ADMINISTRATION
 from app.content.system_logs import SYSTEM_LOGS
 from app.content.system_services import SYSTEM_SERVICES
@@ -42,6 +48,12 @@ LESSONS = [
     LOG_ANALYSIS,
     DISK_SPACE_CLEANUP,
     SCHEDULED_TASKS,
+    IP_ADDRESSING,
+    DNS_PRACTICE,
+    NETWORK_PORTS_SERVICES,
+    SSH_ADMINISTRATION,
+    FIREWALL_BASICS,
+    SELINUX_BASICS,
 ]
 
 
