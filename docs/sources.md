@@ -115,6 +115,9 @@ Ten plik zawiera główne źródła dokumentacji, z których korzystam podczas b
 - Certbot  
   https://certbot.eff.org
 
+- OpenSSL Documentation  
+  https://docs.openssl.org
+
 ## Git, GitHub i CI/CD
 
 - Git Documentation  

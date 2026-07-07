@@ -83,17 +83,22 @@ def roadmap_page(request: Request):
             "status": "Dostępne",
             "status_type": "active",
             "description": (
-                "Pierwsza część etapu skupia się na podstawach komunikacji sieciowej, "
-                "DNS, portach, zdalnym logowaniu oraz podstawowych warstwach ochrony "
-                "serwera Linux."
+                "Kompletny etap skupia się na podstawach komunikacji sieciowej, "
+                "DNS, portach, zdalnym logowaniu, firewallu, SELinux oraz HTTPS "
+                "w codziennej administracji serwerem Linux."
             ),
             "skills": [
                 "rozumienie podstaw adresacji IPv4",
                 "podstawy DNS",
                 "sprawdzanie portów i usług sieciowych",
                 "korzystanie z SSH i kluczy",
+                "bezpieczna konfiguracja serwera SSH",
                 "podstawy firewalld",
+                "zarządzanie strefami, usługami i portami firewalld",
                 "rozpoznawanie trybów i kontekstów SELinux",
+                "podstawowa diagnostyka problemów SELinux",
+                "diagnozowanie DNS, routingu i połączeń",
+                "rozumienie podstaw TLS i HTTPS",
             ],
             "lessons": [
                 "Podstawy adresacji IP",
@@ -102,6 +107,12 @@ def roadmap_page(request: Request):
                 "SSH w administracji systemem",
                 "Firewall — podstawy",
                 "SELinux — podstawowe pojęcia",
+                "Bezpieczna konfiguracja SSH",
+                "Klucze SSH w praktyce",
+                "Firewalld — strefy, usługi i porty",
+                "SELinux — diagnostyka problemów",
+                "Diagnostyka DNS, routingu i połączeń",
+                "Podstawy TLS i HTTPS",
             ],
             "cta_label": "Przejdź do lekcji",
             "cta_url": "/lessons",

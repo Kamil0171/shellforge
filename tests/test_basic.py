@@ -3,13 +3,19 @@ from fastapi.testclient import TestClient
 from app.content.disk_space_cleanup import DISK_SPACE_CLEANUP
 from app.content.dns_practice import DNS_PRACTICE
 from app.content.firewall_basics import FIREWALL_BASICS
+from app.content.firewalld_zones_services_ports import FIREWALLD_ZONES_SERVICES_PORTS
 from app.content.ip_addressing import IP_ADDRESSING
 from app.content.log_analysis import LOG_ANALYSIS
+from app.content.network_dns_routing_connections import NETWORK_DNS_ROUTING_CONNECTIONS
 from app.content.network_ports_services import NETWORK_PORTS_SERVICES
 from app.content.scheduled_tasks import SCHEDULED_TASKS
 from app.content.selinux_basics import SELINUX_BASICS
+from app.content.selinux_troubleshooting import SELINUX_TROUBLESHOOTING
 from app.content.ssh_administration import SSH_ADMINISTRATION
+from app.content.ssh_keys_practice import SSH_KEYS_PRACTICE
+from app.content.ssh_secure_configuration import SSH_SECURE_CONFIGURATION
 from app.content.systemd_diagnostics import SYSTEMD_DIAGNOSTICS
+from app.content.tls_https_basics import TLS_HTTPS_BASICS
 from app.database import create_db_and_tables
 from app.main import app
 from app.seed import seed_database
@@ -628,6 +634,142 @@ def test_twenty_fourth_flashcards_page_returns_200():
     assert "Fiszki do lekcji" in response.text
 
 
+def test_twenty_fifth_lesson_detail_page_returns_200():
+    response = client.get("/lessons/25")
+
+    assert response.status_code == 200
+    assert "Bezpieczna konfiguracja SSH" in response.text
+    assert "Podstawowy+" in response.text
+
+
+def test_twenty_fifth_quiz_page_returns_200():
+    response = client.get("/quiz/25")
+
+    assert response.status_code == 200
+    assert "Quiz: bezpieczna konfiguracja SSH" in response.text
+
+
+def test_twenty_fifth_flashcards_page_returns_200():
+    response = client.get("/flashcards/25")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
+
+
+def test_twenty_sixth_lesson_detail_page_returns_200():
+    response = client.get("/lessons/26")
+
+    assert response.status_code == 200
+    assert "Klucze SSH w praktyce" in response.text
+    assert "Podstawowy+" in response.text
+
+
+def test_twenty_sixth_quiz_page_returns_200():
+    response = client.get("/quiz/26")
+
+    assert response.status_code == 200
+    assert "Quiz: klucze SSH w praktyce" in response.text
+
+
+def test_twenty_sixth_flashcards_page_returns_200():
+    response = client.get("/flashcards/26")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
+
+
+def test_twenty_seventh_lesson_detail_page_returns_200():
+    response = client.get("/lessons/27")
+
+    assert response.status_code == 200
+    assert "Firewalld" in response.text
+    assert "strefy" in response.text
+    assert "Podstawowy+" in response.text
+
+
+def test_twenty_seventh_quiz_page_returns_200():
+    response = client.get("/quiz/27")
+
+    assert response.status_code == 200
+    assert "Quiz:" in response.text
+    assert "firewalld" in response.text
+
+
+def test_twenty_seventh_flashcards_page_returns_200():
+    response = client.get("/flashcards/27")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
+
+
+def test_twenty_eighth_lesson_detail_page_returns_200():
+    response = client.get("/lessons/28")
+
+    assert response.status_code == 200
+    assert "SELinux" in response.text
+    assert "diagnostyka problemów" in response.text
+    assert "Podstawowy+" in response.text
+
+
+def test_twenty_eighth_quiz_page_returns_200():
+    response = client.get("/quiz/28")
+
+    assert response.status_code == 200
+    assert "Quiz:" in response.text
+    assert "SELinux" in response.text
+
+
+def test_twenty_eighth_flashcards_page_returns_200():
+    response = client.get("/flashcards/28")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
+
+
+def test_twenty_ninth_lesson_detail_page_returns_200():
+    response = client.get("/lessons/29")
+
+    assert response.status_code == 200
+    assert "Diagnostyka DNS, routingu i połączeń" in response.text
+    assert "Podstawowy+" in response.text
+
+
+def test_twenty_ninth_quiz_page_returns_200():
+    response = client.get("/quiz/29")
+
+    assert response.status_code == 200
+    assert "Quiz: diagnostyka DNS, routingu i połączeń" in response.text
+
+
+def test_twenty_ninth_flashcards_page_returns_200():
+    response = client.get("/flashcards/29")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
+
+
+def test_thirtieth_lesson_detail_page_returns_200():
+    response = client.get("/lessons/30")
+
+    assert response.status_code == 200
+    assert "Podstawy TLS i HTTPS" in response.text
+    assert "Podstawowy+" in response.text
+
+
+def test_thirtieth_quiz_page_returns_200():
+    response = client.get("/quiz/30")
+
+    assert response.status_code == 200
+    assert "Quiz: podstawy TLS i HTTPS" in response.text
+
+
+def test_thirtieth_flashcards_page_returns_200():
+    response = client.get("/flashcards/30")
+
+    assert response.status_code == 200
+    assert "Fiszki do lekcji" in response.text
+
+
 def test_new_administration_lessons_have_required_structure():
     lessons = [
         SYSTEMD_DIAGNOSTICS,
@@ -657,6 +799,12 @@ def test_network_security_lessons_have_required_structure():
         SSH_ADMINISTRATION,
         FIREWALL_BASICS,
         SELINUX_BASICS,
+        SSH_SECURE_CONFIGURATION,
+        SSH_KEYS_PRACTICE,
+        FIREWALLD_ZONES_SERVICES_PORTS,
+        SELINUX_TROUBLESHOOTING,
+        NETWORK_DNS_ROUTING_CONNECTIONS,
+        TLS_HTTPS_BASICS,
     ]
 
     for lesson_bundle in lessons:
@@ -688,6 +836,10 @@ def test_roadmap_shows_network_security_stage_as_available():
     assert "DNS w praktyce" in response.text
     assert "SSH w administracji systemem" in response.text
     assert "SELinux" in response.text
+    assert "Bezpieczna konfiguracja SSH" in response.text
+    assert "Klucze SSH w praktyce" in response.text
+    assert "Firewalld" in response.text
+    assert "Podstawy TLS i HTTPS" in response.text
 
 
 def test_lessons_page_contains_filtering_ui():
