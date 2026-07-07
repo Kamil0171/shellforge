@@ -9,21 +9,27 @@ from app.content.dns_practice import DNS_PRACTICE
 from app.content.file_permissions import FILE_PERMISSIONS
 from app.content.files_and_directories import FILES_AND_DIRECTORIES
 from app.content.firewall_basics import FIREWALL_BASICS
+from app.content.firewalld_zones_services_ports import FIREWALLD_ZONES_SERVICES_PORTS
 from app.content.ip_addressing import IP_ADDRESSING
 from app.content.log_analysis import LOG_ANALYSIS
 from app.content.network_diagnostics import NETWORK_DIAGNOSTICS
+from app.content.network_dns_routing_connections import NETWORK_DNS_ROUTING_CONNECTIONS
 from app.content.network_ports_services import NETWORK_PORTS_SERVICES
 from app.content.package_management import PACKAGE_MANAGEMENT
 from app.content.processes import PROCESSES
 from app.content.scheduled_tasks import SCHEDULED_TASKS
 from app.content.selinux_basics import SELINUX_BASICS
+from app.content.selinux_troubleshooting import SELINUX_TROUBLESHOOTING
 from app.content.ssh_administration import SSH_ADMINISTRATION
+from app.content.ssh_keys_practice import SSH_KEYS_PRACTICE
+from app.content.ssh_secure_configuration import SSH_SECURE_CONFIGURATION
 from app.content.sudo_administration import SUDO_ADMINISTRATION
 from app.content.system_logs import SYSTEM_LOGS
 from app.content.system_services import SYSTEM_SERVICES
 from app.content.systemd_diagnostics import SYSTEMD_DIAGNOSTICS
 from app.content.terminal_navigation import TERMINAL_NAVIGATION
 from app.content.text_files import TEXT_FILES
+from app.content.tls_https_basics import TLS_HTTPS_BASICS
 from app.content.user_management import USER_MANAGEMENT
 from app.content.users_and_groups import USERS_AND_GROUPS
 from app.database import engine
@@ -54,6 +60,12 @@ LESSONS = [
     SSH_ADMINISTRATION,
     FIREWALL_BASICS,
     SELINUX_BASICS,
+    SSH_SECURE_CONFIGURATION,
+    SSH_KEYS_PRACTICE,
+    FIREWALLD_ZONES_SERVICES_PORTS,
+    SELINUX_TROUBLESHOOTING,
+    NETWORK_DNS_ROUTING_CONNECTIONS,
+    TLS_HTTPS_BASICS,
 ]
 
 
