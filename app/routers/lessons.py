@@ -8,8 +8,17 @@ from app.database import get_session
 from app.models import LearningModule, Lesson, Quiz
 
 router = APIRouter(prefix="/lessons", tags=["lessons"])
-
 templates = Jinja2Templates(directory="app/templates")
+
+MODULE_ORDER = {
+    "Podstawy terminala": 1,
+    "Administracja systemem": 2,
+    "Sieć i bezpieczeństwo": 3,
+}
+
+
+def module_sort_key(module: str):
+    return (MODULE_ORDER.get(module, 999), module)
 
 
 def lesson_to_dict(lesson: Lesson, module: LearningModule, quiz: Quiz | None = None):
@@ -42,12 +51,14 @@ def lessons_page(request: Request, session: Session = Depends(get_session)):
             continue
 
         quiz = session.exec(select(Quiz).where(Quiz.lesson_id == lesson.id)).first()
-
         lessons_data.append(lesson_to_dict(lesson, module, quiz))
 
     lessons_data = sorted(lessons_data, key=lambda lesson: lesson["id"])
     levels = sorted({lesson["level"] for lesson in lessons_data})
-    modules = sorted({lesson["module"] for lesson in lessons_data})
+    modules = sorted(
+        {lesson["module"] for lesson in lessons_data},
+        key=module_sort_key,
+    )
 
     return templates.TemplateResponse(
         request=request,
