@@ -19,15 +19,6 @@ def roadmap_page(request: Request):
                 "bez którego trudno przejść do administracji systemem, sieci, "
                 "deploymentu i automatyzacji."
             ),
-            "skills": [
-                "poruszanie się po systemie plików",
-                "tworzenie i usuwanie plików oraz katalogów",
-                "rozumienie uprawnień",
-                "sprawdzanie użytkowników i grup",
-                "analiza procesów",
-                "praca z plikami tekstowymi",
-                "zarządzanie pakietami",
-            ],
             "lessons": [
                 "Gdzie jestem? Komendy pwd, ls i cd",
                 "Pliki i katalogi: mkdir, touch, cp, mv i rm",
@@ -50,18 +41,6 @@ def roadmap_page(request: Request):
                 "Użytkownik uczy się zarządzania usługami, logami, kontami, miejscem na dysku "
                 "oraz zadaniami cyklicznymi."
             ),
-            "skills": [
-                "zarządzanie usługami przez systemd",
-                "sprawdzanie statusu usług",
-                "restartowanie i włączanie usług",
-                "czytanie logów systemowych",
-                "rozumienie podstawowej struktury systemu",
-                "diagnozowanie problemów z usługami",
-                "bezpieczna praca z sudo i kontem root",
-                "zarządzanie użytkownikami i grupami",
-                "analiza zajętości dysku i bezpieczne porządkowanie systemu",
-                "planowanie zadań przez cron i systemd timers",
-            ],
             "lessons": [
                 "Usługi systemowe: systemctl i systemd",
                 "Logi systemowe: journalctl i katalog /var/log",
@@ -87,19 +66,6 @@ def roadmap_page(request: Request):
                 "DNS, portach, zdalnym logowaniu, firewallu, SELinux oraz HTTPS "
                 "w codziennej administracji serwerem Linux."
             ),
-            "skills": [
-                "rozumienie podstaw adresacji IPv4",
-                "podstawy DNS",
-                "sprawdzanie portów i usług sieciowych",
-                "korzystanie z SSH i kluczy",
-                "bezpieczna konfiguracja serwera SSH",
-                "podstawy firewalld",
-                "zarządzanie strefami, usługami i portami firewalld",
-                "rozpoznawanie trybów i kontekstów SELinux",
-                "podstawowa diagnostyka problemów SELinux",
-                "diagnozowanie DNS, routingu i połączeń",
-                "rozumienie podstaw TLS i HTTPS",
-            ],
             "lessons": [
                 "Podstawy adresacji IP",
                 "DNS w praktyce",
@@ -127,15 +93,6 @@ def roadmap_page(request: Request):
                 "Użytkownik poznaje praktyczny proces przejścia od aplikacji lokalnej "
                 "do publicznego wdrożenia dostępnego przez domenę i HTTPS."
             ),
-            "skills": [
-                "przygotowanie katalogów aplikacji",
-                "konfiguracja środowiska Python",
-                "uruchamianie aplikacji przez systemd",
-                "konfiguracja Nginx jako reverse proxy",
-                "podpięcie domeny",
-                "konfiguracja HTTPS",
-                "aktualizacja aplikacji przez Git",
-            ],
             "lessons": [
                 "Aplikacja jako usługa systemowa",
                 "Nginx jako reverse proxy",
@@ -156,15 +113,6 @@ def roadmap_page(request: Request):
                 "Ten etap prowadzi przez konteneryzację, automatyczne testy, CI/CD "
                 "i bardziej powtarzalne wdrożenia."
             ),
-            "skills": [
-                "podstawy kontenerów",
-                "Docker albo Podman",
-                "przygotowanie Dockerfile",
-                "praca z bazą PostgreSQL",
-                "GitHub Actions",
-                "automatyzacja testów",
-                "automatyzacja wdrożeń",
-            ],
             "lessons": [
                 "Podstawy konteneryzacji",
                 "Dockerfile dla aplikacji webowej",
@@ -184,16 +132,6 @@ def roadmap_page(request: Request):
                 "Użytkownik poznaje podstawy monitorowania, health checków, logów, "
                 "metryk, alertów i procedur operacyjnych."
             ),
-            "skills": [
-                "health checki",
-                "analiza logów aplikacji i serwera",
-                "podstawy metryk",
-                "monitoring dostępności",
-                "Prometheus",
-                "Grafana",
-                "alerty",
-                "backup i odtwarzanie",
-            ],
             "lessons": [
                 "Health checki i podstawy obserwowalności",
                 "Monitoring aplikacji",
