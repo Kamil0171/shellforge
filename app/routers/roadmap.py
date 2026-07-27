@@ -86,22 +86,22 @@ def roadmap_page(request: Request):
         {
             "level": "Poziom 4",
             "title": "Deployment aplikacji",
-            "status": "Planowane",
-            "status_type": "planned",
+            "status": "W trakcie",
+            "status_type": "active",
             "description": (
-                "Ten etap pokazuje, jak uruchomić aplikację webową na serwerze. "
-                "Użytkownik poznaje praktyczny proces przejścia od aplikacji lokalnej "
-                "do publicznego wdrożenia dostępnego przez domenę i HTTPS."
+                "Rozwijany etap pokazuje, jak przygotować aplikację Python, uruchomić ją "
+                "jako usługę i udostępnić przez Nginx oraz domenę."
             ),
             "lessons": [
-                "Aplikacja jako usługa systemowa",
+                "Przygotowanie aplikacji do wdrożenia",
+                "Środowisko Python na serwerze",
+                "Uruchamianie aplikacji przez Uvicorn",
+                "Aplikacja jako usługa systemd",
                 "Nginx jako reverse proxy",
-                "Domena i rekordy DNS",
-                "HTTPS z Let's Encrypt i Certbot",
-                "Aktualizacja aplikacji na serwerze",
+                "Domena i rekordy DNS dla aplikacji",
             ],
-            "cta_label": "Planowane",
-            "cta_url": None,
+            "cta_label": "Przejdź do lekcji",
+            "cta_url": "/lessons",
         },
         {
             "level": "Poziom 5",
