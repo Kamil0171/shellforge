@@ -1,5 +1,7 @@
 from fastapi.testclient import TestClient
 
+from app.content.application_dns import APPLICATION_DNS
+from app.content.deployment_preparation import DEPLOYMENT_PREPARATION
 from app.content.disk_space_cleanup import DISK_SPACE_CLEANUP
 from app.content.dns_practice import DNS_PRACTICE
 from app.content.firewall_basics import FIREWALL_BASICS
@@ -8,6 +10,8 @@ from app.content.ip_addressing import IP_ADDRESSING
 from app.content.log_analysis import LOG_ANALYSIS
 from app.content.network_dns_routing_connections import NETWORK_DNS_ROUTING_CONNECTIONS
 from app.content.network_ports_services import NETWORK_PORTS_SERVICES
+from app.content.nginx_reverse_proxy import NGINX_REVERSE_PROXY
+from app.content.python_server_environment import PYTHON_SERVER_ENVIRONMENT
 from app.content.scheduled_tasks import SCHEDULED_TASKS
 from app.content.selinux_basics import SELINUX_BASICS
 from app.content.selinux_troubleshooting import SELINUX_TROUBLESHOOTING
@@ -15,7 +19,9 @@ from app.content.ssh_administration import SSH_ADMINISTRATION
 from app.content.ssh_keys_practice import SSH_KEYS_PRACTICE
 from app.content.ssh_secure_configuration import SSH_SECURE_CONFIGURATION
 from app.content.systemd_diagnostics import SYSTEMD_DIAGNOSTICS
+from app.content.systemd_web_service import SYSTEMD_WEB_SERVICE
 from app.content.tls_https_basics import TLS_HTTPS_BASICS
+from app.content.uvicorn_application import UVICORN_APPLICATION
 from app.database import create_db_and_tables
 from app.main import app
 from app.seed import seed_database
@@ -770,6 +776,49 @@ def test_thirtieth_flashcards_page_returns_200():
     assert "Fiszki do lekcji" in response.text
 
 
+def test_deployment_lesson_pages_return_200():
+    lesson_titles = {
+        31: "Przygotowanie aplikacji do wdrożenia",
+        32: "Środowisko Python na serwerze",
+        33: "Uruchamianie aplikacji przez Uvicorn",
+        34: "Aplikacja jako usługa systemd",
+        35: "Nginx jako reverse proxy",
+        36: "Domena i rekordy DNS dla aplikacji",
+    }
+
+    for lesson_id, title in lesson_titles.items():
+        response = client.get(f"/lessons/{lesson_id}")
+
+        assert response.status_code == 200
+        assert title in response.text
+        assert "Średnio zaawansowany" in response.text
+
+
+def test_deployment_quiz_pages_return_200():
+    quiz_titles = {
+        31: "Quiz: przygotowanie aplikacji do wdrożenia",
+        32: "Quiz: środowisko Python na serwerze",
+        33: "Quiz: uruchamianie aplikacji przez Uvicorn",
+        34: "Quiz: aplikacja jako usługa systemd",
+        35: "Quiz: Nginx jako reverse proxy",
+        36: "Quiz: domena i rekordy DNS dla aplikacji",
+    }
+
+    for quiz_id, title in quiz_titles.items():
+        response = client.get(f"/quiz/{quiz_id}")
+
+        assert response.status_code == 200
+        assert title in response.text
+
+
+def test_deployment_flashcard_pages_return_200():
+    for lesson_id in range(31, 37):
+        response = client.get(f"/flashcards/{lesson_id}")
+
+        assert response.status_code == 200
+        assert "Fiszki do lekcji" in response.text
+
+
 def test_new_administration_lessons_have_required_structure():
     lessons = [
         SYSTEMD_DIAGNOSTICS,
@@ -818,6 +867,173 @@ def test_network_security_lessons_have_required_structure():
         for question in lesson_bundle["quiz"]["questions"]:
             assert len(question["answers"]) == 4
             assert sum(answer[2] for answer in question["answers"]) == 1
+
+
+def test_deployment_lessons_have_required_structure():
+    lessons = [
+        DEPLOYMENT_PREPARATION,
+        PYTHON_SERVER_ENVIRONMENT,
+        UVICORN_APPLICATION,
+        SYSTEMD_WEB_SERVICE,
+        NGINX_REVERSE_PROXY,
+        APPLICATION_DNS,
+    ]
+
+    for lesson_bundle in lessons:
+        lesson = lesson_bundle["lesson"]
+
+        assert lesson_bundle["module"]["title"] == "Deployment aplikacji"
+        assert lesson["level"] == "Średnio zaawansowany"
+        assert lesson["description"]
+        assert lesson["theory"]
+        assert lesson["commands"]
+        assert lesson["practice_task"]
+        assert lesson["common_mistakes"]
+        assert lesson["summary"]
+        assert len(lesson_bundle["quiz"]["questions"]) == 6
+        assert len(lesson_bundle["flashcards"]) == 25
+
+        for question in lesson_bundle["quiz"]["questions"]:
+            assert len(question["answers"]) == 4
+            assert sum(answer[2] for answer in question["answers"]) == 1
+            assert [answer[0] for answer in question["answers"]] == ["a", "b", "c", "d"]
+
+
+def test_deployment_lessons_contain_required_topics():
+    required_topics = {
+        DEPLOYMENT_PREPARATION["lesson"]["title"]: [
+            "app.main:app",
+            "requirements.txt",
+            "/opt/example-app",
+            "python3 --version",
+            "git --version",
+            "df -h",
+            "ss -lntp",
+            "dedykowany użytkownik",
+        ],
+        PYTHON_SERVER_ENVIRONMENT["lesson"]["title"]: [
+            "systemowy python",
+            "venv",
+            "globalnym",
+            "which python",
+            "python -m pip",
+            "pip check",
+            "requirements.txt",
+            "odtwarzal",
+        ],
+        UVICORN_APPLICATION["lesson"]["title"]: [
+            "asgi",
+            "uvicorn",
+            "app.main:app",
+            "--host",
+            "--port",
+            "127.0.0.1:8000",
+            "curl",
+            "ss -lntp",
+            "--reload",
+            "zajęty",
+        ],
+        SYSTEMD_WEB_SERVICE["lesson"]["title"]: [
+            "[unit]",
+            "[service]",
+            "[install]",
+            "user",
+            "group",
+            "workingdirectory",
+            "environmentfile",
+            "execstart",
+            "restart",
+            "daemon-reload",
+            "enable",
+            "start",
+            "status",
+            "journalctl",
+        ],
+        NGINX_REVERSE_PROXY["lesson"]["title"]: [
+            "reverse proxy",
+            "listen 80",
+            "server_name",
+            "location /",
+            "proxy_pass",
+            "proxy_set_header",
+            "host",
+            "x-real-ip",
+            "x-forwarded-for",
+            "x-forwarded-proto",
+            "nginx -t",
+            "reload nginx",
+            "502 bad gateway",
+        ],
+        APPLICATION_DNS["lesson"]["title"]: [
+            "domena główna",
+            "subdomen",
+            "rekord a",
+            "aaaa",
+            "cname",
+            "server_name",
+            "ttl",
+            "cache dns",
+            "/etc/hosts",
+            "dig",
+            "host",
+            "getent hosts",
+            "resolver",
+        ],
+    }
+    lesson_bundles = [
+        DEPLOYMENT_PREPARATION,
+        PYTHON_SERVER_ENVIRONMENT,
+        UVICORN_APPLICATION,
+        SYSTEMD_WEB_SERVICE,
+        NGINX_REVERSE_PROXY,
+        APPLICATION_DNS,
+    ]
+
+    for lesson_bundle in lesson_bundles:
+        lesson = lesson_bundle["lesson"]
+        searchable_content = " ".join(
+            [
+                lesson["description"],
+                lesson["theory"],
+                str(lesson["commands"]),
+                lesson["practice_task"],
+                str(lesson["common_mistakes"]),
+                lesson["summary"],
+            ]
+        ).lower()
+
+        for topic in required_topics[lesson["title"]]:
+            assert topic in searchable_content
+
+
+def test_lessons_page_contains_deployment_module_in_correct_order():
+    response = client.get("/lessons")
+
+    assert response.status_code == 200
+    module_options = [
+        'value="Podstawy terminala"',
+        'value="Administracja systemem"',
+        'value="Sieć i bezpieczeństwo"',
+        'value="Deployment aplikacji"',
+    ]
+    positions = [response.text.index(option) for option in module_options]
+
+    assert positions == sorted(positions)
+
+
+def test_roadmap_shows_deployment_stage_as_in_progress():
+    response = client.get("/roadmap/")
+
+    assert response.status_code == 200
+    assert "Deployment aplikacji" in response.text
+    assert "W trakcie" in response.text
+    assert "Przygotowanie aplikacji do wdrożenia" in response.text
+    assert "Środowisko Python na serwerze" in response.text
+    assert "Uruchamianie aplikacji przez Uvicorn" in response.text
+    assert "Aplikacja jako usługa systemd" in response.text
+    assert "Nginx jako reverse proxy" in response.text
+    assert "Domena i rekordy DNS dla aplikacji" in response.text
+    assert 'href="/lessons"' in response.text
 
 
 def test_roadmap_shows_complete_administration_stage_as_available():

@@ -14,6 +14,7 @@ MODULE_ORDER = {
     "Podstawy terminala": 1,
     "Administracja systemem": 2,
     "Sieć i bezpieczeństwo": 3,
+    "Deployment aplikacji": 4,
 }
 
 

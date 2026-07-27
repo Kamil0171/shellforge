@@ -7,6 +7,9 @@ Ten plik zawiera główne źródła dokumentacji, z których korzystam podczas b
 - Python Documentation  
   https://docs.python.org/3/
 
+- Python Documentation — venv
+  https://docs.python.org/3/library/venv.html
+
 - FastAPI Documentation  
   https://fastapi.tiangolo.com
 
@@ -108,6 +111,9 @@ Ten plik zawiera główne źródła dokumentacji, z których korzystam podczas b
   https://docs.podman.io/en/latest/
 
 ## Deployment i HTTPS
+
+- Uvicorn Documentation
+  https://www.uvicorn.org/
 
 - Nginx Documentation  
   https://nginx.org/en/docs/
