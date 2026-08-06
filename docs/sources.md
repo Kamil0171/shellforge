@@ -121,8 +121,14 @@ Ten plik zawiera główne źródła dokumentacji, z których korzystam podczas b
 - Certbot  
   https://certbot.eff.org
 
+- Let's Encrypt Documentation
+  https://letsencrypt.org/docs/
+
 - OpenSSL Documentation  
   https://docs.openssl.org
+
+- SQLite Documentation
+  https://www.sqlite.org/docs.html
 
 ## Git, GitHub i CI/CD
 

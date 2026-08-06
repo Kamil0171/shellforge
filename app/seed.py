@@ -5,13 +5,18 @@ from sqlmodel import Session, select
 from app.content.admin_directories import ADMIN_DIRECTORIES
 from app.content.application_dns import APPLICATION_DNS
 from app.content.basic_system_diagnostics import BASIC_SYSTEM_DIAGNOSTICS
+from app.content.certbot_https import CERTBOT_HTTPS
+from app.content.deployment_backup_rollback import DEPLOYMENT_BACKUP_ROLLBACK
+from app.content.deployment_checklist import DEPLOYMENT_CHECKLIST
 from app.content.deployment_preparation import DEPLOYMENT_PREPARATION
 from app.content.disk_space_cleanup import DISK_SPACE_CLEANUP
 from app.content.dns_practice import DNS_PRACTICE
+from app.content.environment_secrets import ENVIRONMENT_SECRETS
 from app.content.file_permissions import FILE_PERMISSIONS
 from app.content.files_and_directories import FILES_AND_DIRECTORIES
 from app.content.firewall_basics import FIREWALL_BASICS
 from app.content.firewalld_zones_services_ports import FIREWALLD_ZONES_SERVICES_PORTS
+from app.content.git_application_update import GIT_APPLICATION_UPDATE
 from app.content.ip_addressing import IP_ADDRESSING
 from app.content.log_analysis import LOG_ANALYSIS
 from app.content.network_diagnostics import NETWORK_DIAGNOSTICS
@@ -19,6 +24,7 @@ from app.content.network_dns_routing_connections import NETWORK_DNS_ROUTING_CONN
 from app.content.network_ports_services import NETWORK_PORTS_SERVICES
 from app.content.nginx_reverse_proxy import NGINX_REVERSE_PROXY
 from app.content.package_management import PACKAGE_MANAGEMENT
+from app.content.post_deployment_diagnostics import POST_DEPLOYMENT_DIAGNOSTICS
 from app.content.processes import PROCESSES
 from app.content.python_server_environment import PYTHON_SERVER_ENVIRONMENT
 from app.content.scheduled_tasks import SCHEDULED_TASKS
@@ -78,6 +84,12 @@ LESSONS = [
     SYSTEMD_WEB_SERVICE,
     NGINX_REVERSE_PROXY,
     APPLICATION_DNS,
+    CERTBOT_HTTPS,
+    ENVIRONMENT_SECRETS,
+    GIT_APPLICATION_UPDATE,
+    DEPLOYMENT_BACKUP_ROLLBACK,
+    POST_DEPLOYMENT_DIAGNOSTICS,
+    DEPLOYMENT_CHECKLIST,
 ]
 
 
