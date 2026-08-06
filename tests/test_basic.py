@@ -1,4 +1,7 @@
+from types import SimpleNamespace
+
 from fastapi.testclient import TestClient
+from sqlmodel import Session, select
 
 from app.content.application_dns import APPLICATION_DNS
 from app.content.certbot_https import CERTBOT_HTTPS
@@ -28,14 +31,21 @@ from app.content.systemd_diagnostics import SYSTEMD_DIAGNOSTICS
 from app.content.systemd_web_service import SYSTEMD_WEB_SERVICE
 from app.content.tls_https_basics import TLS_HTTPS_BASICS
 from app.content.uvicorn_application import UVICORN_APPLICATION
-from app.database import create_db_and_tables
+from app.database import create_db_and_tables, engine
 from app.main import app
+from app.models import Lesson
+from app.routers.lessons import get_adjacent_lessons
 from app.seed import LESSONS, seed_database
 
 create_db_and_tables()
 seed_database()
 
 client = TestClient(app)
+
+
+def get_ordered_lessons():
+    with Session(engine) as session:
+        return session.exec(select(Lesson).order_by(Lesson.id)).all()
 
 
 def test_home_page_returns_200():
@@ -57,6 +67,59 @@ def test_lesson_detail_page_returns_200():
 
     assert response.status_code == 200
     assert "Gdzie jestem? Komendy pwd, ls i cd" in response.text
+
+
+def test_first_lesson_navigation():
+    lessons = get_ordered_lessons()
+    first_lesson, next_lesson = lessons[:2]
+
+    response = client.get(f"/lessons/{first_lesson.id}")
+
+    assert response.status_code == 200
+    assert "Poprzednia lekcja" not in response.text
+    assert "Następna lekcja" in response.text
+    assert f'href="/lessons/{next_lesson.id}"' in response.text
+
+
+def test_middle_lesson_navigation():
+    lessons = get_ordered_lessons()
+    middle_index = len(lessons) // 2
+    previous_lesson = lessons[middle_index - 1]
+    lesson = lessons[middle_index]
+    next_lesson = lessons[middle_index + 1]
+
+    response = client.get(f"/lessons/{lesson.id}")
+
+    assert response.status_code == 200
+    assert "Poprzednia lekcja" in response.text
+    assert "Następna lekcja" in response.text
+    assert f'href="/lessons/{previous_lesson.id}"' in response.text
+    assert f'href="/lessons/{next_lesson.id}"' in response.text
+
+
+def test_last_lesson_navigation():
+    lessons = get_ordered_lessons()
+    previous_lesson, last_lesson = lessons[-2:]
+
+    response = client.get(f"/lessons/{last_lesson.id}")
+
+    assert response.status_code == 200
+    assert "Poprzednia lekcja" in response.text
+    assert "Następna lekcja" not in response.text
+    assert f'href="/lessons/{previous_lesson.id}"' in response.text
+
+
+def test_lesson_navigation_uses_ordered_collection_with_non_contiguous_ids():
+    lessons = [
+        SimpleNamespace(id=3),
+        SimpleNamespace(id=11),
+        SimpleNamespace(id=27),
+    ]
+
+    previous_lesson, next_lesson = get_adjacent_lessons(lessons, 11)
+
+    assert previous_lesson is lessons[0]
+    assert next_lesson is lessons[2]
 
 
 def test_quiz_page_returns_200():

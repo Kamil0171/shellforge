@@ -120,6 +120,28 @@
                     </a>
                 </div>
 
+                <nav class="lesson-navigation mt-5 pt-4 border-top" aria-label="Nawigacja między lekcjami">
+                    <div class="lesson-navigation-actions">
+                        {% if previous_lesson %}
+                        <a
+                            href="/lessons/{{ previous_lesson.id }}"
+                            class="btn btn-outline-secondary lesson-navigation-button lesson-navigation-button-previous"
+                        >
+                            ← Poprzednia lekcja
+                        </a>
+                        {% endif %}
+
+                        {% if next_lesson %}
+                        <a
+                            href="/lessons/{{ next_lesson.id }}"
+                            class="btn btn-outline-secondary lesson-navigation-button lesson-navigation-button-next"
+                        >
+                            Następna lekcja →
+                        </a>
+                        {% endif %}
+                    </div>
+                </nav>
+
             </div>
 
             <div class="col-lg-4">
