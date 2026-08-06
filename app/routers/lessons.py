@@ -39,6 +39,29 @@ def lesson_to_dict(lesson: Lesson, module: LearningModule, quiz: Quiz | None = N
     }
 
 
+def get_adjacent_lessons(lessons: list[Lesson], lesson_id: int):
+    current_index = next(
+        (
+            index
+            for index, lesson in enumerate(lessons)
+            if lesson.id == lesson_id
+        ),
+        None,
+    )
+
+    if current_index is None:
+        return None, None
+
+    previous_lesson = lessons[current_index - 1] if current_index > 0 else None
+    next_lesson = (
+        lessons[current_index + 1]
+        if current_index < len(lessons) - 1
+        else None
+    )
+
+    return previous_lesson, next_lesson
+
+
 @router.get("/")
 def lessons_page(request: Request, session: Session = Depends(get_session)):
     lessons = session.exec(select(Lesson)).all()
@@ -78,7 +101,11 @@ def lesson_detail_page(
     lesson_id: int,
     session: Session = Depends(get_session),
 ):
-    lesson = session.get(Lesson, lesson_id)
+    lessons = session.exec(select(Lesson).order_by(Lesson.id)).all()
+    lesson = next(
+        (lesson for lesson in lessons if lesson.id == lesson_id),
+        None,
+    )
 
     if lesson is None:
         raise HTTPException(
@@ -95,11 +122,14 @@ def lesson_detail_page(
         )
 
     quiz = session.exec(select(Quiz).where(Quiz.lesson_id == lesson.id)).first()
+    previous_lesson, next_lesson = get_adjacent_lessons(lessons, lesson_id)
 
     return templates.TemplateResponse(
         request=request,
         name="lesson_detail.html",
         context={
             "lesson": lesson_to_dict(lesson, module, quiz),
+            "previous_lesson": previous_lesson,
+            "next_lesson": next_lesson,
         },
     )
