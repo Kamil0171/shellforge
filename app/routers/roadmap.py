@@ -86,11 +86,11 @@ def roadmap_page(request: Request):
         {
             "level": "Poziom 4",
             "title": "Deployment aplikacji",
-            "status": "W trakcie",
+            "status": "Dostępne",
             "status_type": "active",
             "description": (
-                "Rozwijany etap pokazuje, jak przygotować aplikację Python, uruchomić ją "
-                "jako usługę i udostępnić przez Nginx oraz domenę."
+                "Kompletny etap pokazuje, jak przygotować aplikację Python, uruchomić ją jako usługę, "
+                "udostępnić przez Nginx i HTTPS oraz bezpiecznie aktualizować i diagnozować wdrożenie."
             ),
             "lessons": [
                 "Przygotowanie aplikacji do wdrożenia",
@@ -99,6 +99,12 @@ def roadmap_page(request: Request):
                 "Aplikacja jako usługa systemd",
                 "Nginx jako reverse proxy",
                 "Domena i rekordy DNS dla aplikacji",
+                "HTTPS z Let's Encrypt i Certbot",
+                "Zmienne środowiskowe i sekrety aplikacji",
+                "Aktualizacja aplikacji przez Git",
+                "Backup przed wdrożeniem i podstawowy rollback",
+                "Logi i diagnostyka problemów po wdrożeniu",
+                "Procedura deploymentu i lista kontrolna",
             ],
             "cta_label": "Przejdź do lekcji",
             "cta_url": "/lessons",

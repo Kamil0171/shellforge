@@ -1,16 +1,22 @@
 from fastapi.testclient import TestClient
 
 from app.content.application_dns import APPLICATION_DNS
+from app.content.certbot_https import CERTBOT_HTTPS
+from app.content.deployment_backup_rollback import DEPLOYMENT_BACKUP_ROLLBACK
+from app.content.deployment_checklist import DEPLOYMENT_CHECKLIST
 from app.content.deployment_preparation import DEPLOYMENT_PREPARATION
 from app.content.disk_space_cleanup import DISK_SPACE_CLEANUP
 from app.content.dns_practice import DNS_PRACTICE
+from app.content.environment_secrets import ENVIRONMENT_SECRETS
 from app.content.firewall_basics import FIREWALL_BASICS
 from app.content.firewalld_zones_services_ports import FIREWALLD_ZONES_SERVICES_PORTS
+from app.content.git_application_update import GIT_APPLICATION_UPDATE
 from app.content.ip_addressing import IP_ADDRESSING
 from app.content.log_analysis import LOG_ANALYSIS
 from app.content.network_dns_routing_connections import NETWORK_DNS_ROUTING_CONNECTIONS
 from app.content.network_ports_services import NETWORK_PORTS_SERVICES
 from app.content.nginx_reverse_proxy import NGINX_REVERSE_PROXY
+from app.content.post_deployment_diagnostics import POST_DEPLOYMENT_DIAGNOSTICS
 from app.content.python_server_environment import PYTHON_SERVER_ENVIRONMENT
 from app.content.scheduled_tasks import SCHEDULED_TASKS
 from app.content.selinux_basics import SELINUX_BASICS
@@ -24,7 +30,7 @@ from app.content.tls_https_basics import TLS_HTTPS_BASICS
 from app.content.uvicorn_application import UVICORN_APPLICATION
 from app.database import create_db_and_tables
 from app.main import app
-from app.seed import seed_database
+from app.seed import LESSONS, seed_database
 
 create_db_and_tables()
 seed_database()
@@ -784,6 +790,12 @@ def test_deployment_lesson_pages_return_200():
         34: "Aplikacja jako usługa systemd",
         35: "Nginx jako reverse proxy",
         36: "Domena i rekordy DNS dla aplikacji",
+        37: "HTTPS z Let&#39;s Encrypt i Certbot",
+        38: "Zmienne środowiskowe i sekrety aplikacji",
+        39: "Aktualizacja aplikacji przez Git",
+        40: "Backup przed wdrożeniem i podstawowy rollback",
+        41: "Logi i diagnostyka problemów po wdrożeniu",
+        42: "Procedura deploymentu i lista kontrolna",
     }
 
     for lesson_id, title in lesson_titles.items():
@@ -802,6 +814,12 @@ def test_deployment_quiz_pages_return_200():
         34: "Quiz: aplikacja jako usługa systemd",
         35: "Quiz: Nginx jako reverse proxy",
         36: "Quiz: domena i rekordy DNS dla aplikacji",
+        37: "Quiz: HTTPS z Let&#39;s Encrypt i Certbot",
+        38: "Quiz: zmienne środowiskowe i sekrety aplikacji",
+        39: "Quiz: aktualizacja aplikacji przez Git",
+        40: "Quiz: backup przed wdrożeniem i podstawowy rollback",
+        41: "Quiz: logi i diagnostyka problemów po wdrożeniu",
+        42: "Quiz: procedura deploymentu i lista kontrolna",
     }
 
     for quiz_id, title in quiz_titles.items():
@@ -812,7 +830,7 @@ def test_deployment_quiz_pages_return_200():
 
 
 def test_deployment_flashcard_pages_return_200():
-    for lesson_id in range(31, 37):
+    for lesson_id in range(31, 43):
         response = client.get(f"/flashcards/{lesson_id}")
 
         assert response.status_code == 200
@@ -877,6 +895,12 @@ def test_deployment_lessons_have_required_structure():
         SYSTEMD_WEB_SERVICE,
         NGINX_REVERSE_PROXY,
         APPLICATION_DNS,
+        CERTBOT_HTTPS,
+        ENVIRONMENT_SECRETS,
+        GIT_APPLICATION_UPDATE,
+        DEPLOYMENT_BACKUP_ROLLBACK,
+        POST_DEPLOYMENT_DIAGNOSTICS,
+        DEPLOYMENT_CHECKLIST,
     ]
 
     for lesson_bundle in lessons:
@@ -979,6 +1003,83 @@ def test_deployment_lessons_contain_required_topics():
             "getent hosts",
             "resolver",
         ],
+        CERTBOT_HTTPS["lesson"]["title"]: [
+            "http",
+            "https",
+            "tls",
+            "let's encrypt",
+            "certbot --nginx",
+            "renew --dry-run",
+            "list-timers",
+            "nginx -t",
+            "porty 80 i 443",
+            "firewall",
+            "/etc/letsencrypt",
+        ],
+        ENVIRONMENT_SECRETS["lesson"]["title"]: [
+            "zmienne środowiskowe",
+            "sekret",
+            ".env.example",
+            ".gitignore",
+            "environmentfile",
+            "execstart",
+            "grep -q",
+            "600",
+            "restart",
+            "rotacja",
+        ],
+        GIT_APPLICATION_UPDATE["lesson"]["title"]: [
+            "branch",
+            "working tree",
+            "git fetch",
+            "pull --ff-only",
+            "main",
+            "requirements.txt",
+            "git log -1",
+            "systemctl status",
+            "127.0.0.1:8000",
+            "reset --hard",
+        ],
+        DEPLOYMENT_BACKUP_ROLLBACK["lesson"]["title"]: [
+            "backup",
+            "sqlite",
+            ".backup",
+            "git rev-parse head",
+            "--preserve=mode,ownership",
+            "git switch --detach",
+            "rollback kodu",
+            "rollback danych",
+            "migracji",
+        ],
+        POST_DEPLOYMENT_DIAGNOSTICS["lesson"]["title"]: [
+            "journalctl",
+            "--since",
+            "127.0.0.1:8000",
+            "error.log",
+            "ss -tlnp",
+            "dig",
+            "404",
+            "502",
+            "503",
+            "500",
+            "df -h",
+            "free -h",
+            "uptime",
+        ],
+        DEPLOYMENT_CHECKLIST["lesson"]["title"]: [
+            "ruff check .",
+            "pytest",
+            "git status --short",
+            "git rev-parse head",
+            "pull --ff-only",
+            "backup",
+            "journalctl",
+            "127.0.0.1:8000",
+            "https://app.example.com",
+            "smoke test",
+            "rollback",
+            "ci/cd",
+        ],
     }
     lesson_bundles = [
         DEPLOYMENT_PREPARATION,
@@ -987,6 +1088,12 @@ def test_deployment_lessons_contain_required_topics():
         SYSTEMD_WEB_SERVICE,
         NGINX_REVERSE_PROXY,
         APPLICATION_DNS,
+        CERTBOT_HTTPS,
+        ENVIRONMENT_SECRETS,
+        GIT_APPLICATION_UPDATE,
+        DEPLOYMENT_BACKUP_ROLLBACK,
+        POST_DEPLOYMENT_DIAGNOSTICS,
+        DEPLOYMENT_CHECKLIST,
     ]
 
     for lesson_bundle in lesson_bundles:
@@ -1021,19 +1128,48 @@ def test_lessons_page_contains_deployment_module_in_correct_order():
     assert positions == sorted(positions)
 
 
-def test_roadmap_shows_deployment_stage_as_in_progress():
+def test_roadmap_shows_complete_deployment_stage_as_available():
     response = client.get("/roadmap/")
 
     assert response.status_code == 200
     assert "Deployment aplikacji" in response.text
-    assert "W trakcie" in response.text
+    assert "Dostępne" in response.text
     assert "Przygotowanie aplikacji do wdrożenia" in response.text
     assert "Środowisko Python na serwerze" in response.text
     assert "Uruchamianie aplikacji przez Uvicorn" in response.text
     assert "Aplikacja jako usługa systemd" in response.text
     assert "Nginx jako reverse proxy" in response.text
     assert "Domena i rekordy DNS dla aplikacji" in response.text
+    assert "HTTPS z Let&#39;s Encrypt i Certbot" in response.text
+    assert "Zmienne środowiskowe i sekrety aplikacji" in response.text
+    assert "Aktualizacja aplikacji przez Git" in response.text
+    assert "Backup przed wdrożeniem i podstawowy rollback" in response.text
+    assert "Logi i diagnostyka problemów po wdrożeniu" in response.text
+    assert "Procedura deploymentu i lista kontrolna" in response.text
     assert 'href="/lessons"' in response.text
+
+
+def test_deployment_module_contains_twelve_lessons_in_order():
+    deployment_lessons = [
+        lesson_bundle["lesson"]["title"]
+        for lesson_bundle in LESSONS
+        if lesson_bundle["module"]["title"] == "Deployment aplikacji"
+    ]
+
+    assert deployment_lessons == [
+        "Przygotowanie aplikacji do wdrożenia",
+        "Środowisko Python na serwerze",
+        "Uruchamianie aplikacji przez Uvicorn",
+        "Aplikacja jako usługa systemd",
+        "Nginx jako reverse proxy",
+        "Domena i rekordy DNS dla aplikacji",
+        "HTTPS z Let's Encrypt i Certbot",
+        "Zmienne środowiskowe i sekrety aplikacji",
+        "Aktualizacja aplikacji przez Git",
+        "Backup przed wdrożeniem i podstawowy rollback",
+        "Logi i diagnostyka problemów po wdrożeniu",
+        "Procedura deploymentu i lista kontrolna",
+    ]
 
 
 def test_roadmap_shows_complete_administration_stage_as_available():
