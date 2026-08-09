@@ -858,9 +858,19 @@ body.admin-duty-playing > footer {
     background: #0f172a;
 }
 
-#admin-duty-game {
+.game-stage {
+    position: relative;
     overflow: hidden;
     flex: 1;
+    min-width: 0;
+    min-height: 0;
+    background: #0b1120;
+}
+
+#admin-duty-game {
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
     min-width: 0;
     min-height: 0;
 }
@@ -885,6 +895,163 @@ body.admin-duty-playing > footer {
     background: #1e293b;
     color: #fff;
     box-shadow: none;
+}
+
+.touch-game-instructions {
+    justify-content: center;
+    text-align: center;
+}
+
+.mobile-game-controls {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.mobile-joystick-control,
+.mobile-interaction-button {
+    position: absolute;
+    bottom: max(14px, env(safe-area-inset-bottom));
+    pointer-events: auto;
+}
+
+.mobile-joystick-control {
+    left: max(14px, env(safe-area-inset-left));
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+
+.mobile-joystick {
+    position: relative;
+    width: 108px;
+    height: 108px;
+    border-radius: 50%;
+    touch-action: none;
+}
+
+.mobile-joystick::before {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 94px;
+    height: 94px;
+    border: 2px solid rgba(148, 163, 184, 0.72);
+    border-radius: 50%;
+    content: "";
+    background:
+        linear-gradient(
+            rgba(148, 163, 184, 0.2),
+            rgba(148, 163, 184, 0.2)
+        ) center / 62% 1px no-repeat,
+        linear-gradient(
+            rgba(148, 163, 184, 0.2),
+            rgba(148, 163, 184, 0.2)
+        ) center / 1px 62% no-repeat,
+        rgba(15, 23, 42, 0.68);
+    box-shadow:
+        inset 0 0 0 10px rgba(30, 41, 59, 0.35),
+        0 8px 24px rgba(2, 6, 23, 0.3);
+    transform: translate(-50%, -50%);
+}
+
+.mobile-joystick-thumb {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 1;
+    width: 44px;
+    height: 44px;
+    border: 1px solid rgba(226, 232, 240, 0.85);
+    border-radius: 50%;
+    background: rgba(71, 85, 105, 0.94);
+    box-shadow: 0 4px 14px rgba(2, 6, 23, 0.45);
+    transform: translate(-50%, -50%);
+}
+
+.mobile-interaction-button {
+    right:
+        calc(
+            max(
+                14px,
+                env(safe-area-inset-right)
+            ) + 7px
+        );
+    bottom:
+        calc(
+            max(
+                14px,
+                env(safe-area-inset-bottom)
+            ) + 27px
+        );
+    display: flex;
+    width: 88px;
+    min-height: 88px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    border: 2px solid rgba(96, 165, 250, 0.85);
+    border-radius: 50%;
+    background: rgba(30, 64, 175, 0.78);
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(2, 6, 23, 0.35);
+    touch-action: none;
+}
+
+.mobile-interaction-button:active:not(:disabled) {
+    background: rgba(37, 99, 235, 0.96);
+    transform: scale(0.96);
+}
+
+.mobile-interaction-button:disabled {
+    border-color: rgba(100, 116, 139, 0.65);
+    background: rgba(30, 41, 59, 0.64);
+    color: #94a3b8;
+    opacity: 0.72;
+}
+
+.mobile-interaction-key {
+    font-size: 1.45rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.mobile-control-label {
+    margin-top: 5px;
+    color: #e2e8f0;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.mobile-joystick-control .mobile-control-label {
+    line-height: 12px;
+}
+
+.mobile-orientation-hint {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    z-index: 19;
+    display: none;
+    width: max-content;
+    max-width: calc(100% - 24px);
+    margin: 0;
+    padding: 5px 9px;
+    border: 1px solid rgba(71, 85, 105, 0.75);
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.76);
+    color: #cbd5e1;
+    font-size: 0.66rem;
+    text-align: center;
+    transform: translateX(-50%);
+}
+
+body.admin-duty-touch-controls .interaction-prompt {
+    display: none;
 }
 
 
@@ -1387,6 +1554,105 @@ body.admin-duty-playing > footer {
     font-size: 1.8rem;
 }
 
+body.admin-duty-touch-controls .duty-overlay {
+    --overlay-safe-top:
+        max(
+            12px,
+            env(safe-area-inset-top)
+        );
+    --overlay-safe-right:
+        max(
+            12px,
+            env(safe-area-inset-right)
+        );
+    --overlay-safe-bottom:
+        max(
+            12px,
+            env(safe-area-inset-bottom)
+        );
+    --overlay-safe-left:
+        max(
+            12px,
+            env(safe-area-inset-left)
+        );
+    overflow: hidden;
+    padding:
+        var(--overlay-safe-top)
+        var(--overlay-safe-right)
+        var(--overlay-safe-bottom)
+        var(--overlay-safe-left);
+}
+
+body.admin-duty-touch-controls .duty-window,
+body.admin-duty-touch-controls .help-dialog,
+body.admin-duty-touch-controls .mission-complete {
+    box-sizing: border-box;
+    max-height:
+        calc(
+            100dvh -
+            var(--overlay-safe-top) -
+            var(--overlay-safe-bottom)
+        );
+}
+
+body.admin-duty-touch-controls .duty-window {
+    display: flex;
+    flex-direction: column;
+}
+
+body.admin-duty-touch-controls .duty-window-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+body.admin-duty-touch-controls .duty-window-header > div,
+body.admin-duty-touch-controls .duty-window-header > strong {
+    min-width: 0;
+}
+
+body.admin-duty-touch-controls .duty-window-header > strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+body.admin-duty-touch-controls .close-window {
+    display: grid;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    flex-shrink: 0;
+    place-items: center;
+}
+
+body.admin-duty-touch-controls .terminal-output {
+    overflow-y: auto;
+    height: auto;
+    min-height: 0;
+    flex: 1;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+body.admin-duty-touch-controls .terminal-input-row {
+    flex-shrink: 0;
+}
+
+body.admin-duty-touch-controls .monitoring-content {
+    overflow-y: auto;
+    min-height: 0;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+body.admin-duty-touch-controls .help-dialog,
+body.admin-duty-touch-controls .mission-complete {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
 
 /* MOBILE */
 
@@ -1415,7 +1681,14 @@ body.admin-duty-playing > footer {
     }
 
     .game-frame {
-        min-height: 540px;
+        height: auto;
+        min-height: 0;
+    }
+
+    .game-stage {
+        flex: 0 0 auto;
+        width: 100%;
+        aspect-ratio: 16 / 9;
     }
 
     .mission-sidebar {
@@ -1428,6 +1701,38 @@ body.admin-duty-playing > footer {
 
     .scenario-card {
         min-height: 360px;
+    }
+}
+
+@media (max-width: 1000px) and (orientation: portrait) {
+    .admin-duty-level.prefers-touch-controls .game-stage {
+        height: auto;
+        padding-bottom:
+            calc(
+                132px +
+                env(safe-area-inset-bottom)
+            );
+        aspect-ratio: auto;
+    }
+
+    .admin-duty-level.prefers-touch-controls #admin-duty-game {
+        height: auto;
+        aspect-ratio: 16 / 9;
+    }
+
+    .admin-duty-level.prefers-touch-controls .mobile-game-controls {
+        top: auto;
+        height:
+            calc(
+                132px +
+                env(safe-area-inset-bottom)
+            );
+        border-top: 1px solid rgba(51, 65, 85, 0.9);
+        background: rgba(2, 6, 23, 0.42);
+    }
+
+    .admin-duty-level.prefers-touch-controls .mobile-orientation-hint {
+        display: block;
     }
 }
 
@@ -1517,4 +1822,5 @@ body.admin-duty-playing > footer {
     .editor-actions {
         justify-content: flex-end;
     }
+
 }

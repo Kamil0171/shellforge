@@ -46,9 +46,73 @@
 
             <div class="game-frame">
 
-                <div id="admin-duty-game"></div>
+                <div class="game-stage">
 
-                <div class="game-controls">
+                    <div id="admin-duty-game"></div>
+
+                    <div
+                        id="mobile-game-controls"
+                        class="mobile-game-controls"
+                        aria-label="Sterowanie dotykowe"
+                        hidden
+                    >
+
+                        <div class="mobile-joystick-control">
+
+                            <div
+                                id="mobile-joystick"
+                                class="mobile-joystick"
+                                role="group"
+                                aria-label="Joystick ruchu"
+                            >
+                                <span
+                                    id="mobile-joystick-thumb"
+                                    class="mobile-joystick-thumb"
+                                    aria-hidden="true"
+                                ></span>
+                            </div>
+
+                            <span class="mobile-control-label">
+                                Ruch
+                            </span>
+
+                        </div>
+
+                        <button
+                            id="mobile-interaction-button"
+                            type="button"
+                            class="mobile-interaction-button"
+                            aria-label="Interakcja"
+                            disabled
+                        >
+                            <span
+                                class="mobile-interaction-key"
+                                aria-hidden="true"
+                            >
+                                E
+                            </span>
+
+                            <span class="mobile-control-label">
+                                Interakcja
+                            </span>
+                        </button>
+
+                    </div>
+
+                    <p
+                        id="mobile-orientation-hint"
+                        class="mobile-orientation-hint"
+                        hidden
+                    >
+                        Dla wygodniejszej rozgrywki obróć urządzenie poziomo.
+                    </p>
+
+                </div>
+
+                <div
+                    id="desktop-game-controls"
+                    class="game-controls"
+                >
 
                     <span>
                         <kbd>WASD</kbd>
@@ -65,6 +129,14 @@
                         zamknięcie panelu
                     </span>
 
+                </div>
+
+                <div
+                    id="touch-game-instructions"
+                    class="game-controls touch-game-instructions"
+                    hidden
+                >
+                    Użyj joysticka i przycisku interakcji.
                 </div>
 
             </div>
@@ -184,7 +256,7 @@
     class="interaction-prompt"
     hidden
 >
-    <kbd>E</kbd>
+    <kbd id="interaction-key-hint">E</kbd>
 
     <span id="interaction-text">
         Interakcja
@@ -210,6 +282,7 @@
                 type="button"
                 class="close-window"
                 data-close-overlay
+                aria-label="Zamknij panel terminala"
             >
                 ×
             </button>
@@ -261,6 +334,7 @@
                 type="button"
                 class="close-window"
                 data-close-overlay
+                aria-label="Zamknij panel monitoringu"
             >
                 ×
             </button>
@@ -345,6 +419,7 @@
                 type="button"
                 class="close-window"
                 data-close-overlay
+                aria-label="Zamknij edytor pliku"
             >
                 ×
             </button>

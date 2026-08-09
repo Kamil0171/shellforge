@@ -79,6 +79,64 @@
             "interaction-text",
         );
 
+    const interactionKeyHint =
+        document.getElementById(
+            "interaction-key-hint",
+        );
+
+    const mobileGameControls =
+        document.getElementById(
+            "mobile-game-controls",
+        );
+
+    const mobileJoystick =
+        document.getElementById(
+            "mobile-joystick",
+        );
+
+    const mobileJoystickThumb =
+        document.getElementById(
+            "mobile-joystick-thumb",
+        );
+
+    const mobileInteractionButton =
+        document.getElementById(
+            "mobile-interaction-button",
+        );
+
+    const mobileOrientationHint =
+        document.getElementById(
+            "mobile-orientation-hint",
+        );
+
+    const desktopGameControls =
+        document.getElementById(
+            "desktop-game-controls",
+        );
+
+    const touchGameInstructions =
+        document.getElementById(
+            "touch-game-instructions",
+        );
+
+    const coarsePointerQuery =
+        window.matchMedia(
+            "(pointer: coarse)",
+        );
+
+    const portraitOrientationQuery =
+        window.matchMedia(
+            "(orientation: portrait)",
+        );
+
+    const touchMovement = {
+        x: 0,
+        y: 0,
+    };
+
+    let touchControlsEnabled = false;
+    let activeJoystickPointerId = null;
+
     const terminalOutput =
         document.getElementById(
             "terminal-output",
@@ -129,6 +187,277 @@
             "hints-used",
         );
 
+    function resetTouchMovement() {
+        const pointerId =
+            activeJoystickPointerId;
+
+        activeJoystickPointerId = null;
+        touchMovement.x = 0;
+        touchMovement.y = 0;
+
+        mobileJoystickThumb.style.transform =
+            "translate(-50%, -50%)";
+
+        if (
+            pointerId !== null &&
+            mobileJoystick.hasPointerCapture(
+                pointerId,
+            )
+        ) {
+            mobileJoystick.releasePointerCapture(
+                pointerId,
+            );
+        }
+    }
+
+    function updateTouchMovement(event) {
+        const bounds =
+            mobileJoystick.getBoundingClientRect();
+
+        const centerX =
+            bounds.left + bounds.width / 2;
+
+        const centerY =
+            bounds.top + bounds.height / 2;
+
+        const maxDistance =
+            Math.max(
+                1,
+                Math.min(
+                    bounds.width,
+                    bounds.height,
+                ) * 0.24,
+            );
+
+        let offsetX =
+            event.clientX - centerX;
+
+        let offsetY =
+            event.clientY - centerY;
+
+        const distance =
+            Math.hypot(
+                offsetX,
+                offsetY,
+            );
+
+        if (distance > maxDistance) {
+            const scale =
+                maxDistance / distance;
+
+            offsetX *= scale;
+            offsetY *= scale;
+        }
+
+        const normalizedX =
+            offsetX / maxDistance;
+
+        const normalizedY =
+            offsetY / maxDistance;
+
+        const normalizedDistance =
+            Math.hypot(
+                normalizedX,
+                normalizedY,
+            );
+
+        if (normalizedDistance < 0.16) {
+            touchMovement.x = 0;
+            touchMovement.y = 0;
+        } else {
+            touchMovement.x =
+                normalizedX;
+
+            touchMovement.y =
+                normalizedY;
+        }
+
+        mobileJoystickThumb.style.transform =
+            `translate(calc(-50% + ${offsetX}px), ` +
+            `calc(-50% + ${offsetY}px))`;
+    }
+
+    function syncMobileInteractionButton() {
+        const interactionAvailable =
+            touchControlsEnabled &&
+            Boolean(activeStation) &&
+            !hasOpenOverlay();
+
+        mobileInteractionButton.disabled =
+            !interactionAvailable;
+
+        mobileInteractionButton.setAttribute(
+            "aria-label",
+            activeStation
+                ? `Interakcja: ${activeStation.label}`
+                : "Interakcja — podejdź do stanowiska",
+        );
+    }
+
+    function syncTouchControlPreference() {
+        touchControlsEnabled =
+            navigator.maxTouchPoints > 0 &&
+            coarsePointerQuery.matches;
+
+        root.classList.toggle(
+            "prefers-touch-controls",
+            touchControlsEnabled,
+        );
+
+        document.body.classList.toggle(
+            "admin-duty-touch-controls",
+            touchControlsEnabled,
+        );
+
+        mobileGameControls.hidden =
+            !touchControlsEnabled;
+
+        mobileOrientationHint.hidden =
+            !touchControlsEnabled;
+
+        desktopGameControls.hidden =
+            touchControlsEnabled;
+
+        touchGameInstructions.hidden =
+            !touchControlsEnabled;
+
+        interactionKeyHint.hidden =
+            touchControlsEnabled;
+
+        if (!touchControlsEnabled) {
+            resetTouchMovement();
+        }
+
+        syncMobileInteractionButton();
+
+        window.requestAnimationFrame(
+            () => {
+                if (phaserGame) {
+                    phaserGame.scale.refresh();
+                }
+            },
+        );
+    }
+
+    mobileJoystick.addEventListener(
+        "pointerdown",
+        (event) => {
+            if (
+                !touchControlsEnabled ||
+                activeJoystickPointerId !== null
+            ) {
+                return;
+            }
+
+            event.preventDefault();
+            activeJoystickPointerId =
+                event.pointerId;
+
+            mobileJoystick.setPointerCapture(
+                event.pointerId,
+            );
+
+            updateTouchMovement(event);
+        },
+    );
+
+    mobileJoystick.addEventListener(
+        "pointermove",
+        (event) => {
+            if (
+                event.pointerId !==
+                activeJoystickPointerId
+            ) {
+                return;
+            }
+
+            event.preventDefault();
+            updateTouchMovement(event);
+        },
+    );
+
+    [
+        "pointerup",
+        "pointercancel",
+        "lostpointercapture",
+    ].forEach((eventName) => {
+        mobileJoystick.addEventListener(
+            eventName,
+            (event) => {
+                if (
+                    event.pointerId !==
+                    activeJoystickPointerId
+                ) {
+                    return;
+                }
+
+                if (event.cancelable) {
+                    event.preventDefault();
+                }
+
+                resetTouchMovement();
+            },
+        );
+    });
+
+    mobileInteractionButton.addEventListener(
+        "click",
+        () => {
+            if (activeScene) {
+                activeScene.interactWithActiveStation();
+            }
+        },
+    );
+
+    window.addEventListener(
+        "blur",
+        resetTouchMovement,
+    );
+
+    document.addEventListener(
+        "visibilitychange",
+        () => {
+            if (document.hidden) {
+                resetTouchMovement();
+            }
+        },
+    );
+
+    if (
+        typeof coarsePointerQuery.addEventListener ===
+        "function"
+    ) {
+        coarsePointerQuery.addEventListener(
+            "change",
+            syncTouchControlPreference,
+        );
+    } else {
+        coarsePointerQuery.addListener(
+            syncTouchControlPreference,
+        );
+    }
+
+    function handleOrientationChange() {
+        resetTouchMovement();
+        refreshGameLayout();
+    }
+
+    if (
+        typeof portraitOrientationQuery.addEventListener ===
+        "function"
+    ) {
+        portraitOrientationQuery.addEventListener(
+            "change",
+            handleOrientationChange,
+        );
+    } else {
+        portraitOrientationQuery.addListener(
+            handleOrientationChange,
+        );
+    }
+
+    syncTouchControlPreference();
+
     function gameKeyboardEnabled(
         enabled,
     ) {
@@ -151,6 +480,8 @@
     }
 
     function openOverlay(element) {
+        resetTouchMovement();
+
         element.classList.add(
             "is-open",
         );
@@ -163,6 +494,8 @@
         gameKeyboardEnabled(
             false,
         );
+
+        syncMobileInteractionButton();
 
         if (
             element === terminalOverlay
@@ -197,6 +530,8 @@
             "true",
         );
 
+        syncMobileInteractionButton();
+
         window.setTimeout(
             () => {
                 if (!hasOpenOverlay()) {
@@ -210,6 +545,8 @@
     }
 
     function closeAllOverlays() {
+        resetTouchMovement();
+
         document
             .querySelectorAll(
                 ".duty-overlay.is-open",
@@ -228,6 +565,8 @@
         gameKeyboardEnabled(
             true,
         );
+
+        syncMobileInteractionButton();
     }
 
     document
@@ -1887,6 +2226,9 @@
         }
 
         updateStations() {
+            const previousActiveStation =
+                activeStation;
+
             activeStation = null;
 
             for (
@@ -1923,15 +2265,32 @@
                 interactionPrompt.hidden =
                     true;
             }
+
+            if (
+                activeStation !==
+                previousActiveStation
+            ) {
+                syncMobileInteractionButton();
+            }
         }
 
         handleInteraction() {
             if (
-                !activeStation ||
                 !Phaser.Input.Keyboard
                     .JustDown(
                         this.keys.interact,
                     )
+            ) {
+                return;
+            }
+
+            this.interactWithActiveStation();
+        }
+
+        interactWithActiveStation() {
+            if (
+                !activeStation ||
+                hasOpenOverlay()
             ) {
                 return;
             }
@@ -1983,41 +2342,32 @@
                     0,
                 );
 
-            if (
+            const horizontalInput =
                 this.cursors.left.isDown ||
                 this.keys.left.isDown
-            ) {
-                this.player.body
-                    .setVelocityX(
-                        -speed,
-                    );
-            } else if (
-                this.cursors.right.isDown ||
-                this.keys.right.isDown
-            ) {
-                this.player.body
-                    .setVelocityX(
-                        speed,
-                    );
-            }
+                    ? -1
+                    : this.cursors.right.isDown ||
+                        this.keys.right.isDown
+                      ? 1
+                      : touchControlsEnabled
+                        ? touchMovement.x
+                        : 0;
 
-            if (
+            const verticalInput =
                 this.cursors.up.isDown ||
                 this.keys.up.isDown
-            ) {
-                this.player.body
-                    .setVelocityY(
-                        -speed,
-                    );
-            } else if (
-                this.cursors.down.isDown ||
-                this.keys.down.isDown
-            ) {
-                this.player.body
-                    .setVelocityY(
-                        speed,
-                    );
-            }
+                    ? -1
+                    : this.cursors.down.isDown ||
+                        this.keys.down.isDown
+                      ? 1
+                      : touchControlsEnabled
+                        ? touchMovement.y
+                        : 0;
+
+            this.player.body.setVelocity(
+                horizontalInput,
+                verticalInput,
+            );
 
             const velocity =
                 this.player.body.velocity;
@@ -2084,15 +2434,17 @@
             });
     }
 
+    function refreshGameLayout() {
+        syncNavbarHeight();
+
+        if (phaserGame) {
+            phaserGame.scale.refresh();
+        }
+    }
+
     window.addEventListener(
         "resize",
-        () => {
-            syncNavbarHeight();
-
-            if (phaserGame) {
-                phaserGame.scale.refresh();
-            }
-        },
+        refreshGameLayout,
     );
 
     renderWelcome();

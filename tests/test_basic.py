@@ -1635,6 +1635,22 @@ def test_admin_duty_valid_session_opens_scenario(admin_duty_session):
     assert "Cele incydentu" in response.text
 
 
+def test_admin_duty_scenario_has_desktop_and_touch_controls(
+    admin_duty_session,
+):
+    response = client.get(admin_duty_session["redirect_url"])
+
+    assert response.status_code == 200
+    assert 'id="desktop-game-controls"' in response.text
+    assert "WASD" in response.text
+    assert 'id="mobile-game-controls"' in response.text
+    assert 'id="mobile-joystick"' in response.text
+    assert 'id="mobile-interaction-button"' in response.text
+    assert "Użyj joysticka i przycisku interakcji." in response.text
+    assert "Dla wygodniejszej rozgrywki obróć urządzenie poziomo." in response.text
+    assert 'aria-label="Zamknij panel terminala"' in response.text
+
+
 def test_admin_duty_command_returns_objective_progress(admin_duty_session):
     response = client.post(
         "/admin-duty/api/command",
