@@ -1,105 +1,71 @@
 # Roadmapa projektu ShellForge
 
-ShellForge jest edukacyjną aplikacją webową do praktycznej nauki Linuxa, administracji systemami i podstaw DevOps.
+ShellForge jest polskojęzyczną platformą do praktycznej nauki Linuxa, administracji systemami, sieci i bezpieczeństwa, wdrażania aplikacji oraz podstaw DevOps.
 
-Projekt rozwijany jest etapami, bez overengineeringu. Najpierw powstaje proste MVP, a później kolejne funkcje związane z bazą danych, deploymentem, konteneryzacją, CI/CD i monitoringiem.
+Roadmapa opisuje aktualny stan i kierunek rozwoju projektu. Sekcja przyszłych pomysłów nie jest zobowiązaniem do wdrożenia wszystkich wymienionych elementów i nie określa terminów realizacji.
 
-## Etap 1 — MVP lokalnie
+## Zrealizowane
 
-Cel: uruchomić lokalną aplikację edukacyjną z podstawowymi lekcjami i quizami.
+### Fundament platformy
 
-Zakres:
+- aplikacja FastAPI z widokami Jinja2;
+- konfiguracja SQLite i modele SQLModel;
+- synchronizacja treści edukacyjnych podczas startu aplikacji;
+- responsywny interfejs oparty na Bootstrapie, CSS i JavaScript;
+- publiczne wdrożenie pod domeną `shellforge.pl` z HTTPS.
 
-- FastAPI
-- Jinja2
-- Bootstrap
-- SQLite
-- SQLModel
-- prosta strona główna
-- lista lekcji
-- widok lekcji
-- prosty quiz
-- podstawowe testy pytest
+### Nauka i utrwalanie
 
-Pierwszy milestone:
+- lekcje z teorią, komendami, zadaniami i podsumowaniem;
+- quizy sprawdzające praktyczne zrozumienie materiału;
+- fiszki do szybkiej powtórki;
+- panel z podsumowaniem zawartości;
+- ścieżka nauki;
+- wyszukiwanie i filtrowanie lekcji;
+- podział listy lekcji na moduły tematyczne;
+- nawigacja do poprzedniej i następnej lekcji;
+- materiały z podstaw terminala, administracji systemem, sieci i bezpieczeństwa oraz wdrażania aplikacji.
 
-- działająca strona główna
-- jedna lekcja
-- jeden quiz
-- zapis danych w SQLite
+### Praktyka
 
-## Etap 2 — Baza danych i treści edukacyjne
+- Symulator „Dyżur administratora”;
+- scenariusz INC-001 „502 po wdrożeniu”;
+- interaktywne środowisko scenariusza wykorzystujące Phaser 3;
+- symulowany terminal i działania administracyjne;
+- cele incydentu, postęp i punktacja;
+- stopniowane podpowiedzi i pełne rozwiązanie;
+- limity wejścia, wygasanie sesji oraz kontrola liczby aktywnych sesji.
 
-Cel: przenieść lekcje i quizy z tymczasowych struktur danych do SQLite.
+### Jakość i utrzymanie repozytorium
 
-Zakres:
+- testy automatyczne w pytest;
+- kontrola jakości kodu przez Ruff;
+- GitHub Actions uruchamiający testy i kontrolę jakości kodu;
+- Dependabot sprawdzający aktualizacje zależności Pythona i akcji GitHub.
 
-- modele `Module`, `Lesson`, `QuizQuestion`, `QuizAnswer`
-- seed danych
-- podstawowa obsługa bazy
-- testy modeli i tras
-- pierwsze lekcje Linux
+## Aktualny kierunek
 
-## Etap 3 — Deployment na Rocky Linux 9 VPS
+- dalszy rozwój treści z obszaru DevOps i automatyzacji;
+- rozwijanie materiałów opartych na praktycznych problemach administracyjnych;
+- doskonalenie spójności między lekcjami, utrwalaniem wiedzy i Symulatorem;
+- utrzymanie jakości, czytelności i aktualności dokumentacji projektu.
 
-Cel: uruchomić aplikację na serwerze VPS jako usługę.
+## Pomysły na przyszłość
 
-Zakres:
+Poniższe kierunki są pomysłami do rozważenia, a nie deklaracją terminów lub kompletnego zakresu wdrożenia:
 
-- SSH
-- użytkownik deploy
-- Python virtualenv
-- systemd service
-- Nginx reverse proxy
-- firewalld
-- domena
-- HTTPS przez Certbot
+- kolejne scenariusze incydentów administracyjnych;
+- dalsze materiały o automatyzacji testów i wdrożeń;
+- praktyczne podstawy konteneryzacji;
+- monitorowanie aplikacji i usług;
+- metryki, alerty i analiza logów;
+- procedury utrzymaniowe, kopie zapasowe i odtwarzanie;
+- rozwijanie narzędzi do praktycznego sprawdzania wiedzy.
 
-## Etap 4 — Docker/Podman
+## Zasady rozwoju
 
-Cel: uruchomić ShellForge w kontenerze.
-
-Zakres:
-
-- Dockerfile
-- docker-compose albo podman-compose
-- wolumeny
-- sieci kontenerowe
-- podstawy image build
-- różnice Docker vs Podman
-
-## Etap 5 — CI/CD
-
-Cel: zautomatyzować testy i deployment.
-
-Zakres:
-
-- GitHub Actions
-- uruchamianie testów
-- linting
-- automatyczny deployment na VPS
-
-## Etap 6 — Monitoring
-
-Cel: nauczyć się podstaw obserwowalności aplikacji i systemu.
-
-Zakres:
-
-- logi aplikacji
-- logi systemd
-- Prometheus
-- Grafana
-- Loki
-- alerty
-
-## Etap 7 — Funkcje zaawansowane
-
-Cel: rozbudować ShellForge o praktyczne środowisko ćwiczeń.
-
-Zakres:
-
-- symulator terminala
-- WebSockety
-- sandboxy Linux
-- izolowane kontenery
-- zadania praktyczne sprawdzane automatycznie
+- najpierw prostota i wartość edukacyjna;
+- małe, logiczne zmiany łatwe do sprawdzenia;
+- funkcje oparte na rzeczywistych potrzebach użytkownika;
+- brak fikcyjnych terminów i obietnic dotyczących pomysłów przyszłych;
+- dokumentacja aktualizowana razem z rzeczywistym stanem projektu.
