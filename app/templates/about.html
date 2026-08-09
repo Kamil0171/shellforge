@@ -4,9 +4,9 @@
 
 {% block content %}
 
-<section class="about-hero py-5 bg-light border-bottom">
+<section class="about-hero sf-page-hero border-bottom">
     <div class="container">
-        <span class="badge text-bg-dark mb-3">Czym jest ShellForge?</span>
+        <span class="sf-eyebrow mb-3">Czym jest ShellForge?</span>
 
         <div class="row">
             <div class="col-lg-9">
@@ -16,64 +16,111 @@
 
                 <p class="lead text-muted mb-0">
                     ShellForge to polska aplikacja edukacyjna tworzona z myślą o osobach,
-                    które chcą uczyć się przez praktykę: krótkie lekcje, komendy, zadania,
-                    quizy i fiszki.
+                    które chcą uczyć się przez praktykę — od lekcji i powtórek po samodzielne
+                    diagnozowanie incydentów w bezpiecznym Symulatorze.
                 </p>
             </div>
         </div>
     </div>
 </section>
 
-<section class="py-5">
+<section class="sf-section">
     <div class="container">
 
-        <div class="row g-4 mb-5">
-            <div class="col-lg-7">
-                <div class="card shadow-sm about-card h-100">
+        <div class="about-section-heading mb-4">
+            <h2 class="fw-bold">Trzy filary ShellForge</h2>
+            <p class="text-muted mb-0">
+                Wiedza, regularna powtórka i praktyczne rozwiązywanie problemów tworzą jeden spójny proces nauki.
+            </p>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow-sm about-card about-pillar-card h-100">
                     <div class="card-body">
-                        <h2 class="fw-bold h4 mb-3">
-                            Idea projektu
-                        </h2>
-
-                        <p class="text-muted">
-                            ShellForge pomaga stopniowo budować praktyczne umiejętności związane
-                            z pracą w terminalu, administracją systemami Linux oraz podstawami DevOps.
-                            Celem aplikacji nie jest samo zapamiętywanie poleceń, ale zrozumienie,
-                            kiedy i dlaczego używa się konkretnych narzędzi.
-                        </p>
-
+                        <div class="about-pillar-header">
+                            <span class="about-pillar-number">01</span>
+                            <span class="about-pillar-icon" aria-hidden="true">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/>
+                                    <path d="M4 5.5v16"/>
+                                    <path d="M8 7h8"/>
+                                </svg>
+                            </span>
+                        </div>
+                        <h2 class="fw-bold h4 mt-2 mb-3">Nauka</h2>
                         <p class="text-muted mb-0">
-                            Materiały są układane w logiczną ścieżkę nauki — od podstaw pracy
-                            z plikami, procesami i uprawnieniami, przez administrację systemem,
-                            aż po sieć, deployment aplikacji, automatyzację i monitoring.
+                            Lekcje prowadzą od podstaw Linuxa do administracji systemami, sieci,
+                            deploymentu aplikacji i zagadnień DevOps.
                         </p>
+                        <span class="about-pillar-meta">Lekcje</span>
                     </div>
                 </div>
             </div>
 
-            <div class="col-lg-5">
-                <div class="card shadow-sm about-card h-100">
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow-sm about-card about-pillar-card h-100">
                     <div class="card-body">
-                        <h2 class="fw-bold h4 mb-3">
-                            Jak działa nauka?
-                        </h2>
-
-                        <div class="about-highlight">
-                            teoria → komendy → zadanie → quiz → fiszki
+                        <div class="about-pillar-header">
+                            <span class="about-pillar-number">02</span>
+                            <span class="about-pillar-icon" aria-hidden="true">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M8 4h8"/>
+                                    <path d="M9 2v4"/>
+                                    <path d="M15 2v4"/>
+                                    <rect x="4" y="5" width="16" height="15" rx="2"/>
+                                    <path d="m8 12 2 2 5-5"/>
+                                </svg>
+                            </span>
                         </div>
-
-                        <p class="text-muted">
-                            Każda lekcja skupia się na jednym konkretnym zagadnieniu.
-                            Najpierw poznajesz krótkie wyjaśnienie, następnie widzisz przykłady
-                            komend i wykonujesz zadanie praktyczne.
-                        </p>
-
+                        <h2 class="fw-bold h4 mt-2 mb-3">Utrwalanie</h2>
                         <p class="text-muted mb-0">
-                            Quiz pozwala sprawdzić zrozumienie materiału, a fiszki pomagają
-                            szybko powtarzać najważniejsze pojęcia, komendy i zależności.
+                            Quizy sprawdzają zrozumienie materiału, a fiszki pomagają regularnie
+                            powtarzać najważniejsze pojęcia, komendy i zależności.
                         </p>
+                        <span class="about-pillar-meta">Quizy + fiszki</span>
                     </div>
                 </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow-sm about-card about-pillar-card about-pillar-practice h-100">
+                    <div class="card-body">
+                        <div class="about-pillar-header">
+                            <span class="about-pillar-number">03</span>
+                            <span class="about-pillar-icon" aria-hidden="true">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="5" width="18" height="14" rx="2"/>
+                                    <path d="m7 10 2 2-2 2"/>
+                                    <path d="M12 14h4"/>
+                                </svg>
+                            </span>
+                        </div>
+                        <h2 class="fw-bold h4 mt-2 mb-3">Praktyka</h2>
+                        <p class="text-muted mb-0">
+                            Symulator „Dyżur administratora” pozwala rozwiązywać symulowane
+                            incydenty administracyjne i ćwiczyć samodzielną diagnostykę.
+                        </p>
+                        <span class="about-pillar-meta">Interaktywny Symulator</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="about-simulator-notice mb-5" role="note">
+            <span class="about-notice-icon" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 3 5 6v5c0 4.6 2.8 7.4 7 9 4.2-1.6 7-4.4 7-9V6z"/>
+                    <path d="m9 12 2 2 4-4"/>
+                </svg>
+            </span>
+            <div>
+                <span class="about-notice-label">Bezpieczne środowisko</span>
+                <h2 class="h5 fw-bold mb-2">Polecenia pozostają w symulacji</h2>
+                <p class="mb-0">
+                    Polecenia wykonywane w Symulatorze działają wyłącznie w przygotowanym środowisku
+                    symulacyjnym i nie są wykonywane na rzeczywistym serwerze.
+                </p>
             </div>
         </div>
 
@@ -415,25 +462,32 @@
         <div class="card shadow-sm about-card about-start-card">
             <div class="card-body">
                 <div class="row align-items-center g-4">
-                    <div class="col-lg-8">
+                    <div class="col-lg-7">
                         <h2 class="fw-bold h4 mb-3">
-                            Zacznij od pierwszych lekcji albo przejdź do roadmapy
+                            Zacznij od lekcji albo sprawdź wiedzę w praktyce
                         </h2>
 
                         <p class="text-muted mb-lg-0">
-                            Możesz przechodzić przez materiał po kolei albo wracać do wybranych tematów,
-                            gdy potrzebujesz powtórki. Roadmapa pokazuje sugerowaną kolejność nauki.
+                            Możesz przechodzić przez materiał po kolei, korzystać z roadmapy albo
+                            rozwiązać incydent w Symulatorze, gdy chcesz sprawdzić swoje umiejętności.
                         </p>
                     </div>
 
-                    <div class="col-lg-4">
-                        <div class="d-grid gap-2">
-                            <a href="/lessons" class="btn btn-dark">
-                                Przejdź do lekcji
-                            </a>
+                    <div class="col-lg-5">
+                        <div class="about-start-actions">
+                            <div class="about-learning-actions">
+                                <a href="/lessons" class="btn btn-dark">
+                                    Przejdź do lekcji
+                                </a>
 
-                            <a href="/roadmap/" class="btn btn-shell-secondary">
-                                Zobacz ścieżkę nauki
+                                <a href="/roadmap/" class="btn btn-shell-secondary">
+                                    Zobacz ścieżkę nauki
+                                </a>
+                            </div>
+
+                            <a href="/admin-duty/" class="about-practice-link">
+                                <span>Praktyka</span>
+                                <strong>Uruchom Symulator <span aria-hidden="true">→</span></strong>
                             </a>
                         </div>
                     </div>

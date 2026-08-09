@@ -17,6 +17,27 @@ MODULE_ORDER = {
     "Deployment aplikacji": 4,
 }
 
+MODULE_DESCRIPTIONS = {
+    "Podstawy terminala": (
+        "Poznaj najważniejsze polecenia i podstawowe zasady pracy w terminalu "
+        "Linux. Nauczysz się poruszać po systemie plików, zarządzać plikami "
+        "i katalogami oraz wykonywać codzienne operacje w wierszu poleceń."
+    ),
+    "Administracja systemem": (
+        "Naucz się zarządzać usługami, użytkownikami, procesami i logami oraz "
+        "diagnozować typowe problemy występujące w systemie Linux."
+    ),
+    "Sieć i bezpieczeństwo": (
+        "Poznaj podstawy konfiguracji sieci, DNS, SSH, firewalla i SELinux "
+        "oraz naucz się diagnozować problemy z łącznością i dostępem do usług."
+    ),
+    "Deployment aplikacji": (
+        "Przejdź przez proces przygotowania i wdrożenia aplikacji na serwer "
+        "Linux — od środowiska Python i Uvicorna po systemd, Nginx, DNS, "
+        "HTTPS, aktualizacje i diagnostykę po wdrożeniu."
+    ),
+}
+
 
 def module_sort_key(module: str):
     return (MODULE_ORDER.get(module, 999), module)
@@ -67,6 +88,7 @@ def lessons_page(request: Request, session: Session = Depends(get_session)):
     lessons = session.exec(select(Lesson)).all()
 
     lessons_data = []
+    module_descriptions = {}
 
     for lesson in lessons:
         module = session.get(LearningModule, lesson.module_id)
@@ -74,6 +96,7 @@ def lessons_page(request: Request, session: Session = Depends(get_session)):
         if module is None:
             continue
 
+        module_descriptions[module.title] = module.description
         quiz = session.exec(select(Quiz).where(Quiz.lesson_id == lesson.id)).first()
         lessons_data.append(lesson_to_dict(lesson, module, quiz))
 
@@ -83,6 +106,22 @@ def lessons_page(request: Request, session: Session = Depends(get_session)):
         {lesson["module"] for lesson in lessons_data},
         key=module_sort_key,
     )
+    module_sections = [
+        {
+            "number": index,
+            "title": module,
+            "description": MODULE_DESCRIPTIONS.get(
+                module,
+                module_descriptions[module],
+            ),
+            "lessons": [
+                lesson
+                for lesson in lessons_data
+                if lesson["module"] == module
+            ],
+        }
+        for index, module in enumerate(modules, start=1)
+    ]
 
     return templates.TemplateResponse(
         request=request,
@@ -91,6 +130,7 @@ def lessons_page(request: Request, session: Session = Depends(get_session)):
             "lessons": lessons_data,
             "levels": levels,
             "modules": modules,
+            "module_sections": module_sections,
         },
     )
 

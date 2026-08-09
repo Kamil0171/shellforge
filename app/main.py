@@ -1,11 +1,13 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.admin_duty.router import router as admin_duty_router
 from app.config import APP_DESCRIPTION, APP_NAME, APP_VERSION
 from app.database import create_db_and_tables
 from app.routers import (
@@ -40,6 +42,19 @@ app = FastAPI(
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
+@app.exception_handler(RequestValidationError)
+async def custom_validation_exception_handler(
+    request: Request,
+    exc: RequestValidationError,
+):
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": "Nieprawidłowe dane żądania.",
+        },
+    )
+
+
 @app.exception_handler(StarletteHTTPException)
 async def custom_http_exception_handler(
     request: Request,
@@ -67,3 +82,4 @@ app.include_router(flashcards.router)
 app.include_router(health.router)
 app.include_router(roadmap.router)
 app.include_router(about.router)
+app.include_router(admin_duty_router)

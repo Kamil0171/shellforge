@@ -1,8 +1,19 @@
+import re
+from datetime import timedelta
+from html import unescape
 from types import SimpleNamespace
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 
+import app.admin_duty.router as admin_duty_router_module
+from app.admin_duty.router import sessions as admin_duty_sessions
+from app.admin_duty.scenarios.incident_001 import (
+    BROKEN_EXEC_START,
+    CORRECT_EXEC_START,
+    SERVICE_FILE,
+)
 from app.content.application_dns import APPLICATION_DNS
 from app.content.certbot_https import CERTBOT_HTTPS
 from app.content.deployment_backup_rollback import DEPLOYMENT_BACKUP_ROLLBACK
@@ -43,6 +54,41 @@ seed_database()
 client = TestClient(app)
 
 
+def start_admin_duty_session():
+    response = client.post(
+        "/admin-duty/api/start",
+        json={"scenario_id": "INC-001"},
+    )
+
+    assert response.status_code == 200
+
+    return response.json()
+
+
+def run_admin_duty_command(session_id, command):
+    response = client.post(
+        "/admin-duty/api/command",
+        json={
+            "session_id": session_id,
+            "command": command,
+        },
+    )
+
+    assert response.status_code == 200
+
+    return response.json()
+
+
+@pytest.fixture
+def admin_duty_session():
+    admin_duty_sessions.clear()
+    session = start_admin_duty_session()
+
+    yield session
+
+    admin_duty_sessions.clear()
+
+
 def get_ordered_lessons():
     with Session(engine) as session:
         return session.exec(select(Lesson).order_by(Lesson.id)).all()
@@ -53,6 +99,21 @@ def test_home_page_returns_200():
 
     assert response.status_code == 200
     assert "ShellForge" in response.text
+    assert "Rozwiąż incydent" in response.text
+    assert "Sprawdź się w praktyce" in response.text
+    assert "502 po wdrożeniu" in response.text
+    assert "Linux · systemd · diagnostyka" in response.text
+    assert "Uvicorn" not in response.text
+    assert 'href="/admin-duty/"' in response.text
+
+
+def test_shared_navigation_uses_simulator_module_name():
+    response = client.get("/nieistniejaca-strona")
+
+    assert response.status_code == 404
+    assert 'href="/admin-duty/"' in response.text
+    assert "Symulator" in response.text
+    assert "Dyżur administratora" not in response.text
 
 
 def test_lessons_page_returns_200():
@@ -60,6 +121,8 @@ def test_lessons_page_returns_200():
 
     assert response.status_code == 200
     assert "Lekcje ShellForge" in response.text
+    assert "Gotowy na praktykę?" in response.text
+    assert "Przejdź do Symulatora" in response.text
 
 
 def test_lesson_detail_page_returns_200():
@@ -213,6 +276,8 @@ def test_roadmap_page_returns_200():
 
     assert response.status_code == 200
     assert "Ścieżka nauki" in response.text
+    assert "Praktyka poza ścieżką" in response.text
+    assert "Przejdź do Symulatora" in response.text
 
 
 def test_custom_404_page_returns_404():
@@ -227,6 +292,13 @@ def test_about_page_returns_200():
 
     assert response.status_code == 200
     assert "Czym jest ShellForge?" in response.text
+    assert "Trzy filary ShellForge" in response.text
+    assert ">Nauka<" in response.text
+    assert ">Utrwalanie<" in response.text
+    assert ">Praktyka<" in response.text
+    assert "Polecenia wykonywane w Symulatorze działają wyłącznie" in response.text
+    assert "nie są wykonywane na rzeczywistym serwerze" in response.text
+    assert "rzeczywistym serwerze ShellForge" not in response.text
 
 
 def test_third_lesson_detail_page_returns_200():
@@ -1268,9 +1340,672 @@ def test_lessons_page_contains_filtering_ui():
     assert "lesson-filters-reset" in response.text
 
 
-def test_lessons_page_contains_learning_block_summary():
+def test_lessons_page_groups_lessons_into_described_module_sections():
     response = client.get("/lessons")
 
     assert response.status_code == 200
-    assert "Podstawy Linuxa i terminala" in response.text
-    assert "Pierwszy blok obejmuje podstawy Linuxa" in response.text
+    assert response.text.count("data-module-section") == 4
+
+    section_markers = [
+        'id="lesson-module-1-heading"',
+        'id="lesson-module-2-heading"',
+        'id="lesson-module-3-heading"',
+        'id="lesson-module-4-heading"',
+    ]
+    positions = [response.text.index(marker) for marker in section_markers]
+    rendered_lesson_titles = [
+        unescape(title)
+        for title in re.findall(
+            r'data-title="([^"]+)"',
+            response.text,
+        )
+    ]
+    expected_lesson_titles = [
+        lesson_bundle["lesson"]["title"]
+        for lesson_bundle in LESSONS
+    ]
+
+    assert positions == sorted(positions)
+    assert rendered_lesson_titles == expected_lesson_titles
+    assert all(f"MODUŁ {number}" in response.text for number in range(1, 5))
+    assert "Podstawy Linuxa i terminala" not in response.text
+    assert "Ten blok prowadzi od pierwszych komend terminala" not in response.text
+    assert "Pierwszy blok obejmuje podstawy Linuxa" not in response.text
+    assert "Materiały uporządkowane w praktyczne moduły tematyczne." in response.text
+    assert (
+        "Poznaj najważniejsze polecenia i podstawowe zasady pracy w terminalu "
+        "Linux. Nauczysz się poruszać po systemie plików, zarządzać plikami "
+        "i katalogami oraz wykonywać codzienne operacje w wierszu poleceń."
+        in response.text
+    )
+    assert (
+        "Naucz się zarządzać usługami, użytkownikami, procesami i logami oraz "
+        "diagnozować typowe problemy występujące w systemie Linux."
+        in response.text
+    )
+    assert (
+        "Poznaj podstawy konfiguracji sieci, DNS, SSH, firewalla i SELinux "
+        "oraz naucz się diagnozować problemy z łącznością i dostępem do usług."
+        in response.text
+    )
+    assert (
+        "Przejdź przez proces przygotowania i wdrożenia aplikacji na serwer "
+        "Linux — od środowiska Python i Uvicorna po systemd, Nginx, DNS, "
+        "HTTPS, aktualizacje i diagnostykę po wdrożeniu."
+        in response.text
+    )
+
+
+def test_admin_duty_page_returns_200():
+    response = client.get("/admin-duty/")
+
+    assert response.status_code == 200
+    assert "Symulator" in response.text
+    assert "Dyżur administratora" in response.text
+    assert "Polecenia wykonywane w Symulatorze działają wyłącznie" in response.text
+    assert "wykonywane na rzeczywistym serwerze" in response.text
+    assert "Podstawowy" in response.text
+    assert "10–15 min" not in response.text
+    assert "Od objawów do rozwiązania" in response.text
+    assert "Punktacja i samodzielność" in response.text
+    assert "Podpowiedzi i rozwiązanie" in response.text
+    assert "Symulowane środowisko" in response.text
+    assert "Kolejne scenariusze" not in response.text
+    assert "Uvicorn" not in response.text
+
+
+def test_admin_duty_start_returns_scenario_redirect():
+    admin_duty_sessions.clear()
+    session = start_admin_duty_session()
+
+    try:
+        assert session["session_id"]
+        assert session["redirect_url"].startswith(
+            "/admin-duty/scenarios/inc-001/?session_id="
+        )
+        assert session["session_id"] in session["redirect_url"]
+    finally:
+        admin_duty_sessions.clear()
+
+
+def test_admin_duty_session_stores_timestamps_and_updates_last_activity():
+    admin_duty_sessions.clear()
+    session = start_admin_duty_session()
+    session_id = session["session_id"]
+
+    try:
+        stored_session = admin_duty_sessions[session_id]
+        created_at = stored_session["created_at"]
+        previous_activity = admin_duty_router_module.utc_now() - timedelta(
+            minutes=1,
+        )
+        stored_session["last_activity"] = previous_activity
+
+        response = client.post(
+            "/admin-duty/api/command",
+            json={
+                "session_id": session_id,
+                "command": "status",
+            },
+        )
+
+        assert response.status_code == 200
+        assert created_at.tzinfo is not None
+        assert stored_session["last_activity"] > previous_activity
+    finally:
+        admin_duty_sessions.clear()
+
+
+def test_admin_duty_expired_session_is_rejected_and_removed():
+    admin_duty_sessions.clear()
+    assert admin_duty_router_module.SESSION_TTL == timedelta(minutes=45)
+
+    session = start_admin_duty_session()
+    session_id = session["session_id"]
+    expired_at = (
+        admin_duty_router_module.utc_now()
+        - admin_duty_router_module.SESSION_TTL
+    )
+    admin_duty_sessions[session_id]["last_activity"] = expired_at
+
+    try:
+        response = client.post(
+            "/admin-duty/api/command",
+            json={
+                "session_id": session_id,
+                "command": "status",
+            },
+        )
+
+        assert response.status_code == 404
+        assert session_id not in admin_duty_sessions
+    finally:
+        admin_duty_sessions.clear()
+
+
+def test_admin_duty_start_cleans_up_expired_sessions():
+    admin_duty_sessions.clear()
+    expired_session = start_admin_duty_session()
+    active_session = start_admin_duty_session()
+    expired_session_id = expired_session["session_id"]
+    active_session_id = active_session["session_id"]
+    admin_duty_sessions[expired_session_id]["last_activity"] = (
+        admin_duty_router_module.utc_now()
+        - admin_duty_router_module.SESSION_TTL
+    )
+
+    try:
+        new_session = start_admin_duty_session()
+
+        assert expired_session_id not in admin_duty_sessions
+        assert active_session_id in admin_duty_sessions
+        assert new_session["session_id"] in admin_duty_sessions
+    finally:
+        admin_duty_sessions.clear()
+
+
+def test_admin_duty_start_returns_503_at_active_session_limit(monkeypatch):
+    admin_duty_sessions.clear()
+    assert admin_duty_router_module.MAX_ACTIVE_SESSIONS == 500
+
+    monkeypatch.setattr(
+        admin_duty_router_module,
+        "MAX_ACTIVE_SESSIONS",
+        2,
+    )
+
+    try:
+        start_admin_duty_session()
+        start_admin_duty_session()
+
+        response = client.post(
+            "/admin-duty/api/start",
+            json={"scenario_id": "INC-001"},
+        )
+
+        assert response.status_code == 503
+        assert len(admin_duty_sessions) == 2
+    finally:
+        admin_duty_sessions.clear()
+
+
+def test_admin_duty_rejects_invalid_session_uuid():
+    response = client.post(
+        "/admin-duty/api/command",
+        json={
+            "session_id": "not-a-uuid",
+            "command": "status",
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": "Nieprawidłowe dane żądania.",
+    }
+
+
+def test_admin_duty_rejects_command_longer_than_1024_characters(
+    admin_duty_session,
+):
+    response = client.post(
+        "/admin-duty/api/command",
+        json={
+            "session_id": admin_duty_session["session_id"],
+            "command": "x" * 1025,
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": "Nieprawidłowe dane żądania.",
+    }
+
+
+def test_admin_duty_rejects_service_file_larger_than_32_kib(
+    admin_duty_session,
+):
+    response = client.post(
+        "/admin-duty/api/service-file",
+        json={
+            "session_id": admin_duty_session["session_id"],
+            "content": "ą" * 16385,
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": "Nieprawidłowe dane żądania.",
+    }
+
+
+def test_admin_duty_rejects_unknown_request_field():
+    admin_duty_sessions.clear()
+
+    try:
+        response = client.post(
+            "/admin-duty/api/start",
+            json={
+                "scenario_id": "INC-001",
+                "unexpected": True,
+            },
+        )
+
+        assert response.status_code == 422
+        assert response.json() == {
+            "detail": "Nieprawidłowe dane żądania.",
+        }
+        assert not admin_duty_sessions
+    finally:
+        admin_duty_sessions.clear()
+
+
+def test_admin_duty_rejects_unsupported_scenario():
+    admin_duty_sessions.clear()
+
+    try:
+        response = client.post(
+            "/admin-duty/api/start",
+            json={"scenario_id": "INC-999"},
+        )
+
+        assert response.status_code == 422
+        assert response.json() == {
+            "detail": "Nieprawidłowe dane żądania.",
+        }
+        assert not admin_duty_sessions
+    finally:
+        admin_duty_sessions.clear()
+
+
+def test_admin_duty_scenario_without_session_redirects():
+    response = client.get(
+        "/admin-duty/scenarios/inc-001/",
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/admin-duty/?view=scenarios"
+
+
+def test_admin_duty_valid_session_opens_scenario(admin_duty_session):
+    response = client.get(admin_duty_session["redirect_url"])
+
+    assert response.status_code == 200
+    assert "502 po wdrożeniu" in response.text
+    assert "Cele incydentu" in response.text
+
+
+def test_admin_duty_command_returns_objective_progress(admin_duty_session):
+    response = client.post(
+        "/admin-duty/api/command",
+        json={
+            "session_id": admin_duty_session["session_id"],
+            "command": "curl https://portal.ironvale.internal",
+        },
+    )
+
+    assert response.status_code == 200
+    result = response.json()
+    objectives = {
+        objective["key"]: objective["completed"]
+        for objective in result["progress"]["objectives"]
+    }
+
+    assert result["output"] == "HTTP/2 502\nBad Gateway"
+    assert objectives["check_portal"] is True
+    assert objectives["verify_portal"] is False
+
+
+def test_admin_duty_hints_reduce_score(admin_duty_session):
+    scores = []
+    costs = []
+
+    for _ in range(3):
+        response = client.post(
+            "/admin-duty/api/hint",
+            json={"session_id": admin_duty_session["session_id"]},
+        )
+
+        assert response.status_code == 200
+        result = response.json()
+        scores.append(result["progress"]["score"])
+        costs.append(result["cost"])
+
+    assert costs == [25, 50, 100]
+    assert scores == [975, 925, 825]
+
+    exhausted = client.post(
+        "/admin-duty/api/hint",
+        json={"session_id": admin_duty_session["session_id"]},
+    ).json()
+
+    assert exhausted["available"] is False
+    assert exhausted["progress"]["score"] == 825
+
+
+def test_admin_duty_solution_is_structured_and_caps_score(admin_duty_session):
+    response = client.post(
+        "/admin-duty/api/solution",
+        json={"session_id": admin_duty_session["session_id"]},
+    )
+
+    assert response.status_code == 200
+    result = response.json()
+
+    assert result["progress"]["solution_viewed"] is True
+    assert result["progress"]["score"] == 500
+    assert result["steps"][0]["command"] == (
+        "curl https://portal.ironvale.internal"
+    )
+
+    editor_step = next(
+        step for step in result["steps"] if step["command"] == "edit-service"
+    )
+
+    assert "/opt/ironvale/venv/bin/uvicorn" in editor_step["instruction"]
+    assert "/srv/ironvale/venv/bin/uvicorn" in editor_step["instruction"]
+
+    repeated = client.post(
+        "/admin-duty/api/solution",
+        json={"session_id": admin_duty_session["session_id"]},
+    ).json()
+
+    assert repeated["progress"]["score"] == 500
+
+
+def test_admin_duty_end_removes_session(admin_duty_session):
+    session_id = admin_duty_session["session_id"]
+    response = client.post(
+        "/admin-duty/api/end",
+        json={"session_id": session_id},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"ended": True}
+
+    missing_session = client.post(
+        "/admin-duty/api/command",
+        json={
+            "session_id": session_id,
+            "command": "status",
+        },
+    )
+
+    assert missing_session.status_code == 404
+
+
+def test_admin_duty_complete_command_sequence_finishes_scenario(
+    admin_duty_session,
+):
+    session_id = admin_duty_session["session_id"]
+
+    diagnostic_commands = [
+        "curl https://portal.ironvale.internal",
+        "systemctl status ironvale-api",
+        "journalctl -u ironvale-api",
+    ]
+
+    for command in diagnostic_commands:
+        response = client.post(
+            "/admin-duty/api/command",
+            json={
+                "session_id": session_id,
+                "command": command,
+            },
+        )
+
+        assert response.status_code == 200
+
+    service_file = SERVICE_FILE.format(exec_start=CORRECT_EXEC_START)
+    saved = client.post(
+        "/admin-duty/api/service-file",
+        json={
+            "session_id": session_id,
+            "content": service_file,
+        },
+    )
+
+    assert saved.status_code == 200
+    assert saved.json()["success"] is True
+
+    repair_commands = [
+        "systemctl daemon-reload",
+        "systemctl restart ironvale-api",
+        "curl https://portal.ironvale.internal",
+    ]
+
+    for command in repair_commands:
+        response = client.post(
+            "/admin-duty/api/command",
+            json={
+                "session_id": session_id,
+                "command": command,
+            },
+        )
+
+        assert response.status_code == 200
+
+    progress = response.json()["progress"]
+
+    assert progress["mission_complete"] is True
+    assert all(objective["completed"] for objective in progress["objectives"])
+
+
+def test_admin_duty_terminal_pwd_and_cd_navigation(admin_duty_session):
+    session_id = admin_duty_session["session_id"]
+
+    initial = run_admin_duty_command(session_id, "pwd")
+    changed = run_admin_duty_command(
+        session_id,
+        "cd /etc/systemd/system",
+    )
+    parent = run_admin_duty_command(session_id, "cd ..")
+    home_without_argument = run_admin_duty_command(session_id, "cd")
+    run_admin_duty_command(session_id, "cd /srv/ironvale")
+    home_with_tilde = run_admin_duty_command(session_id, "cd ~")
+
+    assert initial["output"] == "/home/operator"
+    assert changed["cwd"] == "/etc/systemd/system"
+    assert parent["cwd"] == "/etc/systemd"
+    assert home_without_argument["cwd"] == "/home/operator"
+    assert home_with_tilde["cwd"] == "/home/operator"
+
+
+def test_admin_duty_terminal_lists_virtual_filesystem(admin_duty_session):
+    session_id = admin_duty_session["session_id"]
+
+    root = run_admin_duty_command(session_id, "ls /")
+    home = run_admin_duty_command(session_id, "ls -la /home/operator")
+    active_bin = run_admin_duty_command(
+        session_id,
+        "ls -la /srv/ironvale/venv/bin",
+    )
+    legacy_bin = run_admin_duty_command(
+        session_id,
+        "ls -al /opt/ironvale/venv/bin",
+    )
+
+    assert all(directory in root["output"] for directory in ["etc", "opt", "srv"])
+    assert ".profile" in home["output"]
+    assert "drwxr-x" in home["output"]
+    assert "uvicorn" in active_bin["output"]
+    assert "-rwxr-xr-x" in active_bin["output"]
+    assert "uvicorn" not in legacy_bin["output"]
+
+
+def test_admin_duty_terminal_cat_supports_paths_and_multiple_files(
+    admin_duty_session,
+):
+    session_id = admin_duty_session["session_id"]
+    run_admin_duty_command(
+        session_id,
+        "cd /etc/systemd/system",
+    )
+
+    relative = run_admin_duty_command(
+        session_id,
+        "cat ironvale-api.service",
+    )
+    multiple = run_admin_duty_command(
+        session_id,
+        "cat /home/operator/.profile /srv/ironvale/venv/bin/uvicorn",
+    )
+
+    assert f"ExecStart={BROKEN_EXEC_START}" in relative["output"]
+    assert "export EDITOR=vi" in multiple["output"]
+    assert "from uvicorn.main import main" in multiple["output"]
+
+
+def test_admin_duty_terminal_reports_path_errors(admin_duty_session):
+    session_id = admin_duty_session["session_id"]
+
+    missing_directory = run_admin_duty_command(
+        session_id,
+        "cd /nie-istnieje",
+    )
+    missing_list = run_admin_duty_command(
+        session_id,
+        "ls /nie-istnieje",
+    )
+    directory_cat = run_admin_duty_command(
+        session_id,
+        "cat /srv/ironvale",
+    )
+    missing_cat = run_admin_duty_command(
+        session_id,
+        "cat /srv/ironvale/brak.txt",
+    )
+
+    assert missing_directory["type"] == "error"
+    assert missing_directory["cwd"] == "/home/operator"
+    assert "Nie ma takiego pliku ani katalogu" in missing_list["output"]
+    assert "Jest katalogiem" in directory_cat["output"]
+    assert "Nie ma takiego pliku ani katalogu" in missing_cat["output"]
+
+
+def test_admin_duty_help_describes_commands_without_solution_sequence(
+    admin_duty_session,
+):
+    session_id = admin_duty_session["session_id"]
+
+    general_help = run_admin_duty_command(session_id, "help")
+    systemctl_help = run_admin_duty_command(session_id, "help systemctl")
+
+    assert "ls [-la] [ścieżka]" in general_help["output"]
+    assert "cat <plik> [plik...]" in general_help["output"]
+    assert "curl https://portal.ironvale.internal" not in general_help["output"]
+    assert "journalctl -u ironvale-api" not in general_help["output"]
+    assert "systemctl status ironvale-api" not in general_help["output"]
+    assert "systemctl status <usługa>" in systemctl_help["output"]
+    assert "systemctl daemon-reload" in systemctl_help["output"]
+
+
+def test_admin_duty_virtual_exploration_identifies_cause(admin_duty_session):
+    session_id = admin_duty_session["session_id"]
+
+    inspected_unit = run_admin_duty_command(
+        session_id,
+        "cat /etc/systemd/system/ironvale-api.service",
+    )
+    found_binary = run_admin_duty_command(
+        session_id,
+        "ls /srv/ironvale/venv/bin",
+    )
+
+    objectives = {
+        objective["key"]: objective["completed"]
+        for objective in found_binary["progress"]["objectives"]
+    }
+
+    assert f"ExecStart={BROKEN_EXEC_START}" in inspected_unit["output"]
+    assert "uvicorn" in found_binary["output"]
+    assert objectives["find_cause"] is True
+
+
+def test_admin_duty_editor_save_updates_cat_content(admin_duty_session):
+    session_id = admin_duty_session["session_id"]
+    updated_content = SERVICE_FILE.format(exec_start=CORRECT_EXEC_START)
+
+    saved = client.post(
+        "/admin-duty/api/service-file",
+        json={
+            "session_id": session_id,
+            "content": updated_content,
+        },
+    )
+    read_back = run_admin_duty_command(
+        session_id,
+        "cat /etc/systemd/system/ironvale-api.service",
+    )
+
+    assert saved.status_code == 200
+    assert saved.json()["success"] is True
+    assert saved.json()["configuration_fixed"] is True
+    assert "Zmiany zostały zapisane" in saved.json()["message"]
+    assert read_back["output"] == updated_content.rstrip("\n")
+
+
+def test_admin_duty_editor_persists_incorrect_content_with_warning(
+    admin_duty_session,
+):
+    session_id = admin_duty_session["session_id"]
+    incorrect_content = SERVICE_FILE.format(
+        exec_start="/srv/ironvale/venv/bin/brak",
+    )
+
+    saved = client.post(
+        "/admin-duty/api/service-file",
+        json={
+            "session_id": session_id,
+            "content": incorrect_content,
+        },
+    ).json()
+    read_back = run_admin_duty_command(
+        session_id,
+        "cat /etc/systemd/system/ironvale-api.service",
+    )
+
+    assert saved["success"] is True
+    assert saved["configuration_fixed"] is False
+    assert "nadal jest nieprawidłowy" in saved["message"]
+    assert read_back["output"] == incorrect_content.rstrip("\n")
+
+
+def test_admin_duty_virtual_files_are_isolated_between_sessions(
+    admin_duty_session,
+):
+    first_session_id = admin_duty_session["session_id"]
+    second_session = start_admin_duty_session()
+    second_session_id = second_session["session_id"]
+    updated_content = SERVICE_FILE.format(exec_start=CORRECT_EXEC_START)
+
+    client.post(
+        "/admin-duty/api/service-file",
+        json={
+            "session_id": first_session_id,
+            "content": updated_content,
+        },
+    )
+
+    first_content = run_admin_duty_command(
+        first_session_id,
+        "cat /etc/systemd/system/ironvale-api.service",
+    )
+    second_content = run_admin_duty_command(
+        second_session_id,
+        "cat /etc/systemd/system/ironvale-api.service",
+    )
+
+    assert f"ExecStart={CORRECT_EXEC_START}" in first_content["output"]
+    assert f"ExecStart={BROKEN_EXEC_START}" in second_content["output"]
+
+
+def test_admin_duty_editor_has_visible_save_and_cancel_actions(
+    admin_duty_session,
+):
+    response = client.get(admin_duty_session["redirect_url"])
+
+    assert response.status_code == 200
+    assert "Zapisz zmiany" in response.text
+    assert "Anuluj" in response.text
+    assert 'id="editor-message"' in response.text

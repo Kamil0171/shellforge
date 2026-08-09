@@ -1,10 +1,10 @@
-@import url("base.css");
-@import url("layout.css");
-@import url("home.css");
-@import url("lessons.css");
+@import url("base.css?v=learning-ui-1");
+@import url("layout.css?v=learning-ui-1");
+@import url("home.css?v=learning-ui-1");
+@import url("lessons.css?v=learning-ui-1");
 @import url("quiz.css");
 @import url("dashboard.css");
 @import url("flashcards.css");
-@import url("roadmap.css");
+@import url("roadmap.css?v=learning-ui-1");
 @import url("errors.css");
-@import url("about.css");
+@import url("about.css?v=learning-ui-1");

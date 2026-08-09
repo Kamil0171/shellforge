@@ -6,6 +6,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const visibleCount = document.querySelector("#lesson-visible-count");
     const emptyState = document.querySelector("#lessons-empty-state");
     const lessonCards = Array.from(document.querySelectorAll("[data-lesson-card]"));
+    const moduleSections = Array.from(
+        document.querySelectorAll("[data-module-section]"),
+    );
 
     if (!searchInput || !levelFilter || !moduleFilter || !visibleCount) {
         return;
@@ -47,6 +50,15 @@ document.addEventListener("DOMContentLoaded", () => {
             if (isVisible) {
                 visibleLessons += 1;
             }
+        });
+
+        moduleSections.forEach((section) => {
+            const hasVisibleLessons = Array.from(
+                section.querySelectorAll("[data-lesson-card]"),
+            ).some((card) => !card.hidden);
+
+            section.classList.toggle("is-hidden", !hasVisibleLessons);
+            section.hidden = !hasVisibleLessons;
         });
 
         visibleCount.textContent = String(visibleLessons);

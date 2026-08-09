@@ -1,0 +1,618 @@
+{% extends "base.html" %}
+
+{% block title %}Dyżur administratora — ShellForge{% endblock %}
+
+{% block body_class %}admin-duty-lobby{% endblock %}
+
+{% block styles %}
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', path='admin_duty/css/admin_duty.css') }}?v=operations-ui-2"
+>
+{% endblock %}
+
+{% block content %}
+
+<section id="admin-duty" class="admin-duty">
+
+    <div class="container py-4">
+
+        <section
+            id="duty-menu-screen"
+            class="duty-screen duty-menu-screen"
+        >
+            <div class="duty-menu-card">
+
+                <div class="duty-menu-status">
+                    <span class="duty-status-indicator"></span>
+                    <span>SYSTEM READY</span>
+                    <span class="duty-status-separator">/</span>
+                    <span>1 dostępny scenariusz</span>
+                </div>
+
+                <span class="duty-kicker">
+                    ShellForge // Operations Simulator
+                </span>
+
+                <h1>
+                    Dyżur administratora
+                </h1>
+
+                <p class="duty-menu-description">
+                    Interaktywny symulator administracji systemami
+                    i reagowania na incydenty.
+                </p>
+
+                <div class="duty-menu-actions">
+
+                    <button
+                        id="play-button"
+                        type="button"
+                        class="duty-primary-button"
+                    >
+                        Graj
+                    </button>
+
+                    <button
+                        id="controls-button"
+                        type="button"
+                        class="duty-secondary-button"
+                    >
+                        Sterowanie
+                    </button>
+
+                    <button
+                        id="about-game-button"
+                        type="button"
+                        class="duty-secondary-button"
+                    >
+                        O trybie
+                    </button>
+
+                </div>
+
+            </div>
+        </section>
+
+
+        <section
+            id="scenario-screen"
+            class="duty-screen"
+            hidden
+        >
+
+            <div class="screen-header">
+
+                <div>
+                    <span class="duty-kicker">
+                        Dyżur administratora
+                    </span>
+
+                    <h1>
+                        Wybierz scenariusz
+                    </h1>
+
+                    <p>
+                        Każdy scenariusz przedstawia inną awarię
+                        lub problem infrastrukturalny.
+                    </p>
+                </div>
+
+                <button
+                    type="button"
+                    class="back-to-menu duty-secondary-button"
+                >
+                    ← Menu główne
+                </button>
+
+            </div>
+
+            <div class="scenario-grid">
+
+                {% for scenario in scenarios %}
+
+                    <article class="scenario-card">
+
+                        <div class="scenario-card-top">
+
+                            <span class="scenario-id">
+                                {{ scenario.id }}
+                            </span>
+
+                            <span class="scenario-difficulty">
+                                Poziom {{ scenario.difficulty_level }}
+                            </span>
+
+                        </div>
+
+                        <h2>
+                            {{ scenario.title }}
+                        </h2>
+
+                        <p>
+                            {{ scenario.description }}
+                        </p>
+
+                        <div class="scenario-meta">
+
+                            <span>
+                                {{ scenario.difficulty }}
+                            </span>
+
+                        </div>
+
+                        <div class="scenario-tags">
+
+                            {% for tag in scenario.tags %}
+                                <span>
+                                    {{ tag }}
+                                </span>
+                            {% endfor %}
+
+                        </div>
+
+                        <button
+                            type="button"
+                            class="duty-primary-button select-scenario"
+                            data-scenario-context="{{ scenario.id }} · {{ scenario.company }}"
+                        >
+                            Wybierz scenariusz
+                        </button>
+
+                    </article>
+
+                {% endfor %}
+
+
+                <article class="scenario-card scenario-card-locked">
+
+                    <div class="scenario-card-top">
+
+                        <span class="scenario-id">
+                            INC-002
+                        </span>
+
+                        <span class="scenario-coming-soon">
+                            W przygotowaniu
+                        </span>
+
+                    </div>
+
+                    <h2>
+                        Brak miejsca na serwerze
+                    </h2>
+
+                    <p>
+                        Serwer aplikacyjny przestaje zapisywać dane,
+                        a monitoring zgłasza krytyczne wykorzystanie
+                        przestrzeni dyskowej.
+                    </p>
+
+                    <div class="scenario-tags">
+                        <span>Linux</span>
+                        <span>df</span>
+                        <span>du</span>
+                        <span>logi</span>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="duty-primary-button scenario-disabled-button"
+                        disabled
+                    >
+                        Wkrótce dostępne
+                    </button>
+
+                </article>
+
+
+                <article class="scenario-card scenario-card-locked">
+
+                    <div class="scenario-card-top">
+
+                        <span class="scenario-id">
+                            INC-003
+                        </span>
+
+                        <span class="scenario-coming-soon">
+                            W przygotowaniu
+                        </span>
+
+                    </div>
+
+                    <h2>
+                        Usługa nie uruchamia się
+                    </h2>
+
+                    <p>
+                        Jedna z usług produkcyjnych przestała działać
+                        po zmianie konfiguracji systemu.
+                    </p>
+
+                    <div class="scenario-tags">
+                        <span>systemd</span>
+                        <span>uprawnienia</span>
+                        <span>journalctl</span>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="duty-primary-button scenario-disabled-button"
+                        disabled
+                    >
+                        Wkrótce dostępne
+                    </button>
+
+                </article>
+
+            </div>
+
+        </section>
+
+
+        {% set scenario = scenarios[0] %}
+
+        <section
+            id="briefing-screen"
+            class="duty-screen"
+            hidden
+        >
+
+            <div class="briefing-panel">
+
+                <div class="briefing-status-line">
+                    <span>INCIDENT BRIEFING</span>
+                    <span>STATUS: ACTIVE</span>
+                </div>
+
+                <div class="briefing-label">
+                    {{ scenario.id }}
+                </div>
+
+                <h1>
+                    {{ scenario.title }}
+                </h1>
+
+                <div class="briefing-divider"></div>
+
+                <div class="briefing-section">
+                    <span>ŚRODOWISKO</span>
+
+                    <strong>
+                        {{ scenario.company }}
+                        ·
+                        {{ scenario.environment }}
+                    </strong>
+                </div>
+
+                <div class="briefing-section">
+                    <span>SYTUACJA</span>
+
+                    <p>
+                        {{ scenario.briefing }}
+                    </p>
+                </div>
+
+                <div class="briefing-section">
+                    <span>CEL</span>
+
+                    <p>
+                        {{ scenario.objective }}
+                    </p>
+                </div>
+
+                <div class="briefing-section">
+                    <span>DOSTĘPNE NARZĘDZIA</span>
+
+                    <ul>
+                        {% for tool in scenario.available_tools %}
+                            <li>
+                                {{ tool }}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="briefing-actions">
+
+                    <button
+                        id="briefing-back-button"
+                        type="button"
+                        class="duty-secondary-button"
+                    >
+                        ← Scenariusze
+                    </button>
+
+                    <button
+                        id="start-duty-button"
+                        type="button"
+                        class="duty-primary-button"
+                        data-scenario-id="{{ scenario.id }}"
+                        data-scenario-context="{{ scenario.id }} · {{ scenario.company }}"
+                    >
+                        Rozpocznij dyżur
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <section
+            id="controls-screen"
+            class="duty-screen"
+            hidden
+        >
+
+            <div class="controls-panel">
+
+                <div class="screen-header">
+
+                    <div>
+                        <span class="duty-kicker">
+                            Dyżur administratora
+                        </span>
+
+                        <h1>
+                            Sterowanie
+                        </h1>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="back-to-menu duty-secondary-button"
+                    >
+                        ← Menu główne
+                    </button>
+
+                </div>
+
+                <div class="controls-grid">
+
+                    <div class="control-row">
+                        <div>
+                            <kbd>W</kbd>
+                            <kbd>↑</kbd>
+                        </div>
+                        <span>Ruch w górę</span>
+                    </div>
+
+                    <div class="control-row">
+                        <div>
+                            <kbd>S</kbd>
+                            <kbd>↓</kbd>
+                        </div>
+                        <span>Ruch w dół</span>
+                    </div>
+
+                    <div class="control-row">
+                        <div>
+                            <kbd>A</kbd>
+                            <kbd>←</kbd>
+                        </div>
+                        <span>Ruch w lewo</span>
+                    </div>
+
+                    <div class="control-row">
+                        <div>
+                            <kbd>D</kbd>
+                            <kbd>→</kbd>
+                        </div>
+                        <span>Ruch w prawo</span>
+                    </div>
+
+                    <div class="control-row">
+                        <div>
+                            <kbd>E</kbd>
+                        </div>
+                        <span>Interakcja</span>
+                    </div>
+
+                    <div class="control-row">
+                        <div>
+                            <kbd>ESC</kbd>
+                        </div>
+                        <span>Zamknięcie panelu</span>
+                    </div>
+
+                    <div class="control-row">
+                        <div>
+                            <kbd>ENTER</kbd>
+                        </div>
+                        <span>Wykonanie polecenia</span>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <section
+            id="about-game-screen"
+            class="duty-screen"
+            hidden
+        >
+
+            <div class="about-game-panel">
+
+                <div class="screen-header">
+
+                    <div>
+                        <span class="duty-kicker">
+                            ShellForge
+                        </span>
+
+                        <h1>
+                            O trybie
+                        </h1>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="back-to-menu duty-secondary-button"
+                    >
+                        ← Menu główne
+                    </button>
+
+                </div>
+
+                <div class="about-game-grid">
+
+                    <article class="about-game-card">
+                        <span class="about-game-card-icon" aria-hidden="true">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 6h16v12H4z"/>
+                                <path d="m8 10-2 2 2 2"/>
+                                <path d="M13 14h3"/>
+                            </svg>
+                        </span>
+                        <span class="about-game-card-label">Tryb</span>
+                        <h2>Dyżur administratora</h2>
+                        <p>
+                            Interaktywny symulator pracy administratora,
+                            w którym diagnozujesz incydenty i przywracasz
+                            prawidłowe działanie środowiska.
+                        </p>
+                    </article>
+
+                    <article class="about-game-card">
+                        <span class="about-game-card-icon" aria-hidden="true">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 4h14v16H5z"/>
+                                <path d="M9 8h6"/>
+                                <path d="M9 12h6"/>
+                                <path d="M9 16h3"/>
+                            </svg>
+                        </span>
+                        <span class="about-game-card-label">Rozgrywka</span>
+                        <h2>Od objawów do rozwiązania</h2>
+                        <p>
+                            Analizujesz opis incydentu, sprawdzasz objawy,
+                            eksplorujesz środowisko, ustalasz przyczynę
+                            i wdrażasz rozwiązanie problemu.
+                        </p>
+                    </article>
+
+                    <article class="about-game-card">
+                        <span class="about-game-card-icon" aria-hidden="true">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="5" width="18" height="14" rx="2"/>
+                                <path d="m7 10 2 2-2 2"/>
+                                <path d="M12 14h4"/>
+                            </svg>
+                        </span>
+                        <span class="about-game-card-label">Narzędzia</span>
+                        <h2>Terminal i interakcje</h2>
+                        <p>
+                            Korzystasz z terminala oraz dostępnych interakcji,
+                            aby badać system plików, usługi i pozostałe
+                            elementy środowiska.
+                        </p>
+                    </article>
+
+                    <article class="about-game-card">
+                        <span class="about-game-card-icon" aria-hidden="true">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 19h16"/>
+                                <path d="M7 16v-4"/>
+                                <path d="M12 16V7"/>
+                                <path d="M17 16v-6"/>
+                            </svg>
+                        </span>
+                        <span class="about-game-card-label">Wynik</span>
+                        <h2>Punktacja i samodzielność</h2>
+                        <p>
+                            Punktacja odzwierciedla samodzielność rozwiązania.
+                            Eksploracja nie obniża wyniku, natomiast korzystanie
+                            z pomocy ma wpływ na końcową liczbę punktów.
+                        </p>
+                    </article>
+
+                    <article class="about-game-card">
+                        <span class="about-game-card-icon" aria-hidden="true">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="9"/>
+                                <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4"/>
+                                <path d="M12 17h.01"/>
+                            </svg>
+                        </span>
+                        <span class="about-game-card-label">Pomoc</span>
+                        <h2>Podpowiedzi i rozwiązanie</h2>
+                        <p>
+                            Podpowiedzi stopniowo naprowadzają na właściwy trop
+                            i kosztują punkty. Pełne rozwiązanie jest drogą
+                            awaryjną i mocniej ogranicza możliwy wynik.
+                        </p>
+                    </article>
+
+                    <article class="about-game-card about-game-card-safety">
+                        <span class="about-game-card-icon" aria-hidden="true">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 3 5 6v5c0 4.6 2.8 7.4 7 9 4.2-1.6 7-4.4 7-9V6z"/>
+                                <path d="m9 12 2 2 4-4"/>
+                            </svg>
+                        </span>
+                        <span class="about-game-card-label">Bezpieczeństwo</span>
+                        <h2>Symulowane środowisko</h2>
+                        <p>
+                            Terminal, system plików, usługi i pozostałe elementy
+                            środowiska są symulowane.
+                            Polecenia wykonywane w Symulatorze działają wyłącznie w przygotowanym
+                            środowisku symulacyjnym i nie są wykonywane na rzeczywistym serwerze.
+                        </p>
+                    </article>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </div>
+
+</section>
+
+
+<div
+    id="duty-transition"
+    class="duty-transition"
+    aria-hidden="true"
+>
+    <div
+        class="duty-transition-content"
+        aria-live="polite"
+    >
+
+        <span class="duty-transition-kicker">
+            ShellForge
+        </span>
+
+        <h2 id="transition-title">
+            Rozpoczynanie dyżuru
+        </h2>
+
+        <strong id="transition-context">
+            INC-001 · IronVale Systems
+        </strong>
+
+        <div class="transition-loader">
+            <span></span>
+        </div>
+
+        <p id="transition-status">
+            Przygotowywanie sesji operacyjnej...
+        </p>
+
+    </div>
+</div>
+
+
+<script
+    src="{{ url_for('static', path='admin_duty/js/admin_duty.js') }}?v=operations-ui-1">
+</script>
+
+{% endblock %}
