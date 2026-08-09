@@ -4,9 +4,9 @@
 
 {% block content %}
 
-<section class="py-5 bg-light border-bottom">
+<section class="sf-page-hero border-bottom">
     <div class="container">
-        <span class="badge text-bg-dark mb-3">Ścieżka nauki</span>
+        <span class="sf-eyebrow mb-3">Ścieżka nauki</span>
 
         <div class="row align-items-center g-4">
             <div class="col-lg-8">
@@ -35,7 +35,7 @@
                             </span>
                         </div>
                         <p class="small text-muted mb-0">
-                            Pierwszy blok obejmuje podstawy Linuxa, terminala, usług, sieci i logów.
+                            Materiały uporządkowane w praktyczne moduły tematyczne.
                         </p>
                     </div>
                 </div>
@@ -44,7 +44,7 @@
     </div>
 </section>
 
-<section class="py-4 border-bottom">
+<section class="sf-section-compact border-bottom bg-white">
     <div class="container">
         <div class="lesson-filters card border-0 shadow-sm">
             <div class="card-body">
@@ -108,70 +108,86 @@
     </div>
 </section>
 
-<section class="py-5">
+<section class="sf-section">
     <div class="container">
-        <div class="mb-4">
-            <h2 class="h4 fw-bold">
-                Podstawy Linuxa i terminala
-            </h2>
-            <p class="text-muted mb-0">
-                Ten blok prowadzi od pierwszych komend terminala do podstaw pracy z usługami,
-                diagnostyką sieci i logami systemowymi.
-            </p>
-        </div>
-
-        <div id="lessons-grid" class="row g-4">
-
-            {% for lesson in lessons %}
-            <div
-                class="col-md-6 col-lg-4 lesson-card-wrapper"
-                data-lesson-card
-                data-title="{{ lesson.title }}"
-                data-description="{{ lesson.description }}"
-                data-module="{{ lesson.module }}"
-                data-level="{{ lesson.level }}"
+        <div id="lessons-grid" class="lesson-module-list">
+            {% for module in module_sections %}
+            <section
+                class="lesson-module-section"
+                data-module-section
+                data-module="{{ module.title }}"
+                aria-labelledby="lesson-module-{{ module.number }}-heading"
             >
-                <div class="card h-100 shadow-sm lesson-card">
-                    <div class="card-body d-flex flex-column">
+                <header class="lesson-module-header">
+                    <span class="lesson-module-label">
+                        MODUŁ {{ module.number }}
+                    </span>
 
-                        <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
-                            <div>
-                                <span class="badge text-bg-secondary">
-                                    {{ lesson.module }}
-                                </span>
-                                <span class="badge text-bg-light border">
-                                    {{ lesson.level }}
-                                </span>
+                    <h2
+                        id="lesson-module-{{ module.number }}-heading"
+                        class="lesson-module-title"
+                    >
+                        {{ module.title }}
+                    </h2>
+
+                    <p class="lesson-module-description">
+                        {{ module.description }}
+                    </p>
+                </header>
+
+                <div class="row g-4 lesson-module-grid">
+                    {% for lesson in module.lessons %}
+                    <div
+                        class="col-md-6 col-lg-4 lesson-card-wrapper"
+                        data-lesson-card
+                        data-title="{{ lesson.title }}"
+                        data-description="{{ lesson.description }}"
+                        data-module="{{ lesson.module }}"
+                        data-level="{{ lesson.level }}"
+                    >
+                        <div class="card h-100 shadow-sm lesson-card">
+                            <div class="card-body d-flex flex-column">
+
+                                <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                                    <div>
+                                        <span class="badge text-bg-secondary">
+                                            {{ lesson.module }}
+                                        </span>
+                                        <span class="badge text-bg-light border">
+                                            {{ lesson.level }}
+                                        </span>
+                                    </div>
+
+                                    <span class="lesson-number">
+                                        {{ lesson.id }}
+                                    </span>
+                                </div>
+
+                                <h5 class="card-title fw-bold">
+                                    {{ lesson.title }}
+                                </h5>
+
+                                <p class="card-text text-muted">
+                                    {{ lesson.description }}
+                                </p>
+
+                                <div class="mt-auto">
+                                    <p class="small text-muted mb-3">
+                                        Czas: {{ lesson.duration }}
+                                    </p>
+
+                                    <a href="/lessons/{{ lesson.id }}" class="btn btn-dark">
+                                        Otwórz lekcję
+                                    </a>
+                                </div>
+
                             </div>
-
-                            <span class="lesson-number">
-                                {{ lesson.id }}
-                            </span>
                         </div>
-
-                        <h5 class="card-title fw-bold">
-                            {{ lesson.title }}
-                        </h5>
-
-                        <p class="card-text text-muted">
-                            {{ lesson.description }}
-                        </p>
-
-                        <div class="mt-auto">
-                            <p class="small text-muted mb-3">
-                                Czas: {{ lesson.duration }}
-                            </p>
-
-                            <a href="/lessons/{{ lesson.id }}" class="btn btn-dark">
-                                Otwórz lekcję
-                            </a>
-                        </div>
-
                     </div>
+                    {% endfor %}
                 </div>
-            </div>
+            </section>
             {% endfor %}
-
         </div>
 
         <div id="lessons-empty-state" class="alert alert-info mt-4 d-none">
@@ -183,6 +199,19 @@
             Brak dostępnych lekcji.
         </div>
         {% endif %}
+
+        <aside class="lessons-simulator-cta mt-5" aria-labelledby="lessons-simulator-heading">
+            <div class="lessons-simulator-copy">
+                <span class="lessons-simulator-label">Symulator · Praktyka</span>
+                <h2 id="lessons-simulator-heading" class="h5 fw-bold mb-1">Gotowy na praktykę?</h2>
+                <p class="mb-0">
+                    Sprawdź wiedzę z lekcji podczas diagnozowania symulowanego incydentu.
+                </p>
+            </div>
+            <a href="/admin-duty/" class="btn lessons-simulator-button flex-shrink-0">
+                Przejdź do Symulatora
+            </a>
+        </aside>
     </div>
 </section>
 

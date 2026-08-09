@@ -60,6 +60,17 @@
     gap: 6px;
 }
 
+.shellforge-navbar {
+    padding-block: 0.7rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+    background-color: #0f172a !important;
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+}
+
+.shellforge-navbar .navbar-brand {
+    letter-spacing: -0.02em;
+}
+
 .navbar .nav-link {
     position: relative;
     padding-left: 0.65rem;
@@ -86,12 +97,36 @@
     background-color: #ffffff;
 }
 
+.navbar .nav-link-simulator {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.navbar .nav-link-simulator::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.12);
+}
+
+.navbar .nav-link-simulator:not(.active) {
+    color: #bfdbfe;
+}
+
+.navbar .nav-link-simulator.active::after {
+    background-color: #60a5fa;
+}
+
 .app-footer {
-    padding: 8px 0;
+    padding: 18px 0;
     margin-top: 0;
-    font-size: 0.76rem;
-    line-height: 1.2;
-    background-color: #ffffff;
+    border-color: rgba(15, 23, 42, 0.08) !important;
+    font-size: 0.8rem;
+    line-height: 1.35;
+    background-color: #f8fafc;
 }
 
 .app-footer small {
@@ -99,8 +134,8 @@
 }
 
 .btn-shell-secondary {
-    color: #212529;
-    border: 1px solid #212529;
+    color: var(--sf-ink);
+    border: 1px solid var(--sf-border-strong);
     background-color: #ffffff;
     font-weight: 600;
     box-shadow: none;
@@ -108,21 +143,21 @@
 
 .btn-shell-secondary:hover {
     color: #ffffff;
-    border-color: #212529;
-    background-color: #212529;
+    border-color: var(--sf-navy);
+    background-color: var(--sf-navy);
 }
 
 .btn-shell-secondary:focus {
     color: #ffffff;
-    border-color: #212529;
-    background-color: #212529;
-    box-shadow: 0 0 0 0.2rem rgba(33, 37, 41, 0.15);
+    border-color: var(--sf-navy);
+    background-color: var(--sf-navy);
+    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.15);
 }
 
 .btn-shell-secondary:active {
     color: #ffffff;
-    border-color: #212529;
-    background-color: #212529;
+    border-color: var(--sf-navy);
+    background-color: var(--sf-navy);
 }
 
 @media (max-width: 991.98px) {
@@ -133,5 +168,13 @@
 
     .navbar .nav-link.active::after {
         display: none;
+    }
+
+    .shellforge-navbar .navbar-nav {
+        padding-top: 0.75rem;
+    }
+
+    .shellforge-navbar .nav-link {
+        padding-block: 0.55rem;
     }
 }

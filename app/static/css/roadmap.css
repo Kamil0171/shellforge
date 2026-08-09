@@ -14,7 +14,40 @@
     bottom: 10px;
     left: 22px;
     width: 2px;
-    background-color: #dee2e6;
+    background-color: rgba(148, 163, 184, 0.34);
+}
+
+.roadmap-summary-card .card-body {
+    padding: 1.5rem;
+}
+
+.roadmap-summary-badge {
+    padding: 6px 9px;
+    border: 1px solid var(--sf-border);
+    border-radius: 999px;
+    background-color: #f8fafc;
+    color: #475569;
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+}
+
+.roadmap-summary-badge-primary {
+    border-color: rgba(37, 99, 235, 0.16);
+    background-color: var(--sf-accent-soft);
+    color: #1d4ed8;
+}
+
+.roadmap-summary-card {
+    transition:
+        transform 0.22s ease,
+        border-color 0.22s ease,
+        box-shadow 0.22s ease;
+}
+
+.roadmap-summary-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--sf-border-strong) !important;
+    box-shadow: var(--sf-shadow-hover) !important;
 }
 
 .roadmap-item {
@@ -46,11 +79,14 @@
 }
 
 .roadmap-card {
-    border-radius: 16px;
+    transition:
+        border-color 0.22s ease,
+        box-shadow 0.22s ease;
 }
 
 .roadmap-item-active .roadmap-card {
-    border-color: #212529;
+    border-color: rgba(37, 99, 235, 0.32) !important;
+    box-shadow: 0 14px 34px rgba(37, 99, 235, 0.08) !important;
 }
 
 .roadmap-status {
@@ -66,8 +102,8 @@
 }
 
 .roadmap-status-active {
-    background-color: #e6f1fb;
-    color: #0c447c;
+    background-color: var(--sf-accent-soft);
+    color: #1d4ed8;
 }
 
 .roadmap-items {
@@ -80,7 +116,59 @@
     color: #212529;
 }
 
+.roadmap-simulator-cta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    max-width: 900px;
+    margin: 44px auto 0;
+    padding: 26px 28px;
+    overflow: hidden;
+    border: 1px solid rgba(96, 165, 250, 0.2);
+    border-radius: var(--sf-radius);
+    background:
+        radial-gradient(circle at 8% 20%, rgba(37, 99, 235, 0.17), transparent 32%),
+        #0f172a;
+    color: #cbd5e1;
+    box-shadow: 0 16px 38px rgba(15, 23, 42, 0.12);
+}
+
+.roadmap-simulator-label {
+    display: inline-block;
+    margin-bottom: 6px;
+    color: #60a5fa;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+.roadmap-simulator-cta h2 {
+    color: #f8fafc;
+}
+
+.roadmap-simulator-button {
+    border: 1px solid #3b82f6;
+    background-color: #2563eb;
+    color: #ffffff;
+}
+
+.roadmap-simulator-button:hover,
+.roadmap-simulator-button:focus {
+    border-color: #60a5fa;
+    background-color: #3b82f6;
+    color: #ffffff;
+}
+
 @media (max-width: 576px) {
+    .roadmap-simulator-cta {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 16px;
+    }
+
     .roadmap-list::before {
         left: 18px;
     }

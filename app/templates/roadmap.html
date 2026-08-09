@@ -4,9 +4,9 @@
 
 {% block content %}
 
-<section class="py-5 bg-light border-bottom">
+<section class="sf-page-hero border-bottom">
     <div class="container">
-        <span class="badge text-bg-dark mb-3">Ścieżka nauki</span>
+        <span class="sf-eyebrow mb-3">Ścieżka nauki</span>
 
         <h1 class="fw-bold">
             Ucz się Linuxa krok po kroku
@@ -25,14 +25,14 @@
     </div>
 </section>
 
-<section class="py-5">
+<section class="sf-section">
     <div class="container">
 
         <div class="row g-4 mb-5">
             <div class="col-lg-4">
-                <div class="card h-100 shadow-sm border-0">
+                <div class="card h-100 shadow-sm border-0 roadmap-summary-card">
                     <div class="card-body">
-                        <span class="badge text-bg-dark mb-3">Start</span>
+                        <span class="badge roadmap-summary-badge roadmap-summary-badge-primary mb-3">Start</span>
                         <h2 class="h4 fw-bold">Podstawy</h2>
                         <p class="text-muted mb-0">
                             Terminal, pliki, katalogi, uprawnienia, użytkownicy,
@@ -43,9 +43,9 @@
             </div>
 
             <div class="col-lg-4">
-                <div class="card h-100 shadow-sm border-0">
+                <div class="card h-100 shadow-sm border-0 roadmap-summary-card">
                     <div class="card-body">
-                        <span class="badge text-bg-secondary mb-3">Dostępne</span>
+                        <span class="badge roadmap-summary-badge mb-3">Dostępne</span>
                         <h2 class="h4 fw-bold">Administracja i sieć</h2>
                         <p class="text-muted mb-0">
                             Usługi systemowe, logi, konta użytkowników, diagnostyka,
@@ -56,9 +56,9 @@
             </div>
 
             <div class="col-lg-4">
-                <div class="card h-100 shadow-sm border-0">
+                <div class="card h-100 shadow-sm border-0 roadmap-summary-card">
                     <div class="card-body">
-                        <span class="badge text-bg-secondary mb-3">Później</span>
+                        <span class="badge roadmap-summary-badge mb-3">Później</span>
                         <h2 class="h4 fw-bold">DevOps</h2>
                         <p class="text-muted mb-0">
                             Deployment aplikacji, Nginx, HTTPS, kontenery,
@@ -128,6 +128,19 @@
             </article>
             {% endfor %}
         </div>
+
+        <aside class="roadmap-simulator-cta" aria-labelledby="roadmap-simulator-heading">
+            <div>
+                <span class="roadmap-simulator-label">Symulator · Poza roadmapą</span>
+                <h2 id="roadmap-simulator-heading" class="h4 fw-bold mb-2">Praktyka poza ścieżką</h2>
+                <p class="mb-0">
+                    Wiedzę zdobytą w lekcjach możesz sprawdzić w osobnych scenariuszach Symulatora.
+                </p>
+            </div>
+            <a href="/admin-duty/" class="btn roadmap-simulator-button flex-shrink-0">
+                Przejdź do Symulatora
+            </a>
+        </aside>
 
     </div>
 </section>

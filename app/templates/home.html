@@ -4,11 +4,11 @@
 
 {% block content %}
 
-<section class="hero-section py-5">
+<section class="hero-section sf-page-hero">
     <div class="container">
         <div class="row align-items-center g-5">
             <div class="col-lg-7">
-                <span class="badge text-bg-dark mb-3">Linux · SysAdmin · DevOps</span>
+                <span class="sf-eyebrow mb-3">Linux · SysAdmin · DevOps</span>
 
                 <h1 class="display-4 fw-bold">
                     Ucz się Linuxa i DevOps przez praktykę
@@ -20,8 +20,8 @@
                 </p>
 
                 <p class="text-muted">
-                    Krótkie lekcje, praktyczne komendy, quizy i fiszki pomagają utrwalać wiedzę
-                    krok po kroku — bez zbędnego komplikowania.
+                    Lekcje, praktyczne komendy, quizy, fiszki i interaktywne scenariusze
+                    administracyjne pomagają zdobywać i utrwalać wiedzę krok po kroku.
                 </p>
 
                 <div class="d-flex gap-3 flex-wrap">
@@ -58,7 +58,7 @@ Linux staje się prostszy przez praktykę</code></pre>
     </div>
 </section>
 
-<section class="home-section py-5 border-top">
+<section class="home-section sf-section border-top">
     <div class="container">
         <div class="home-section-heading mb-4">
             <h2 class="fw-bold mb-2">Jak wygląda nauka w ShellForge?</h2>
@@ -67,8 +67,8 @@ Linux staje się prostszy przez praktykę</code></pre>
             </p>
         </div>
 
-        <div class="row g-4">
-            <div class="col-md-6 col-xl-3">
+        <div class="home-steps-grid">
+            <div class="home-step-item">
                 <div class="card h-100 shadow-sm home-card">
                     <div class="card-body">
                         <span class="badge text-bg-dark rounded-pill px-3 py-2 mb-3 home-step-number">01</span>
@@ -80,7 +80,7 @@ Linux staje się prostszy przez praktykę</code></pre>
                 </div>
             </div>
 
-            <div class="col-md-6 col-xl-3">
+            <div class="home-step-item">
                 <div class="card h-100 shadow-sm home-card">
                     <div class="card-body">
                         <span class="badge text-bg-dark rounded-pill px-3 py-2 mb-3 home-step-number">02</span>
@@ -92,7 +92,7 @@ Linux staje się prostszy przez praktykę</code></pre>
                 </div>
             </div>
 
-            <div class="col-md-6 col-xl-3">
+            <div class="home-step-item">
                 <div class="card h-100 shadow-sm home-card">
                     <div class="card-body">
                         <span class="badge text-bg-dark rounded-pill px-3 py-2 mb-3 home-step-number">03</span>
@@ -104,7 +104,7 @@ Linux staje się prostszy przez praktykę</code></pre>
                 </div>
             </div>
 
-            <div class="col-md-6 col-xl-3">
+            <div class="home-step-item">
                 <div class="card h-100 shadow-sm home-card">
                     <div class="card-body">
                         <span class="badge text-bg-dark rounded-pill px-3 py-2 mb-3 home-step-number">04</span>
@@ -115,11 +115,57 @@ Linux staje się prostszy przez praktykę</code></pre>
                     </div>
                 </div>
             </div>
+
+            <div class="home-step-item">
+                <a href="/admin-duty/" class="card h-100 shadow-sm home-card home-step-link home-step-practice text-decoration-none text-reset">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                            <span class="badge rounded-pill px-3 py-2 home-step-number home-step-practice-number">05</span>
+                            <span class="home-step-type">Praktyka</span>
+                        </div>
+                        <h5 class="fw-bold mt-3">Rozwiąż incydent</h5>
+                        <p class="text-muted mb-0">
+                            Wykorzystaj zdobytą wiedzę podczas diagnozowania symulowanej awarii usługi.
+                        </p>
+                    </div>
+                </a>
+            </div>
         </div>
     </div>
 </section>
 
-<section class="home-section py-5 bg-light border-top border-bottom">
+<section class="home-section home-simulator-section sf-section-compact border-top">
+    <div class="container">
+        <div class="home-simulator-panel">
+            <div class="home-simulator-copy">
+                <span class="home-simulator-kicker">Symulator</span>
+                <h2 class="h3 fw-bold mb-3">Sprawdź się w praktyce</h2>
+                <p class="home-simulator-description mb-4">
+                    Wejdź do symulowanego centrum operacyjnego, diagnozuj awarie,
+                    eksploruj środowisko Linux i przywracaj działanie usług.
+                </p>
+                <a href="/admin-duty/" class="btn home-simulator-cta">Uruchom Symulator</a>
+            </div>
+
+            <div class="home-simulator-incident" aria-label="Dostępny scenariusz Symulatora">
+                <div class="home-simulator-incident-header">
+                    <span class="home-simulator-id">INC-001</span>
+                    <span class="home-simulator-priority">P1</span>
+                </div>
+                <h3 class="h4 mb-3">502 po wdrożeniu</h3>
+                <div class="home-simulator-service">
+                    <span class="home-simulator-service-dot"></span>
+                    <span>APP-01</span>
+                    <strong>FAILED</strong>
+                </div>
+                <p class="home-simulator-tags">Linux · systemd · diagnostyka</p>
+                <div class="home-simulator-availability">1 dostępny scenariusz</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="home-section sf-section sf-section-soft border-top border-bottom">
     <div class="container">
         <div class="home-section-heading mb-4">
             <h2 class="fw-bold mb-2">Główne obszary nauki</h2>
@@ -128,8 +174,8 @@ Linux staje się prostszy przez praktykę</code></pre>
             </p>
         </div>
 
-        <div class="row g-4">
-            <div class="col-md-6 col-lg-4">
+        <div class="home-modules-grid">
+            <div class="home-module-item">
                 <div class="card h-100 shadow-sm home-card home-card-with-icon position-relative">
                     <div class="home-card-icon position-absolute top-0 end-0 mt-3 me-3 d-inline-flex align-items-center justify-content-center rounded-3 border bg-white text-dark" style="width: 34px; height: 34px;" aria-hidden="true">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -140,7 +186,7 @@ Linux staje się prostszy przez praktykę</code></pre>
                     </div>
 
                     <div class="card-body">
-                        <span class="home-track-label">Terminal</span>
+                        <span class="home-track-label">Moduł 1 · Terminal</span>
                         <h5 class="fw-bold mt-2">Podstawy Linuxa</h5>
                         <p class="text-muted mb-0">
                             Pliki, katalogi, uprawnienia, procesy i podstawowe narzędzia pracy w terminalu.
@@ -149,7 +195,7 @@ Linux staje się prostszy przez praktykę</code></pre>
                 </div>
             </div>
 
-            <div class="col-md-6 col-lg-4">
+            <div class="home-module-item">
                 <div class="card h-100 shadow-sm home-card home-card-with-icon position-relative">
                     <div class="home-card-icon position-absolute top-0 end-0 mt-3 me-3 d-inline-flex align-items-center justify-content-center rounded-3 border bg-white text-dark" style="width: 34px; height: 34px;" aria-hidden="true">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -161,7 +207,7 @@ Linux staje się prostszy przez praktykę</code></pre>
                     </div>
 
                     <div class="card-body">
-                        <span class="home-track-label">System</span>
+                        <span class="home-track-label">Moduł 2 · System</span>
                         <h5 class="fw-bold mt-2">Administracja systemem</h5>
                         <p class="text-muted mb-0">
                             Użytkownicy, usługi, logi, diagnostyka, pakiety, miejsce na dysku i zadania cykliczne.
@@ -170,7 +216,7 @@ Linux staje się prostszy przez praktykę</code></pre>
                 </div>
             </div>
 
-            <div class="col-md-6 col-lg-4">
+            <div class="home-module-item">
                 <div class="card h-100 shadow-sm home-card home-card-with-icon position-relative">
                     <div class="home-card-icon position-absolute top-0 end-0 mt-3 me-3 d-inline-flex align-items-center justify-content-center rounded-3 border bg-white text-dark" style="width: 34px; height: 34px;" aria-hidden="true">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -180,7 +226,7 @@ Linux staje się prostszy przez praktykę</code></pre>
                     </div>
 
                     <div class="card-body">
-                        <span class="home-track-label">Bezpieczeństwo</span>
+                        <span class="home-track-label">Moduł 3 · Bezpieczeństwo</span>
                         <h5 class="fw-bold mt-2">Sieć i bezpieczeństwo</h5>
                         <p class="text-muted mb-0">
                             SSH, porty, DNS, firewall, SELinux i bezpieczniejsza konfiguracja dostępu.
@@ -189,7 +235,7 @@ Linux staje się prostszy przez praktykę</code></pre>
                 </div>
             </div>
 
-            <div class="col-md-6 col-lg-4">
+            <div class="home-module-item">
                 <div class="card h-100 shadow-sm home-card home-card-with-icon position-relative">
                     <div class="home-card-icon position-absolute top-0 end-0 mt-3 me-3 d-inline-flex align-items-center justify-content-center rounded-3 border bg-white text-dark" style="width: 34px; height: 34px;" aria-hidden="true">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -200,7 +246,7 @@ Linux staje się prostszy przez praktykę</code></pre>
                     </div>
 
                     <div class="card-body">
-                        <span class="home-track-label">Wdrożenia</span>
+                        <span class="home-track-label">Moduł 4 · Wdrożenia</span>
                         <h5 class="fw-bold mt-2">Deployment aplikacji</h5>
                         <p class="text-muted mb-0">
                             Uruchamianie aplikacji przez systemd, reverse proxy, domeny i certyfikaty HTTPS.
@@ -209,7 +255,7 @@ Linux staje się prostszy przez praktykę</code></pre>
                 </div>
             </div>
 
-            <div class="col-md-6 col-lg-4">
+            <div class="home-module-item">
                 <div class="card h-100 shadow-sm home-card home-card-with-icon position-relative">
                     <div class="home-card-icon position-absolute top-0 end-0 mt-3 me-3 d-inline-flex align-items-center justify-content-center rounded-3 border bg-white text-dark" style="width: 34px; height: 34px;" aria-hidden="true">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -220,7 +266,7 @@ Linux staje się prostszy przez praktykę</code></pre>
                     </div>
 
                     <div class="card-body">
-                        <span class="home-track-label">Automatyzacja</span>
+                        <span class="home-track-label">Moduł 5 · Automatyzacja</span>
                         <h5 class="fw-bold mt-2">DevOps i automatyzacja</h5>
                         <p class="text-muted mb-0">
                             Git, kontenery, CI/CD i automatyzowanie powtarzalnych operacji.
@@ -229,7 +275,7 @@ Linux staje się prostszy przez praktykę</code></pre>
                 </div>
             </div>
 
-            <div class="col-md-6 col-lg-4">
+            <div class="home-module-item">
                 <div class="card h-100 shadow-sm home-card home-card-with-icon position-relative">
                     <div class="home-card-icon position-absolute top-0 end-0 mt-3 me-3 d-inline-flex align-items-center justify-content-center rounded-3 border bg-white text-dark" style="width: 34px; height: 34px;" aria-hidden="true">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -241,7 +287,7 @@ Linux staje się prostszy przez praktykę</code></pre>
                     </div>
 
                     <div class="card-body">
-                        <span class="home-track-label">Utrzymanie</span>
+                        <span class="home-track-label">Moduł 6 · Utrzymanie</span>
                         <h5 class="fw-bold mt-2">Monitoring i utrzymanie</h5>
                         <p class="text-muted mb-0">
                             Obserwacja usług, analiza problemów, metryki, alerty i codzienna opieka nad systemem.
