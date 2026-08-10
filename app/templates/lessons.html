@@ -24,18 +24,23 @@
                 <div class="card border-0 shadow-sm lesson-summary-card">
                     <div class="card-body">
                         <p class="text-muted small mb-1">
-                            Aktualnie dostępne
+                            Postęp nauki
                         </p>
-                        <div class="d-flex align-items-end gap-2">
-                            <span class="display-6 fw-bold">
+                        <p class="lesson-progress-count mb-2" aria-live="polite">
+                            Ukończono:
+                            <span id="lesson-completed-count" class="fw-bold text-dark">
+                                0
+                            </span>
+                            /
+                            <span id="lesson-total-count" class="fw-bold text-dark">
                                 {{ lessons|length }}
                             </span>
-                            <span class="text-muted mb-2">
-                                lekcji
-                            </span>
-                        </div>
-                        <p class="small text-muted mb-0">
+                        </p>
+                        <p class="small text-muted mb-1">
                             Materiały uporządkowane w praktyczne moduły tematyczne.
+                        </p>
+                        <p class="small text-muted mb-0">
+                            Postęp jest zapisywany lokalnie w tej przeglądarce.
                         </p>
                     </div>
                 </div>
@@ -140,6 +145,7 @@
                     <div
                         class="col-md-6 col-lg-4 lesson-card-wrapper"
                         data-lesson-card
+                        data-lesson-id="{{ lesson.id }}"
                         data-title="{{ lesson.title }}"
                         data-description="{{ lesson.description }}"
                         data-module="{{ lesson.module }}"
@@ -149,12 +155,20 @@
                             <div class="card-body d-flex flex-column">
 
                                 <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
-                                    <div>
+                                    <div class="d-flex flex-wrap gap-1">
                                         <span class="badge text-bg-secondary">
                                             {{ lesson.module }}
                                         </span>
                                         <span class="badge text-bg-light border">
                                             {{ lesson.level }}
+                                        </span>
+                                        <span
+                                            class="lesson-completed-badge"
+                                            data-lesson-completed-status
+                                            hidden
+                                        >
+                                            <span aria-hidden="true">✓</span>
+                                            Ukończono
                                         </span>
                                     </div>
 
@@ -215,6 +229,7 @@
     </div>
 </section>
 
+<script src="{{ url_for('static', path='js/lesson_progress.js') }}"></script>
 <script src="{{ url_for('static', path='js/lessons.js') }}"></script>
 
 {% endblock %}

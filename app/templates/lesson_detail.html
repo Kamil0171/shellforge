@@ -4,7 +4,11 @@
 
 {% block content %}
 
-<section class="py-5 bg-light border-bottom">
+<section
+    class="py-5 bg-light border-bottom"
+    data-lesson-progress-detail
+    data-lesson-id="{{ lesson.id }}"
+>
     <div class="container">
 
         <div class="mb-3">
@@ -27,9 +31,22 @@
             {{ lesson.description }}
         </p>
 
-        <a href="/lessons" class="btn btn-outline-secondary">
-            Wróć do listy lekcji
-        </a>
+        <div class="lesson-header-actions">
+            <a href="/lessons" class="btn btn-outline-secondary">
+                Wróć do listy lekcji
+            </a>
+
+            <button
+                type="button"
+                class="btn lesson-completion-button"
+                data-lesson-completion-toggle
+                aria-pressed="false"
+                aria-label="Oznacz lekcję jako ukończoną"
+            >
+                <span data-lesson-completion-icon aria-hidden="true" hidden>✓</span>
+                <span data-lesson-completion-label>Oznacz jako ukończoną</span>
+            </button>
+        </div>
 
     </div>
 </section>
@@ -167,5 +184,7 @@
 
     </div>
 </section>
+
+<script src="{{ url_for('static', path='js/lesson_progress.js') }}"></script>
 
 {% endblock %}
