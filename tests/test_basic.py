@@ -1340,6 +1340,34 @@ def test_lessons_page_contains_filtering_ui():
     assert "lesson-filters-reset" in response.text
 
 
+def test_lessons_page_contains_local_progress_ui():
+    lessons = get_ordered_lessons()
+    response = client.get("/lessons")
+
+    assert response.status_code == 200
+    assert 'id="lesson-completed-count"' in response.text
+    assert 'id="lesson-total-count"' in response.text
+    assert "Postęp jest zapisywany lokalnie w tej przeglądarce." in response.text
+    assert 'src="http://testserver/static/js/lesson_progress.js"' in response.text
+    assert response.text.count("data-lesson-completed-status") == len(lessons)
+
+    for lesson in lessons:
+        assert f'data-lesson-id="{lesson.id}"' in response.text
+
+
+def test_lesson_detail_page_contains_local_progress_control():
+    lesson = get_ordered_lessons()[0]
+    response = client.get(f"/lessons/{lesson.id}")
+
+    assert response.status_code == 200
+    assert "data-lesson-progress-detail" in response.text
+    assert f'data-lesson-id="{lesson.id}"' in response.text
+    assert "data-lesson-completion-toggle" in response.text
+    assert 'aria-pressed="false"' in response.text
+    assert "Oznacz jako ukończoną" in response.text
+    assert 'src="http://testserver/static/js/lesson_progress.js"' in response.text
+
+
 def test_lessons_page_groups_lessons_into_described_module_sections():
     response = client.get("/lessons")
 
