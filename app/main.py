@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.admin_duty.dynamic_router import router as dynamic_admin_duty_router
 from app.admin_duty.router import router as admin_duty_router
 from app.config import APP_DESCRIPTION, APP_NAME, APP_VERSION
 from app.database import create_db_and_tables
@@ -83,3 +84,4 @@ app.include_router(health.router)
 app.include_router(roadmap.router)
 app.include_router(about.router)
 app.include_router(admin_duty_router)
+app.include_router(dynamic_admin_duty_router)
