@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Incydent dynamiczny — ShellForge{% endblock %}
+
+{% block body_class %}dynamic-session-page{% endblock %}
+
+{% block styles %}
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', path='admin_duty/dynamic/dynamic.css') }}?v=frontend-mvp-1"
+>
+{% endblock %}
+
+{% block content %}
+<section
+    id="dynamic-session-workspace"
+    class="dynamic-session"
+    data-session-id="{{ session_id }}"
+>
+    <div id="workspace-loading" class="workspace-state-panel">
+        <div class="workspace-loading-mark" aria-hidden="true">
+            <span></span><span></span><span></span>
+        </div>
+        <span class="dynamic-eyebrow">Dynamic Incident Lab</span>
+        <h1>Łączenie z sesją operacyjną</h1>
+        <p>Pobieramy briefing i aktualny stan incydentu.</p>
+    </div>
+
+    <div id="workspace-error" class="workspace-state-panel" hidden>
+        <span class="workspace-state-code">SESSION UNAVAILABLE</span>
+        <h1 id="workspace-error-title">Nie udało się pobrać sesji</h1>
+        <p id="workspace-error-message">
+            Sprawdź połączenie i spróbuj ponownie.
+        </p>
+        <div class="workspace-state-actions">
+            <button id="retry-session-button" class="dynamic-primary-button" type="button">
+                Spróbuj ponownie
+            </button>
+            <a href="/admin-duty/dynamic/" class="dynamic-secondary-button">
+                Nowy incydent
+            </a>
+        </div>
+    </div>
+
+    <div id="workspace-content" class="workspace-content" hidden>
+        <header class="workspace-topbar">
+            <div class="workspace-brand">
+                <a href="/admin-duty/dynamic/" aria-label="Wróć do Dynamic Incident Lab">SF</a>
+                <div>
+                    <span>Dynamic Incident</span>
+                    <strong id="workspace-title">Sesja operacyjna</strong>
+                </div>
+            </div>
+
+            <div class="workspace-topbar-state">
+                <span id="session-status-badge" class="session-status-badge">
+                    Łączenie
+                </span>
+                <div class="workspace-score">
+                    <span>SCORE</span>
+                    <strong id="header-score">—</strong>
+                </div>
+            </div>
+        </header>
+
+        <div id="completion-banner" class="completion-banner" hidden>
+            <div>
+                <span class="dynamic-status-dot" aria-hidden="true"></span>
+                <strong>Wymagane cele zostały ukończone.</strong>
+            </div>
+            <button id="banner-end-button" type="button">Zakończ incydent</button>
+        </div>
+
+        <div class="workspace-grid">
+            <aside class="incident-sidebar">
+                <section class="incident-card incident-briefing-card">
+                    <div class="incident-card-heading">
+                        <span>INCIDENT BRIEFING</span>
+                        <span id="incident-difficulty">—</span>
+                    </div>
+                    <h1 id="incident-title">Ładowanie briefingu...</h1>
+                    <p id="incident-briefing" class="incident-briefing">—</p>
+
+                    <dl class="incident-facts">
+                        <div>
+                            <dt>Organizacja</dt>
+                            <dd id="incident-organization">—</dd>
+                        </div>
+                        <div>
+                            <dt>Środowisko</dt>
+                            <dd id="incident-environment">—</dd>
+                        </div>
+                    </dl>
+
+                    <div class="incident-objective-summary">
+                        <span>Główny cel</span>
+                        <p id="incident-main-objective">—</p>
+                    </div>
+
+                    <div class="incident-tools">
+                        <span>Dostępne narzędzia</span>
+                        <div id="incident-interfaces" class="incident-tool-list"></div>
+                    </div>
+                </section>
+
+                <section class="incident-card">
+                    <div class="incident-card-heading">
+                        <span>CELE INCYDENTU</span>
+                        <span id="objectives-counter">0 / 0</span>
+                    </div>
+                    <div id="objectives-list" class="objectives-list"></div>
+                </section>
+
+                <section class="incident-card">
+                    <div class="incident-card-heading">
+                        <span>POSTĘP SESJI</span>
+                        <span id="session-revision">REV 0</span>
+                    </div>
+                    <div class="progress-metrics">
+                        <div>
+                            <span>Wynik</span>
+                            <strong id="progress-score">—</strong>
+                        </div>
+                        <div>
+                            <span>Komendy</span>
+                            <strong id="commands-used">0</strong>
+                        </div>
+                        <div>
+                            <span>Podpowiedzi</span>
+                            <strong id="hints-used">0</strong>
+                        </div>
+                        <div>
+                            <span>Status</span>
+                            <strong id="progress-status">—</strong>
+                        </div>
+                    </div>
+                </section>
+            </aside>
+
+            <main class="terminal-panel" aria-label="Terminal incydentu">
+                <header class="terminal-toolbar">
+                    <div class="terminal-window-controls" aria-hidden="true">
+                        <span></span><span></span><span></span>
+                    </div>
+                    <div class="terminal-toolbar-title">
+                        <span>TERMINAL</span>
+                        <strong>operator@incident</strong>
+                    </div>
+                    <span id="terminal-connection" class="terminal-connection">
+                        CONNECTED
+                    </span>
+                </header>
+
+                <div
+                    id="terminal-output"
+                    class="terminal-output"
+                    role="log"
+                    aria-live="polite"
+                    aria-label="Historia terminala"
+                ></div>
+
+                <form id="terminal-form" class="terminal-form">
+                    <label for="terminal-input" class="visually-hidden">
+                        Polecenie terminala
+                    </label>
+                    <span class="terminal-prompt" aria-hidden="true">
+                        operator@incident:~$
+                    </span>
+                    <input
+                        id="terminal-input"
+                        name="command"
+                        type="text"
+                        maxlength="1024"
+                        autocomplete="off"
+                        autocapitalize="off"
+                        spellcheck="false"
+                        placeholder="Wpisz polecenie..."
+                    >
+                    <button id="terminal-submit" type="submit">Wykonaj</button>
+                </form>
+
+                <footer class="terminal-footer">
+                    <span id="terminal-state">Terminal gotowy</span>
+                    <span><kbd>↑</kbd><kbd>↓</kbd> historia · <kbd>Ctrl</kbd>+<kbd>L</kbd> wyczyść</span>
+                </footer>
+            </main>
+        </div>
+    </div>
+
+    <div
+        id="completion-overlay"
+        class="completion-overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="completion-title"
+        hidden
+    >
+        <div class="completion-panel">
+            <div class="completion-mark" aria-hidden="true">✓</div>
+            <span class="dynamic-eyebrow">Mission complete</span>
+            <h2 id="completion-title">INCYDENT OPANOWANY</h2>
+            <p>
+                Wymagane cele zostały ukończone, a środowisko wróciło
+                do prawidłowego stanu.
+            </p>
+            <div class="completion-stats">
+                <div><span>Wynik</span><strong id="completion-score">—</strong></div>
+                <div><span>Komendy</span><strong id="completion-commands">—</strong></div>
+                <div><span>Cele</span><strong id="completion-objectives">—</strong></div>
+            </div>
+            <div class="completion-actions">
+                <button id="end-session-button" class="dynamic-primary-button" type="button">
+                    Zakończ incydent
+                </button>
+                <button id="continue-session-button" class="dynamic-secondary-button" type="button">
+                    Pozostań w widoku
+                </button>
+            </div>
+            <p id="completion-error" class="completion-error" hidden></p>
+        </div>
+    </div>
+
+    <div id="end-summary" class="end-summary" hidden>
+        <div class="end-summary-panel">
+            <span class="end-summary-code">SESSION ENDED</span>
+            <h1>Incydent zakończony</h1>
+            <p>
+                Sesja została zamknięta. Twój wynik i postęp pozostaną
+                dostępne do czasu wygaśnięcia sesji.
+            </p>
+            <div class="end-summary-grid">
+                <div><span>Poziom</span><strong id="summary-difficulty">—</strong></div>
+                <div><span>Wynik</span><strong id="summary-score">—</strong></div>
+                <div><span>Komendy</span><strong id="summary-commands">—</strong></div>
+                <div><span>Cele</span><strong id="summary-objectives">—</strong></div>
+            </div>
+            <a href="/admin-duty/dynamic/" class="dynamic-primary-button">
+                Nowy incydent
+                <span aria-hidden="true">→</span>
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script
+    src="{{ url_for('static', path='admin_duty/dynamic/scenario.js') }}?v=frontend-mvp-1"
+></script>
+{% endblock %}

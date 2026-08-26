@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}Dynamic Incident Lab — ShellForge{% endblock %}
+
+{% block body_class %}dynamic-lab-page{% endblock %}
+
+{% block styles %}
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', path='admin_duty/dynamic/dynamic.css') }}?v=frontend-mvp-1"
+>
+{% endblock %}
+
+{% block content %}
+<section id="dynamic-lab" class="dynamic-lab">
+    <div class="dynamic-lab-shell">
+        <header class="dynamic-lab-header">
+            <a class="dynamic-back-link" href="/admin-duty/">
+                <span aria-hidden="true">←</span>
+                Symulator
+            </a>
+
+            <div class="dynamic-system-state">
+                <span class="dynamic-status-dot" aria-hidden="true"></span>
+                LAB ONLINE
+            </div>
+        </header>
+
+        <section class="dynamic-hero" aria-labelledby="dynamic-lab-title">
+            <span class="dynamic-eyebrow">ShellForge // Incident Response</span>
+            <h1 id="dynamic-lab-title">Dynamic Incident Lab</h1>
+            <p>
+                Ćwicz diagnostykę prawdziwych problemów Linux i DevOps
+                w dynamicznie tworzonych środowiskach.
+            </p>
+
+            <div class="dynamic-principles" aria-label="Zasady laboratorium">
+                <div class="dynamic-principle">
+                    <span>01</span>
+                    <strong>Nowy incydent przy każdym starcie</strong>
+                </div>
+                <div class="dynamic-principle">
+                    <span>02</span>
+                    <strong>Osobny stan każdej sesji</strong>
+                </div>
+                <div class="dynamic-principle">
+                    <span>03</span>
+                    <strong>Bezpieczna symulacja poleceń</strong>
+                </div>
+                <div class="dynamic-principle">
+                    <span>04</span>
+                    <strong>Wynik zależny od działań</strong>
+                </div>
+            </div>
+        </section>
+
+        <section class="difficulty-section" aria-labelledby="difficulty-title">
+            <div class="difficulty-heading">
+                <div>
+                    <span class="dynamic-eyebrow">Poziom operacji</span>
+                    <h2 id="difficulty-title">Wybierz poziom trudności</h2>
+                </div>
+                <p>
+                    Zacznij od prowadzonej diagnostyki małego środowiska.
+                    Kolejne poziomy pojawią się wraz z rozwojem laboratorium.
+                </p>
+            </div>
+
+            <div class="difficulty-grid">
+                <article class="difficulty-card difficulty-card-active">
+                    <div class="difficulty-card-top">
+                        <span class="difficulty-code">EASY</span>
+                        <span class="difficulty-availability">Dostępny</span>
+                    </div>
+                    <h3>Łatwy</h3>
+                    <p>
+                        Skup się na podstawowej diagnostyce i przywróceniu
+                        działania niewielkiego środowiska.
+                    </p>
+                    <ul>
+                        <li>Mała infrastruktura</li>
+                        <li>Pojedyncza główna awaria</li>
+                        <li>Więcej wskazówek</li>
+                        <li>Podstawowe narzędzia administracyjne</li>
+                    </ul>
+                    <button
+                        id="start-easy-button"
+                        class="dynamic-primary-button"
+                        type="button"
+                    >
+                        Rozpocznij incydent
+                        <span aria-hidden="true">→</span>
+                    </button>
+                </article>
+
+                <article class="difficulty-card difficulty-card-locked">
+                    <div class="difficulty-card-top">
+                        <span class="difficulty-code">MEDIUM</span>
+                        <span class="difficulty-coming-soon">Wkrótce</span>
+                    </div>
+                    <h3>Średni</h3>
+                    <p>
+                        Więcej zależności, mniej oczywiste symptomy
+                        i większa samodzielność podczas diagnozy.
+                    </p>
+                    <ul>
+                        <li>Rozbudowane środowisko</li>
+                        <li>Dodatkowe sygnały diagnostyczne</li>
+                        <li>Mniej wskazówek</li>
+                    </ul>
+                    <button type="button" disabled>Poziom w przygotowaniu</button>
+                </article>
+
+                <article class="difficulty-card difficulty-card-locked">
+                    <div class="difficulty-card-top">
+                        <span class="difficulty-code">HARD</span>
+                        <span class="difficulty-coming-soon">Wkrótce</span>
+                    </div>
+                    <h3>Trudny</h3>
+                    <p>
+                        Złożone incydenty dla osób gotowych samodzielnie
+                        analizować wiele elementów infrastruktury.
+                    </p>
+                    <ul>
+                        <li>Wiele hostów i zależności</li>
+                        <li>Ograniczony briefing</li>
+                        <li>Rygorystyczny scoring</li>
+                    </ul>
+                    <button type="button" disabled>Poziom w przygotowaniu</button>
+                </article>
+            </div>
+        </section>
+
+        <section id="start-error" class="dynamic-start-error" hidden>
+            <div>
+                <span class="dynamic-eyebrow">Nie udało się rozpocząć sesji</span>
+                <p id="start-error-message">
+                    Laboratorium jest chwilowo niedostępne.
+                </p>
+            </div>
+            <button id="retry-start-button" type="button">
+                Spróbuj ponownie
+            </button>
+        </section>
+    </div>
+
+    <div
+        id="generation-overlay"
+        class="generation-overlay"
+        role="status"
+        aria-live="polite"
+        aria-hidden="true"
+        hidden
+    >
+        <div class="generation-panel">
+            <div class="generation-header">
+                <span class="dynamic-eyebrow">Dynamic Incident Lab</span>
+                <span class="generation-live">
+                    <span aria-hidden="true"></span>
+                    Przygotowywanie sesji
+                </span>
+            </div>
+
+            <h2>Budujemy środowisko operacyjne</h2>
+            <p>
+                Za chwilę otrzymasz własną, bezpieczną sesję diagnostyczną.
+            </p>
+
+            <ol id="generation-steps" class="generation-steps">
+                <li class="is-active">Analiza środowiska...</li>
+                <li>Przygotowywanie infrastruktury...</li>
+                <li>Konfiguracja usług...</li>
+                <li>Generowanie symptomów...</li>
+                <li>Uruchamianie terminala...</li>
+                <li>Incydent gotowy.</li>
+            </ol>
+
+            <div class="generation-progress" aria-hidden="true">
+                <span id="generation-progress-bar"></span>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script
+    src="{{ url_for('static', path='admin_duty/dynamic/index.js') }}?v=frontend-mvp-1"
+></script>
+{% endblock %}

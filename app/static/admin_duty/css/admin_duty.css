@@ -291,6 +291,27 @@ body.admin-duty-lobby > footer {
     gap: 18px;
 }
 
+.scenario-grid-modes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.scenario-card-featured {
+    border-color: rgba(74, 222, 128, 0.32);
+    background:
+        linear-gradient(
+            155deg,
+            rgba(8, 31, 35, 0.96),
+            rgba(8, 17, 34, 0.97)
+        );
+    box-shadow:
+        0 22px 58px rgba(0, 0, 0, 0.3),
+        inset 0 2px rgba(74, 222, 128, 0.26);
+}
+
+.scenario-card-featured .scenario-id {
+    color: #86efac;
+}
+
 .scenario-card {
     position: relative;
     display: flex;

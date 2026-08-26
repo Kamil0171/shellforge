@@ -27,7 +27,7 @@
                     <span class="duty-status-indicator"></span>
                     <span>SYSTEM READY</span>
                     <span class="duty-status-separator">/</span>
-                    <span>1 dostępny scenariusz</span>
+                    <span>2 dostępne tryby</span>
                 </div>
 
                 <span class="duty-kicker">
@@ -89,12 +89,12 @@
                     </span>
 
                     <h1>
-                        Wybierz scenariusz
+                        Wybierz tryb rozgrywki
                     </h1>
 
                     <p>
-                        Każdy scenariusz przedstawia inną awarię
-                        lub problem infrastrukturalny.
+                        Rozwiązuj dynamiczne incydenty albo wróć
+                        do klasycznego scenariusza szkoleniowego.
                     </p>
                 </div>
 
@@ -107,16 +107,59 @@
 
             </div>
 
-            <div class="scenario-grid">
+            <div class="scenario-grid scenario-grid-modes">
+
+                <article class="scenario-card scenario-card-featured">
+
+                    <div class="scenario-card-top">
+
+                        <span class="scenario-id">
+                            TRYB DYNAMICZNY
+                        </span>
+
+                        <span class="scenario-difficulty">
+                            Nowa generacja
+                        </span>
+
+                    </div>
+
+                    <h2>
+                        Dynamic Incident Lab
+                    </h2>
+
+                    <p>
+                        Rozpocznij incydent tworzony przy starcie sesji,
+                        diagnozuj środowisko w terminalu i obserwuj
+                        aktualizowany na żywo postęp misji.
+                    </p>
+
+                    <div class="scenario-meta">
+                        <span>Rekomendowany tryb</span>
+                    </div>
+
+                    <div class="scenario-tags">
+                        <span>Dynamiczne środowisko</span>
+                        <span>Terminal</span>
+                        <span>Scoring</span>
+                    </div>
+
+                    <a
+                        href="/admin-duty/dynamic/"
+                        class="duty-primary-button text-decoration-none"
+                    >
+                        Uruchom Dynamic Incident
+                    </a>
+
+                </article>
 
                 {% for scenario in scenarios %}
 
-                    <article class="scenario-card">
+                    <article class="scenario-card scenario-card-classic">
 
                         <div class="scenario-card-top">
 
                             <span class="scenario-id">
-                                {{ scenario.id }}
+                                SCENARIUSZ KLASYCZNY
                             </span>
 
                             <span class="scenario-difficulty">
@@ -156,94 +199,13 @@
                             class="duty-primary-button select-scenario"
                             data-scenario-context="{{ scenario.id }} · {{ scenario.company }}"
                         >
-                            Wybierz scenariusz
+                            Zagraj w {{ scenario.id }}
                         </button>
 
                     </article>
 
                 {% endfor %}
 
-
-                <article class="scenario-card scenario-card-locked">
-
-                    <div class="scenario-card-top">
-
-                        <span class="scenario-id">
-                            INC-002
-                        </span>
-
-                        <span class="scenario-coming-soon">
-                            W przygotowaniu
-                        </span>
-
-                    </div>
-
-                    <h2>
-                        Brak miejsca na serwerze
-                    </h2>
-
-                    <p>
-                        Serwer aplikacyjny przestaje zapisywać dane,
-                        a monitoring zgłasza krytyczne wykorzystanie
-                        przestrzeni dyskowej.
-                    </p>
-
-                    <div class="scenario-tags">
-                        <span>Linux</span>
-                        <span>df</span>
-                        <span>du</span>
-                        <span>logi</span>
-                    </div>
-
-                    <button
-                        type="button"
-                        class="duty-primary-button scenario-disabled-button"
-                        disabled
-                    >
-                        Wkrótce dostępne
-                    </button>
-
-                </article>
-
-
-                <article class="scenario-card scenario-card-locked">
-
-                    <div class="scenario-card-top">
-
-                        <span class="scenario-id">
-                            INC-003
-                        </span>
-
-                        <span class="scenario-coming-soon">
-                            W przygotowaniu
-                        </span>
-
-                    </div>
-
-                    <h2>
-                        Usługa nie uruchamia się
-                    </h2>
-
-                    <p>
-                        Jedna z usług produkcyjnych przestała działać
-                        po zmianie konfiguracji systemu.
-                    </p>
-
-                    <div class="scenario-tags">
-                        <span>systemd</span>
-                        <span>uprawnienia</span>
-                        <span>journalctl</span>
-                    </div>
-
-                    <button
-                        type="button"
-                        class="duty-primary-button scenario-disabled-button"
-                        disabled
-                    >
-                        Wkrótce dostępne
-                    </button>
-
-                </article>
 
             </div>
 
