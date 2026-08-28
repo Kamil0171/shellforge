@@ -27,6 +27,11 @@ def test_dynamic_lobby_renders_difficulty_selection_and_assets():
         in response.text
     )
 
+    source = client.get("/static/admin_duty/dynamic/index.js")
+    assert source.status_code == 200
+    assert "window.location.replace(" in source.text
+    assert "window.location.assign(" not in source.text
+
 
 def test_dynamic_workspace_bootstraps_only_session_id_and_frontend_containers():
     session_id = uuid4()
@@ -44,10 +49,65 @@ def test_dynamic_workspace_bootstraps_only_session_id_and_frontend_containers():
     assert 'id="objectives-list"' in response.text
     assert 'id="completion-overlay"' in response.text
     assert 'id="end-summary"' in response.text
+    assert 'id="game-canvas"' in response.text
+    assert 'id="desktop-gate"' in response.text
+    assert 'id="mission-drawer"' in response.text
+    assert 'id="support-overlay"' in response.text
+    assert 'id="support-runbooks"' in response.text
+    assert 'id="operational-guidance"' in response.text
+    assert 'id="exploration-counter"' not in response.text
+    assert 'class="game-controls"' not in response.text
+    assert 'id="terminal-overlay"' in response.text
+    assert 'id="monitoring-overlay"' in response.text
+    assert 'id="rack-overlay"' in response.text
+    assert 'id="request-hint-button"' in response.text
+    assert 'id="exit-session-button"' in response.text
+    assert 'id="exit-confirmation"' in response.text
+    assert (
+        'href="http://testserver/static/admin_duty/dynamic/gameplay.css'
+        in response.text
+    )
+    assert (
+        'src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"'
+        in response.text
+    )
+    assert (
+        'src="http://testserver/static/admin_duty/dynamic/game.js'
+        in response.text
+    )
+    assert (
+        'src="http://testserver/static/admin_duty/dynamic/terminal.js'
+        in response.text
+    )
     assert (
         'src="http://testserver/static/admin_duty/dynamic/scenario.js'
         in response.text
     )
+
+
+def test_dynamic_gameplay_assets_include_keyboard_and_overlay_contracts():
+    game = client.get("/static/admin_duty/dynamic/game.js")
+    terminal = client.get("/static/admin_duty/dynamic/terminal.js")
+    scenario = client.get("/static/admin_duty/dynamic/scenario.js")
+
+    assert game.status_code == 200
+    assert "Phaser.Input.Keyboard.JustDown" in game.text
+    assert "scene.input.keyboard.enabled = !locked" in game.text
+    assert 'game.canvas.focus({ preventScroll: true })' in game.text
+    assert "createFogOfWar" in game.text
+    assert "discoveredSectors" in game.text
+    assert terminal.status_code == 200
+    assert 'form.addEventListener("submit"' in terminal.text
+    assert 'event.key === "Enter"' in terminal.text
+    assert '["clear", "cls"]' in terminal.text
+    assert "output.replaceChildren()" in terminal.text
+    assert 'event.key === "Escape"' in terminal.text
+    assert 'input.focus({ preventScroll: true })' in terminal.text
+    assert scenario.status_code == 200
+    assert 'window.innerWidth >= 1024' in scenario.text
+    assert "navigator.maxTouchPoints" in scenario.text
+    assert 'window.scrollTo({ top: 0, left: 0, behavior: "instant" })' in scenario.text
+    assert 'window.location.replace("/admin-duty/dynamic/")' in scenario.text
 
 
 def test_dynamic_workspace_rejects_invalid_uuid():

@@ -32,6 +32,7 @@ from app.admin_duty.domain.definition import (
 )
 from app.admin_duty.domain.difficulty import DifficultyLevel, get_difficulty_profile
 from app.admin_duty.validators import IncidentValidationError, IncidentValidator
+from app.admin_duty.virtual_shell import SHELL_CAPABILITIES
 
 GENERATOR_ID = "shellforge.deterministic"
 GENERATOR_VERSION = "2.0"
@@ -287,8 +288,13 @@ def _build_candidate(
             ),
         ),
         capabilities=CapabilitySet(
-            interfaces=(InterfaceCapability.TERMINAL,),
-            command_capability_ids=fault.required_capabilities,
+            interfaces=(
+                InterfaceCapability.TERMINAL,
+                InterfaceCapability.MONITORING,
+            ),
+            command_capability_ids=tuple(
+                dict.fromkeys((*fault.required_capabilities, *SHELL_CAPABILITIES))
+            ),
         ),
         scoring=ScoringRules(
             policy_id=f"scoring.{profile.scoring_severity.value}",

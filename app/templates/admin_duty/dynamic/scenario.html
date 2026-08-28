@@ -1,250 +1,179 @@
 {% extends "base.html" %}
 
 {% block title %}Incydent dynamiczny — ShellForge{% endblock %}
-
 {% block body_class %}dynamic-session-page{% endblock %}
 
 {% block styles %}
-<link
-    rel="stylesheet"
-    href="{{ url_for('static', path='admin_duty/dynamic/dynamic.css') }}?v=frontend-mvp-1"
->
+<link rel="stylesheet" href="{{ url_for('static', path='admin_duty/dynamic/dynamic.css') }}?v=gameplay-2">
+<link rel="stylesheet" href="{{ url_for('static', path='admin_duty/dynamic/gameplay.css') }}?v=gameplay-3">
 {% endblock %}
 
 {% block content %}
-<section
-    id="dynamic-session-workspace"
-    class="dynamic-session"
-    data-session-id="{{ session_id }}"
->
-    <div id="workspace-loading" class="workspace-state-panel">
-        <div class="workspace-loading-mark" aria-hidden="true">
-            <span></span><span></span><span></span>
+<section id="dynamic-session-workspace" class="dynamic-gameplay" data-session-id="{{ session_id }}">
+    <div id="desktop-gate" class="desktop-gate" hidden>
+        <div class="desktop-gate-card">
+            <span class="dynamic-eyebrow">DESKTOP REQUIRED</span>
+            <div class="desktop-gate-icon" aria-hidden="true">▣</div>
+            <h1>Dynamic Incident jest obecnie dostępny tylko na komputerach</h1>
+            <p>Tryb 2D został zaprojektowany z myślą o większym ekranie i sterowaniu desktopowym. Wersja mobilna pojawi się w przyszłości.</p>
+            <strong>Sesja pozostaje aktywna i nie traci postępu.</strong>
+            <a href="/admin-duty/dynamic/" class="dynamic-secondary-button">Wróć do laboratorium</a>
         </div>
+    </div>
+
+    <div id="workspace-loading" class="workspace-state-panel">
+        <div class="workspace-loading-mark" aria-hidden="true"><span></span><span></span><span></span></div>
         <span class="dynamic-eyebrow">Dynamic Incident Lab</span>
-        <h1>Łączenie z sesją operacyjną</h1>
-        <p>Pobieramy briefing i aktualny stan incydentu.</p>
+        <h1>Łączenie z centrum NOC</h1>
+        <p>Pobieramy publiczny snapshot mapy i aktualny stan incydentu.</p>
     </div>
 
     <div id="workspace-error" class="workspace-state-panel" hidden>
         <span class="workspace-state-code">SESSION UNAVAILABLE</span>
         <h1 id="workspace-error-title">Nie udało się pobrać sesji</h1>
-        <p id="workspace-error-message">
-            Sprawdź połączenie i spróbuj ponownie.
-        </p>
+        <p id="workspace-error-message">Sprawdź połączenie i spróbuj ponownie.</p>
         <div class="workspace-state-actions">
-            <button id="retry-session-button" class="dynamic-primary-button" type="button">
-                Spróbuj ponownie
-            </button>
-            <a href="/admin-duty/dynamic/" class="dynamic-secondary-button">
-                Nowy incydent
-            </a>
+            <button id="retry-session-button" class="dynamic-primary-button" type="button">Spróbuj ponownie</button>
+            <a href="/admin-duty/dynamic/" class="dynamic-secondary-button">Nowy incydent</a>
         </div>
     </div>
 
-    <div id="workspace-content" class="workspace-content" hidden>
-        <header class="workspace-topbar">
-            <div class="workspace-brand">
+    <div id="workspace-content" class="gameplay-workspace" hidden>
+        <header class="gameplay-topbar">
+            <div class="gameplay-brand">
                 <a href="/admin-duty/dynamic/" aria-label="Wróć do Dynamic Incident Lab">SF</a>
-                <div>
-                    <span>Dynamic Incident</span>
-                    <strong id="workspace-title">Sesja operacyjna</strong>
-                </div>
+                <div><span>LIVE INCIDENT</span><strong id="workspace-title">Sesja operacyjna</strong></div>
             </div>
-
-            <div class="workspace-topbar-state">
-                <span id="session-status-badge" class="session-status-badge">
-                    Łączenie
-                </span>
-                <div class="workspace-score">
-                    <span>SCORE</span>
-                    <strong id="header-score">—</strong>
-                </div>
+            <div class="gameplay-statusline">
+                <span id="session-status-badge" class="session-status-badge">Łączenie</span>
+                <span class="gameplay-map-name" id="game-map-name">Modern NOC</span>
+                <div class="workspace-score"><span>SCORE</span><strong id="header-score">—</strong></div>
+                <button id="toggle-briefing-button" class="workspace-mission-button" type="button" aria-expanded="false" aria-controls="mission-drawer">Misja</button>
+                <button id="exit-session-button" class="workspace-exit-button" type="button">Opuść incydent</button>
             </div>
         </header>
 
-        <div id="completion-banner" class="completion-banner" hidden>
-            <div>
-                <span class="dynamic-status-dot" aria-hidden="true"></span>
-                <strong>Wymagane cele zostały ukończone.</strong>
-            </div>
+        <div id="completion-banner" class="completion-banner gameplay-completion-banner" hidden>
+            <div><span class="dynamic-status-dot" aria-hidden="true"></span><strong>Wymagane cele zostały ukończone.</strong></div>
             <button id="banner-end-button" type="button">Zakończ incydent</button>
         </div>
 
-        <div class="workspace-grid">
-            <aside class="incident-sidebar">
-                <section class="incident-card incident-briefing-card">
-                    <div class="incident-card-heading">
-                        <span>INCIDENT BRIEFING</span>
-                        <span id="incident-difficulty">—</span>
-                    </div>
+        <div class="gameplay-stage">
+            <section class="game-viewport-panel" aria-label="Interaktywna mapa Modern NOC">
+                <div id="game-canvas" class="game-canvas"></div>
+                <div class="game-vignette" aria-hidden="true"></div>
+                <div class="game-map-label"><span>SECTOR</span><strong id="game-sector-label">NOC / OPS FLOOR</strong></div>
+                <div id="interaction-prompt" class="interaction-prompt" hidden>
+                    <kbd>E</kbd><span id="interaction-prompt-label">Użyj stanowiska</span>
+                </div>
+                <div id="game-announcement" class="game-announcement" role="status" aria-live="polite"></div>
+            </section>
+
+            <aside id="mission-drawer" class="gameplay-left-panel is-collapsed" aria-label="Briefing i cele" aria-hidden="true">
+                <header class="mission-drawer-header">
+                    <div><span>AKTYWNA MISJA</span><strong>Briefing incydentu</strong></div>
+                    <button id="close-briefing-button" type="button" aria-label="Zamknij panel misji">×</button>
+                </header>
+                <div id="briefing-panel-content" class="briefing-panel-content">
+                    <div class="incident-card-heading"><span>INCIDENT BRIEFING</span><span id="incident-difficulty">—</span></div>
                     <h1 id="incident-title">Ładowanie briefingu...</h1>
                     <p id="incident-briefing" class="incident-briefing">—</p>
-
                     <dl class="incident-facts">
-                        <div>
-                            <dt>Organizacja</dt>
-                            <dd id="incident-organization">—</dd>
-                        </div>
-                        <div>
-                            <dt>Środowisko</dt>
-                            <dd id="incident-environment">—</dd>
-                        </div>
+                        <div><dt>Organizacja</dt><dd id="incident-organization">—</dd></div>
+                        <div><dt>Środowisko</dt><dd id="incident-environment">—</dd></div>
                     </dl>
-
-                    <div class="incident-objective-summary">
-                        <span>Główny cel</span>
-                        <p id="incident-main-objective">—</p>
+                    <div class="incident-objective-summary"><span>Główny cel</span><p id="incident-main-objective">—</p></div>
+                    <div class="gameplay-objectives">
+                        <div class="incident-card-heading"><span>CELE</span><span id="objectives-counter">0 / 0</span></div>
+                        <div id="objectives-list" class="objectives-list"></div>
                     </div>
-
-                    <div class="incident-tools">
-                        <span>Dostępne narzędzia</span>
-                        <div id="incident-interfaces" class="incident-tool-list"></div>
-                    </div>
-                </section>
-
-                <section class="incident-card">
-                    <div class="incident-card-heading">
-                        <span>CELE INCYDENTU</span>
-                        <span id="objectives-counter">0 / 0</span>
-                    </div>
-                    <div id="objectives-list" class="objectives-list"></div>
-                </section>
-
-                <section class="incident-card">
-                    <div class="incident-card-heading">
-                        <span>POSTĘP SESJI</span>
-                        <span id="session-revision">REV 0</span>
-                    </div>
-                    <div class="progress-metrics">
-                        <div>
-                            <span>Wynik</span>
-                            <strong id="progress-score">—</strong>
-                        </div>
-                        <div>
-                            <span>Komendy</span>
-                            <strong id="commands-used">0</strong>
-                        </div>
-                        <div>
-                            <span>Podpowiedzi</span>
-                            <strong id="hints-used">0</strong>
-                        </div>
-                        <div>
-                            <span>Status</span>
-                            <strong id="progress-status">—</strong>
-                        </div>
-                    </div>
-                </section>
+                </div>
             </aside>
 
-            <main class="terminal-panel" aria-label="Terminal incydentu">
-                <header class="terminal-toolbar">
-                    <div class="terminal-window-controls" aria-hidden="true">
-                        <span></span><span></span><span></span>
-                    </div>
-                    <div class="terminal-toolbar-title">
-                        <span>TERMINAL</span>
-                        <strong>operator@incident</strong>
-                    </div>
-                    <span id="terminal-connection" class="terminal-connection">
-                        CONNECTED
-                    </span>
-                </header>
-
-                <div
-                    id="terminal-output"
-                    class="terminal-output"
-                    role="log"
-                    aria-live="polite"
-                    aria-label="Historia terminala"
-                ></div>
-
-                <form id="terminal-form" class="terminal-form">
-                    <label for="terminal-input" class="visually-hidden">
-                        Polecenie terminala
-                    </label>
-                    <span class="terminal-prompt" aria-hidden="true">
-                        operator@incident:~$
-                    </span>
-                    <input
-                        id="terminal-input"
-                        name="command"
-                        type="text"
-                        maxlength="1024"
-                        autocomplete="off"
-                        autocapitalize="off"
-                        spellcheck="false"
-                        placeholder="Wpisz polecenie..."
-                    >
-                    <button id="terminal-submit" type="submit">Wykonaj</button>
-                </form>
-
-                <footer class="terminal-footer">
-                    <span id="terminal-state">Terminal gotowy</span>
-                    <span><kbd>↑</kbd><kbd>↓</kbd> historia · <kbd>Ctrl</kbd>+<kbd>L</kbd> wyczyść</span>
-                </footer>
-            </main>
+            <aside class="gameplay-hud" aria-label="Stan sesji">
+                <div class="hud-health"><span>INFRA</span><strong id="infrastructure-health">—</strong></div>
+                <div><span>STATUS</span><strong id="progress-status">—</strong></div>
+                <div><span>CMD</span><strong id="commands-used">0</strong></div>
+                <strong id="hints-used" class="visually-hidden">0</strong>
+                <strong id="session-revision" class="visually-hidden">0</strong>
+            </aside>
         </div>
     </div>
 
-    <div
-        id="completion-overlay"
-        class="completion-overlay"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="completion-title"
-        hidden
-    >
-        <div class="completion-panel">
-            <div class="completion-mark" aria-hidden="true">✓</div>
-            <span class="dynamic-eyebrow">Mission complete</span>
-            <h2 id="completion-title">INCYDENT OPANOWANY</h2>
-            <p>
-                Wymagane cele zostały ukończone, a środowisko wróciło
-                do prawidłowego stanu.
-            </p>
-            <div class="completion-stats">
-                <div><span>Wynik</span><strong id="completion-score">—</strong></div>
-                <div><span>Komendy</span><strong id="completion-commands">—</strong></div>
-                <div><span>Cele</span><strong id="completion-objectives">—</strong></div>
+    <div id="terminal-overlay" class="game-overlay" role="dialog" aria-modal="true" aria-labelledby="terminal-title" hidden>
+        <section class="game-overlay-panel terminal-overlay-panel">
+            <header class="terminal-toolbar">
+                <div class="terminal-window-controls" aria-hidden="true"><span></span><span></span><span></span></div>
+                <div class="terminal-toolbar-title"><span>SECURE SHELL</span><strong id="terminal-title">operator@incident</strong></div>
+                <button id="terminal-close" class="overlay-close" type="button" aria-label="Zamknij terminal">ESC</button>
+            </header>
+            <div id="terminal-output" class="terminal-output" role="log" aria-live="polite" aria-label="Historia terminala"></div>
+            <form id="terminal-form" class="terminal-form">
+                <label for="terminal-input" class="visually-hidden">Polecenie terminala</label>
+                <span id="terminal-prompt" class="terminal-prompt" aria-hidden="true">operator@incident:~$</span>
+                <input id="terminal-input" name="command" type="text" maxlength="1024" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Wpisz polecenie i naciśnij Enter...">
+                <button id="terminal-submit" type="submit">Wykonaj</button>
+            </form>
+            <footer class="terminal-footer"><span id="terminal-state">Terminal gotowy</span><span><kbd>Enter</kbd> wykonaj · <kbd>↑↓</kbd> historia · <kbd>Esc</kbd> zamknij</span></footer>
+        </section>
+    </div>
+
+    <div id="monitoring-overlay" class="game-overlay" role="dialog" aria-modal="true" aria-labelledby="monitoring-title" hidden>
+        <section class="game-overlay-panel monitoring-overlay-panel">
+            <header class="overlay-panel-header"><div><span class="dynamic-eyebrow">OBSERVABILITY WALL</span><h2 id="monitoring-title">Monitoring infrastruktury</h2></div><button class="overlay-close" data-close-overlay="monitoring-overlay" type="button">ESC</button></header>
+            <div id="monitoring-signals" class="monitoring-signals"></div>
+            <p class="overlay-help">Statusy pochodzą z bieżącego publicznego snapshotu sesji.</p>
+        </section>
+    </div>
+
+    <div id="rack-overlay" class="game-overlay" role="dialog" aria-modal="true" aria-labelledby="rack-title" hidden>
+        <section class="game-overlay-panel rack-overlay-panel">
+            <header class="overlay-panel-header"><div><span class="dynamic-eyebrow">RACK INSPECTION</span><h2 id="rack-title">Szafa infrastruktury</h2></div><button class="overlay-close" data-close-overlay="rack-overlay" type="button">ESC</button></header>
+            <div id="rack-details" class="rack-details"></div>
+            <p class="overlay-help">Inspekcja jest pasywna i nie modyfikuje stanu sesji.</p>
+        </section>
+    </div>
+
+    <div id="support-overlay" class="game-overlay" role="dialog" aria-modal="true" aria-labelledby="support-title" hidden>
+        <section class="game-overlay-panel support-overlay-panel">
+            <header class="overlay-panel-header"><div><span class="dynamic-eyebrow">SUPPORT BAY</span><h2 id="support-title">Centrum wsparcia</h2></div><button class="overlay-close" data-close-overlay="support-overlay" type="button">ESC</button></header>
+            <div class="support-center-grid">
+                <section><div class="incident-card-heading"><span>RUNBOOKI</span><span>Materiały edukacyjne</span></div><div id="support-runbooks" class="support-runbooks"></div></section>
+                <section><div class="incident-card-heading"><span>WSKAZÓWKI OPERACYJNE</span><span>Bezpłatne</span></div><ul id="operational-guidance" class="operational-guidance"></ul></section>
+                <section class="support-hints"><div class="incident-card-heading"><span>PODPOWIEDZI SCENARIUSZA</span><span id="hints-counter">0 / 0</span></div><ol id="revealed-hints" class="revealed-hints"></ol><button id="request-hint-button" class="hint-button" type="button">Pobierz podpowiedź</button><p id="hint-error" class="hint-error" hidden></p></section>
             </div>
-            <div class="completion-actions">
-                <button id="end-session-button" class="dynamic-primary-button" type="button">
-                    Zakończ incydent
-                </button>
-                <button id="continue-session-button" class="dynamic-secondary-button" type="button">
-                    Pozostań w widoku
-                </button>
-            </div>
+        </section>
+    </div>
+
+    <div id="exit-confirmation" class="game-overlay" role="dialog" aria-modal="true" aria-labelledby="exit-confirmation-title" hidden>
+        <section class="game-overlay-panel exit-confirmation-panel">
+            <span class="dynamic-eyebrow">ZAKOŃCZENIE SESJI</span>
+            <h2 id="exit-confirmation-title">Opuścić aktywny incydent?</h2>
+            <p id="exit-confirmation-message">Sesja zostanie oznaczona jako zakończona. Zmiana viewportu nigdy nie wykonuje tej operacji.</p>
+            <div class="exit-confirmation-actions"><button id="cancel-exit-button" class="dynamic-secondary-button" type="button">Wróć do incydentu</button><button id="confirm-exit-button" class="danger-button" type="button">Opuść incydent</button></div>
+            <p id="exit-error" class="completion-error" hidden></p>
+        </section>
+    </div>
+
+    <div id="completion-overlay" class="game-overlay" role="dialog" aria-modal="true" aria-labelledby="completion-title" hidden>
+        <section class="game-overlay-panel completion-panel">
+            <div class="completion-mark" aria-hidden="true">✓</div><span class="dynamic-eyebrow">Mission complete</span><h2 id="completion-title">INCYDENT OPANOWANY</h2>
+            <p>Wymagane cele zostały ukończone, a środowisko wróciło do prawidłowego stanu.</p>
+            <div class="completion-stats"><div><span>Wynik</span><strong id="completion-score">—</strong></div><div><span>Komendy</span><strong id="completion-commands">—</strong></div><div><span>Cele</span><strong id="completion-objectives">—</strong></div></div>
+            <div class="completion-actions"><button id="end-session-button" class="dynamic-primary-button" type="button">Zakończ incydent</button><button id="continue-session-button" class="dynamic-secondary-button" type="button">Wróć do mapy</button></div>
             <p id="completion-error" class="completion-error" hidden></p>
-        </div>
+        </section>
     </div>
 
     <div id="end-summary" class="end-summary" hidden>
-        <div class="end-summary-panel">
-            <span class="end-summary-code">SESSION ENDED</span>
-            <h1>Incydent zakończony</h1>
-            <p>
-                Sesja została zamknięta. Twój wynik i postęp pozostaną
-                dostępne do czasu wygaśnięcia sesji.
-            </p>
-            <div class="end-summary-grid">
-                <div><span>Poziom</span><strong id="summary-difficulty">—</strong></div>
-                <div><span>Wynik</span><strong id="summary-score">—</strong></div>
-                <div><span>Komendy</span><strong id="summary-commands">—</strong></div>
-                <div><span>Cele</span><strong id="summary-objectives">—</strong></div>
-            </div>
-            <a href="/admin-duty/dynamic/" class="dynamic-primary-button">
-                Nowy incydent
-                <span aria-hidden="true">→</span>
-            </a>
-        </div>
+        <div class="end-summary-panel"><span class="end-summary-code">SESSION ENDED</span><h1>Incydent zakończony</h1><p>Wynik i postęp pozostaną dostępne do czasu wygaśnięcia sesji.</p><div class="end-summary-grid"><div><span>Poziom</span><strong id="summary-difficulty">—</strong></div><div><span>Wynik</span><strong id="summary-score">—</strong></div><div><span>Komendy</span><strong id="summary-commands">—</strong></div><div><span>Cele</span><strong id="summary-objectives">—</strong></div></div><a href="/admin-duty/dynamic/" class="dynamic-primary-button">Nowy incydent <span aria-hidden="true">→</span></a></div>
     </div>
 </section>
 {% endblock %}
 
 {% block scripts %}
-<script
-    src="{{ url_for('static', path='admin_duty/dynamic/scenario.js') }}?v=frontend-mvp-1"
-></script>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"></script>
+<script src="{{ url_for('static', path='admin_duty/dynamic/game.js') }}?v=rocky-shell-1"></script>
+<script src="{{ url_for('static', path='admin_duty/dynamic/terminal.js') }}?v=rocky-shell-1"></script>
+<script src="{{ url_for('static', path='admin_duty/dynamic/scenario.js') }}?v=rocky-shell-1"></script>
 {% endblock %}

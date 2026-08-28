@@ -50,6 +50,8 @@ Scenariusz obejmuje między innymi:
 - stopniowane podpowiedzi;
 - pełne rozwiązanie dostępne na żądanie.
 
+Rozwijany tryb Dynamic Incident łączy eksplorowaną mapę 2D Modern NOC z izolowanym środowiskiem Virtual Rocky Linux. Gracz korzysta z monitoringu, racków, Centrum wsparcia i terminala obsługującego kontrolowany katalog realnych składniowo poleceń Linux. Symulacja nigdy nie wykonuje poleceń na hoście aplikacji.
+
 ## Zakres edukacyjny
 
 Materiały dostępne w aplikacji obejmują:
@@ -106,6 +108,29 @@ Szczegółowy opis komponentów i przepływów znajduje się w dokumencie [Archi
 
 - GitHub Actions
 - Dependabot
+
+## Praca lokalna
+
+Zależności developerskie, w tym pre-commit, można zainstalować poleceniem:
+
+```powershell
+python -m pip install -r requirements-dev.txt
+pre-commit install
+```
+
+Pełny lokalny quality gate:
+
+```powershell
+python scripts/check.py
+```
+
+Architektura gameplay, publiczna projekcja mapy i zasady dodawania kolejnych map są opisane w [notatkach developerskich Dynamic Incident](docs/dynamic-incident-development.md).
+
+Smoke test uruchomionej pod adresem `http://127.0.0.1:8000` aplikacji:
+
+```powershell
+python scripts/smoke_test.py
+```
 
 ### Produkcja
 

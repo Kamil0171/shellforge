@@ -32,10 +32,12 @@ from app.admin_duty.repositories import (
     SessionNotFoundError,
 )
 from app.admin_duty.services import (
+    DynamicHintResult,
     DynamicIncidentService,
     DynamicSessionEndResult,
     DynamicSessionStartResult,
     DynamicSessionView,
+    HintUnavailableError,
 )
 
 router = APIRouter(
@@ -61,6 +63,10 @@ class DynamicCommandRequest(StrictRequestModel):
 
 
 class DynamicEndRequest(StrictRequestModel):
+    session_id: UUID
+
+
+class DynamicHintRequest(StrictRequestModel):
     session_id: UUID
 
 
@@ -113,6 +119,12 @@ def _error_response(error: Exception) -> JSONResponse:
         )
 
     if isinstance(error, InactiveSessionError):
+        return JSONResponse(
+            status_code=409,
+            content={"detail": str(error)},
+        )
+
+    if isinstance(error, HintUnavailableError):
         return JSONResponse(
             status_code=409,
             content={"detail": str(error)},
@@ -205,6 +217,20 @@ def execute_dynamic_command(
             payload.command,
             now=utc_now(),
         )
+    except Exception as error:
+        return _error_response(error)
+
+
+@router.post(
+    "/api/hint",
+    response_model=DynamicHintResult,
+)
+def request_dynamic_hint(
+    payload: DynamicHintRequest,
+    service: DynamicIncidentService = Depends(get_dynamic_incident_service),
+):
+    try:
+        return service.request_hint(payload.session_id, now=utc_now())
     except Exception as error:
         return _error_response(error)
 
