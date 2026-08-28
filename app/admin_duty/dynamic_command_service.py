@@ -20,10 +20,21 @@ class DynamicCommandService:
     ) -> CommandExecutionResult:
         request = parse_dynamic_command(command)
 
-        return DynamicCommandDispatcher().dispatch(
+        result = DynamicCommandDispatcher().dispatch(
             definition,
             state,
             request,
             engine=engine,
             now=now,
+        )
+        cwd = state.current_working_directory
+        home = state.virtual_rocky.home_directory
+        display_cwd = "~" if cwd == home else cwd
+        if cwd.startswith(f"{home}/"):
+            display_cwd = f"~/{cwd.removeprefix(f'{home}/')}"
+        return result.model_copy(
+            update={
+                "current_working_directory": cwd,
+                "prompt": f"operator@incident:{display_cwd}$",
+            }
         )

@@ -1,6 +1,7 @@
 import posixpath
 from datetime import UTC, datetime
 from enum import StrEnum
+from typing import Literal
 from uuid import UUID, uuid4
 
 from pydantic import (
@@ -68,6 +69,35 @@ class RuntimeWorldState(MutableDomainModel):
         return self
 
 
+class VirtualFileEntry(MutableDomainModel):
+    path: str = Field(min_length=1, max_length=1024)
+    kind: Literal["directory", "file"]
+    content: str = Field(default="", max_length=32768)
+    mode: str = Field(min_length=3, max_length=10)
+    owner: str = Field(min_length=1, max_length=64)
+    group: str = Field(min_length=1, max_length=64)
+
+    @field_validator("path")
+    @classmethod
+    def validate_path(cls, value: str) -> str:
+        if not value.startswith("/"):
+            raise ValueError("Ścieżka wirtualnego filesystemu musi być bezwzględna.")
+        return "/" + posixpath.normpath(value).lstrip("/")
+
+
+class VirtualRockyRuntime(MutableDomainModel):
+    hostname: str = Field(default="incident-host", min_length=1, max_length=253)
+    user: str = Field(default="operator", min_length=1, max_length=64)
+    home_directory: str = Field(default="/home/operator", min_length=1, max_length=1024)
+    filesystem: dict[str, VirtualFileEntry] = Field(default_factory=dict, max_length=2048)
+
+    @model_validator(mode="after")
+    def validate_filesystem_keys(self):
+        if any(path != entry.path for path, entry in self.filesystem.items()):
+            raise ValueError("Klucz filesystemu musi odpowiadać ścieżce wpisu.")
+        return self
+
+
 class SessionRuntimeState(MutableDomainModel):
     scenario_id: UUID
     session_id: UUID
@@ -75,6 +105,7 @@ class SessionRuntimeState(MutableDomainModel):
     last_activity: AwareDatetime
     status: SessionStatus
     current_working_directory: str = Field(min_length=1, max_length=1024)
+    virtual_rocky: VirtualRockyRuntime = Field(default_factory=VirtualRockyRuntime)
     world_state: RuntimeWorldState
     score: int = Field(ge=0, le=1_000_000)
     commands_used: int = Field(default=0, ge=0)
@@ -119,14 +150,123 @@ def create_runtime_resource(resource: WorldResource) -> RuntimeResource:
     )
 
 
+def _virtual_directory(path: str, mode: str = "0755", owner: str = "root") -> VirtualFileEntry:
+    return VirtualFileEntry(
+        path=path,
+        kind="directory",
+        mode=mode,
+        owner=owner,
+        group=owner,
+    )
+
+
+def _virtual_file(
+    path: str,
+    content: str,
+    *,
+    mode: str = "0644",
+    owner: str = "root",
+    group: str | None = None,
+) -> VirtualFileEntry:
+    return VirtualFileEntry(
+        path=path,
+        kind="file",
+        content=content,
+        mode=mode,
+        owner=owner,
+        group=group or owner,
+    )
+
+
+def create_virtual_rocky_runtime(definition: IncidentDefinition) -> VirtualRockyRuntime:
+    resources = definition.initial_world_state.resources
+    service = next(
+        resource for resource in resources if resource.resource_type is ResourceType.SERVICE
+    )
+    attributes = {field.key: field.value for field in service.attributes}
+    host = next(
+        resource
+        for resource in resources
+        if resource.resource_id == service.parent_id
+    )
+    host_attributes = {field.key: field.value for field in host.attributes}
+    hostname = str(host_attributes.get("hostname", "incident-host"))
+    service_name = str(attributes.get("service_name", f"{service.resource_id}.service"))
+    app_name = service_name.removesuffix(".service")
+    configured_exec_target = str(attributes.get("configured_exec_start", app_name))
+    expected_exec_target = str(
+        attributes.get("expected_exec_start", configured_exec_target)
+    )
+    executable = next(
+        (
+            resource
+            for resource in resources
+            if resource.resource_id == attributes.get("executable_resource_id")
+        ),
+        None,
+    )
+    executable_attributes = (
+        {field.key: field.value for field in executable.attributes}
+        if executable is not None
+        else {}
+    )
+    app_directory = f"/opt/{app_name}"
+    service_path = f"/etc/systemd/system/{service_name}"
+    log_path = f"/var/log/{app_name}.log"
+    unit_content = (
+        "[Unit]\n"
+        f"Description=ShellForge incident service {app_name}\n"
+        "After=network-online.target\n\n"
+        "[Service]\n"
+        "Type=simple\n"
+        f"ExecStart={app_directory}/{configured_exec_target}\n"
+        "User=app\n"
+        "Restart=on-failure\n\n"
+        "[Install]\n"
+        "WantedBy=multi-user.target\n"
+    )
+    entries = (
+        _virtual_directory("/"),
+        _virtual_directory("/etc"),
+        _virtual_directory("/etc/systemd"),
+        _virtual_directory("/etc/systemd/system"),
+        _virtual_directory("/var"),
+        _virtual_directory("/var/log", mode="0750"),
+        _virtual_directory("/home"),
+        _virtual_directory("/home/operator", owner="operator"),
+        _virtual_file("/home/operator/README.txt", "Środowisko szkoleniowe ShellForge.\n", owner="operator"),
+        _virtual_directory("/opt"),
+        _virtual_directory(app_directory, mode="0755", owner="app"),
+        _virtual_file(
+            f"{app_directory}/{expected_exec_target}",
+            "ELF virtual executable\n",
+            mode=str(executable_attributes.get("current_mode", "0755")),
+            owner=str(executable_attributes.get("owner", "app")),
+        ),
+        _virtual_directory("/srv"),
+        _virtual_directory(f"/srv/{app_name}", owner="app"),
+        _virtual_directory("/tmp", mode="1777"),
+        _virtual_directory("/root", mode="0700"),
+        _virtual_file(service_path, unit_content),
+        _virtual_file(log_path, f"{app_name}: oczekiwanie na diagnostykę operatora\n", mode="0640", owner="app", group="app"),
+        _virtual_file(
+            "/etc/os-release",
+            'NAME="Rocky Linux"\nVERSION="9.6 (Blue Onyx)"\nID="rocky"\nVERSION_ID="9.6"\n',
+        ),
+    )
+    return VirtualRockyRuntime(
+        hostname=hostname,
+        filesystem={entry.path: entry for entry in entries},
+    )
+
+
 def create_session_runtime(
     definition: IncidentDefinition,
     *,
     session_id: UUID | None = None,
     now: datetime | None = None,
-    current_working_directory: str = "/",
+    current_working_directory: str = "/home/operator",
 ) -> SessionRuntimeState:
-    """Utwórz runtime; domyślne / jest przejściowe do czasu modelu environment."""
     current_time = now if now is not None else utc_now()
     runtime_resources = {
         resource.resource_id: create_runtime_resource(resource)
@@ -140,6 +280,7 @@ def create_session_runtime(
         last_activity=current_time,
         status=SessionStatus.ACTIVE,
         current_working_directory=current_working_directory,
+        virtual_rocky=create_virtual_rocky_runtime(definition),
         world_state=RuntimeWorldState(resources=runtime_resources),
         score=definition.scoring.initial_score,
     )

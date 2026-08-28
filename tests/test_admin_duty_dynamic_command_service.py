@@ -110,7 +110,7 @@ def test_parser_error_leaves_runtime_unchanged():
         service.execute(
             definition,
             state,
-            "systemctl stop service-api",
+            "systemctl destroy service-api",
             now=STATUS_TIME,
         )
 

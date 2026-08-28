@@ -31,6 +31,17 @@ def test_catalog_contains_three_easy_environments_and_matching_maps():
         assert len(hosts) == 2
         assert DifficultyLevel.EASY in environment.compatible_difficulties
 
+    for template in MAP_TEMPLATES:
+        assert template.snapshot.width == 1800
+        assert template.snapshot.height == 1100
+        assert {item.capability_id for item in template.snapshot.interactions} == {
+            "terminal",
+            "monitoring",
+            "rack",
+            "support",
+        }
+        assert len(template.snapshot.collision_zones) >= 18
+
 
 def test_environment_baselines_are_healthy_and_have_required_roles():
     expected_roles = {

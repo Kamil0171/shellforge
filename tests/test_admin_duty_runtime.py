@@ -243,8 +243,8 @@ def test_current_working_directory_is_absolute_and_normalized():
         runtime.current_working_directory = "home/operator"
 
 
-def test_default_current_working_directory_is_root():
-    assert build_runtime().current_working_directory == "/"
+def test_default_current_working_directory_is_operator_home():
+    assert build_runtime().current_working_directory == "/home/operator"
 
 
 def test_runtime_world_rejects_resource_key_mismatch():

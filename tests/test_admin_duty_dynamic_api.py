@@ -69,6 +69,27 @@ def test_complete_dynamic_api_flow(api_context):
     assert started["progress"]["status"] == "active"
     assert started["incident"]["title"] == "Niedostępność API platformy"
     assert started["incident"]["briefing"]
+    assert started["hint_limit"] == 3
+    assert started["revealed_hints"] == []
+    assert started["infrastructure"]["nodes"]
+    assert started["game_map"]["theme"] == "modern-noc"
+    assert {item["type"] for item in started["game_map"]["interactions"]} == {
+        "terminal",
+        "monitoring",
+        "rack",
+        "support",
+    }
+    assert started["monitoring"]["signals"]
+    assert started["shell"] == {
+        "user": "operator",
+        "hostname": "app-01",
+        "current_working_directory": "/home/operator",
+        "prompt": "operator@incident:~$",
+    }
+    assert len(started["support_center"]["runbooks"]) >= 2
+    assert started["support_center"]["operational_guidance"]
+    assert "filesystem" not in started
+    assert "virtual_rocky" not in started
 
     current = client.get(f"/admin-duty/dynamic/api/sessions/{session_id}")
     assert current.status_code == 200
@@ -157,7 +178,7 @@ def test_api_maps_invalid_command_and_unknown_session(api_context):
         "/admin-duty/dynamic/api/command",
         json={
             "session_id": started["session_id"],
-            "command": "systemctl stop service-api",
+            "command": "systemctl destroy service-api",
         },
     )
     unknown = client.get(f"/admin-duty/dynamic/api/sessions/{uuid4()}")
@@ -244,6 +265,16 @@ def test_public_api_does_not_expose_backend_only_definition_data(api_context):
         "seed",
         "initial_world_state",
         "completion_condition",
+        "attributes",
+        "expected_exec_start",
+        "configured_exec_start",
+        "expected_mode",
+        "fault_type",
+        "root_cause",
+        "command_capabilities",
+        "parameters",
+        "capability_id",
+        "map_snapshot",
     }
 
     def collect_keys(value):
@@ -256,6 +287,150 @@ def test_public_api_does_not_expose_backend_only_definition_data(api_context):
         return set()
 
     assert forbidden_keys.isdisjoint(collect_keys(response))
+
+
+def test_hint_lifecycle_exposes_only_revealed_prefix(api_context):
+    started = start_easy(seed=123).json()
+    session_id = started["session_id"]
+    definition = api_context["scenarios"].get(UUID(started["scenario_id"]))
+    initial_score = started["progress"]["score"]
+
+    assert "hint" not in started
+    assert started["revealed_hints"] == []
+
+    first = client.post(
+        "/admin-duty/dynamic/api/hint",
+        json={"session_id": session_id},
+    )
+
+    assert first.status_code == 200
+    payload = first.json()
+    assert payload["hint"] == {
+        "order": definition.hints[0].order,
+        "text": definition.hints[0].text,
+        "cost": definition.hints[0].cost,
+    }
+    assert payload["revealed_hints"] == [payload["hint"]]
+    assert payload["progress"]["hints_used"] == 1
+    assert payload["progress"]["revision"] == 1
+    assert payload["progress"]["score"] == max(
+        0,
+        initial_score - definition.hints[0].cost,
+    )
+
+    refreshed = client.get(
+        f"/admin-duty/dynamic/api/sessions/{session_id}"
+    ).json()
+    assert refreshed["revealed_hints"] == payload["revealed_hints"]
+    assert len(refreshed["revealed_hints"]) == refreshed["progress"]["hints_used"]
+    assert all(
+        future.text not in str(refreshed)
+        for future in definition.hints[refreshed["progress"]["hints_used"] :]
+    )
+
+
+def test_hint_limit_and_inactive_session_rejection(api_context):
+    started = start_easy(seed=321).json()
+    session_id = started["session_id"]
+
+    for expected_used in range(1, started["hint_limit"] + 1):
+        response = client.post(
+            "/admin-duty/dynamic/api/hint",
+            json={"session_id": session_id},
+        )
+        assert response.status_code == 200
+        assert response.json()["progress"]["hints_used"] == expected_used
+
+    exhausted = client.post(
+        "/admin-duty/dynamic/api/hint",
+        json={"session_id": session_id},
+    )
+    assert exhausted.status_code == 409
+    assert exhausted.json() == {
+        "detail": "Wykorzystano wszystkie dostępne podpowiedzi."
+    }
+
+    ended = client.post(
+        "/admin-duty/dynamic/api/end",
+        json={"session_id": session_id},
+    )
+    assert ended.status_code == 200
+    rejected = client.post(
+        "/admin-duty/dynamic/api/hint",
+        json={"session_id": session_id},
+    )
+    assert rejected.status_code == 409
+    assert rejected.json()["detail"] == (
+        "Operacja jest dostępna wyłącznie dla aktywnej sesji."
+    )
+
+
+def test_public_infrastructure_tracks_runtime_without_fault_leaks(api_context):
+    started = start_easy(seed=1).json()
+    session_id = started["session_id"]
+    infrastructure = started["infrastructure"]
+    service_nodes = [
+        node for node in infrastructure["nodes"] if node["type"] == "service"
+    ]
+
+    assert len(service_nodes) == 1
+    assert service_nodes[0]["status"] == "failed"
+    assert infrastructure["links"] == [
+        {
+            "source": service_nodes[0]["parent_id"],
+            "target": service_nodes[0]["id"],
+            "label": "uruchamia",
+        }
+    ]
+
+    restarted = client.post(
+        "/admin-duty/dynamic/api/command",
+        json={
+            "session_id": session_id,
+            "command": f"systemctl restart {service_nodes[0]['id']}",
+        },
+    )
+    assert restarted.status_code == 200
+
+    current = client.get(
+        f"/admin-duty/dynamic/api/sessions/{session_id}"
+    ).json()
+    current_service = next(
+        node
+        for node in current["infrastructure"]["nodes"]
+        if node["id"] == service_nodes[0]["id"]
+    )
+    assert current_service["status"] == "running"
+    current_signal = next(
+        signal
+        for signal in current["monitoring"]["signals"]
+        if signal["resource_id"] == service_nodes[0]["id"]
+    )
+    assert current_signal["status"] == "running"
+    assert current_signal["severity"] == "ok"
+
+
+def test_public_game_map_matches_selected_component_without_internal_wrapper(api_context):
+    started = start_easy(seed=1).json()
+    definition = api_context["scenarios"].get(UUID(started["scenario_id"]))
+    public_map = started["game_map"]
+
+    assert public_map["id"] == definition.initial_world_state.map.map_id
+    assert public_map["version"] == definition.initial_world_state.map.component_version
+    assert public_map["width"] == 1800
+    assert public_map["height"] == 1100
+    assert len(public_map["objects"]) >= 30
+    assert {sector["id"] for sector in public_map["sectors"]} == {
+        "entry",
+        "operations",
+        "observability",
+        "data-hall",
+        "support",
+    }
+    assert public_map["collision_zones"]
+    assert "snapshot" not in public_map
+    assert "parameters" not in str(public_map)
+    assert "capability_id" not in str(public_map)
 
 
 def test_unavailable_capability_maps_to_400(monkeypatch):

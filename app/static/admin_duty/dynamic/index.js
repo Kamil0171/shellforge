@@ -146,7 +146,8 @@
 
             const data = await response.json();
             await finishPreparation();
-            window.location.assign(
+            hidePreparation();
+            window.location.replace(
                 `/admin-duty/dynamic/sessions/${data.session_id}`,
             );
         } catch (error) {

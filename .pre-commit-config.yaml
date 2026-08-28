@@ -1,0 +1,15 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+        exclude: >-
+          ^(?:\.env\.example|\.github/dependabot\.yml|\.gitignore|pyproject\.toml|requirements\.txt|run\.py|app/(?:config\.py|database\.py|models\.py|admin_duty/domain/__init__\.py|content/(?:file_permissions|files_and_directories|network_diagnostics|package_management|processes|system_logs|system_services|terminal_navigation|text_files|users_and_groups)\.py|routers/(?:about|dashboard|flashcards|health|home|quizzes)\.py|static/(?:css/(?:dashboard|errors|flashcards|quiz)\.css|js/(?:flashcards|main|quiz)\.js)|templates/(?:404|dashboard|flashcards|quiz)\.html))$
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.4
+    hooks:
+      - id: ruff-check

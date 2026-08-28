@@ -35,7 +35,7 @@ def build_context():
 
 
 def test_registry_contains_all_controlled_handlers():
-    assert set(COMMAND_HANDLERS) == {
+    assert {
         "systemd.status",
         "systemd.restart",
         "systemd.cat",
@@ -44,7 +44,16 @@ def test_registry_contains_all_controlled_handlers():
         "environment.restore",
         "filesystem.stat",
         "filesystem.restore-permissions",
-    }
+    } < set(COMMAND_HANDLERS)
+    assert {
+        "shell.pwd",
+        "shell.cd",
+        "filesystem.list",
+        "filesystem.read",
+        "journal.read",
+        "resources.memory",
+        "network.listeners",
+    } <= set(COMMAND_HANDLERS)
     assert COMMAND_HANDLERS["systemd.status"] is get_systemd_service_status
     assert COMMAND_HANDLERS["systemd.restart"] is restart_systemd_service
 
@@ -129,7 +138,7 @@ def test_unknown_command_is_rejected_without_mutation():
             definition,
             state,
             DynamicCommandRequest(
-                command_id="systemd.stop",
+                command_id="systemd.destroy",
                 resource_id="service-api",
             ),
             now=LATER,

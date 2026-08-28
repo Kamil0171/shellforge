@@ -31,8 +31,10 @@ class CommandExecutionError(ValueError):
 
 
 class CommandExecutionResult(FrozenDomainModel):
-    output: str = Field(min_length=1, max_length=1000)
+    output: str = Field(max_length=1000)
     success: bool
+    current_working_directory: str = Field(default="/home/operator", min_length=1, max_length=1024)
+    prompt: str = Field(default="operator@incident:~$", min_length=1, max_length=1200)
     progress: SessionProgress
 
 
@@ -54,6 +56,20 @@ def _get_systemd_service(
         )
 
     resource = state.world_state.resources.get(resource_id)
+
+    if resource is None:
+        normalized = resource_id.removesuffix(".service")
+        resource = next(
+            (
+                candidate
+                for candidate in state.world_state.resources.values()
+                if candidate.resource_type is ResourceType.SERVICE
+                and isinstance(candidate.attributes.get("service_name"), str)
+                and candidate.attributes["service_name"].removesuffix(".service")
+                == normalized
+            ),
+            None,
+        )
 
     if resource is None:
         raise CommandExecutionError(f"Zasób runtime nie istnieje: {resource_id}.")
@@ -185,32 +201,25 @@ def restart_systemd_service(
         )
         return CommandExecutionResult(
             output=(
-                f"Nie udało się uruchomić usługi {resource_id}. "
-                "Sprawdź jej konfigurację i zależności."
+                f"Job for {resource.attributes.get('service_name', resource_id)} "
+                "failed. See 'systemctl status' and 'journalctl -u' for details."
             ),
             success=False,
             progress=progress,
         )
 
-    already_running = resource.current_state == RUNNING_STATE
     progress = dynamic_engine.execute_command(
         definition,
         state,
         ResourceStateUpdate(
-            resource_id=resource_id,
+            resource_id=resource.resource_id,
             new_state=RUNNING_STATE,
         ),
         command_cost=definition.scoring.command_cost,
         now=now,
     )
-    output = (
-        f"Usługa {resource_id} już działa."
-        if already_running
-        else f"Usługa {resource_id} została ponownie uruchomiona."
-    )
-
     return CommandExecutionResult(
-        output=output,
+        output="",
         success=True,
         progress=progress,
     )
@@ -238,7 +247,13 @@ def get_systemd_service_status(
         if isinstance(configured_name, str) and configured_name.strip()
         else resource_id
     )
-    output = f"● {display_name}\n   Loaded: loaded\n   Active: {resource.current_state}"
+    active_label = "active (running)" if resource.current_state == "running" else "failed (Result: exit-code)"
+    output = (
+        f"● {display_name} - Virtual Rocky service\n"
+        f"     Loaded: loaded (/etc/systemd/system/{display_name}; enabled; preset: disabled)\n"
+        f"     Active: {active_label}\n"
+        "       Docs: man:systemd.service(5)"
+    )
 
     if len(output) > 1000:
         raise CommandExecutionError("Nazwa usługi jest zbyt długa.")
@@ -276,8 +291,20 @@ def get_systemd_service_configuration(
     )
     _require_argument_count(arguments, 0)
     configured = resource.attributes.get("configured_exec_start", "<brak>")
-    expected = resource.attributes.get("expected_exec_start", "<brak>")
-    output = f"[Service]\nExecStart={configured}\nDozwolony cel: {expected}"
+    service_name = str(resource.attributes.get("service_name", resource_id))
+    app_name = service_name.removesuffix(".service")
+    output = (
+        "[Unit]\n"
+        f"Description={app_name} application service\n"
+        "After=network-online.target\n\n"
+        "[Service]\n"
+        "Type=simple\n"
+        f"ExecStart=/opt/{app_name}/{configured}\n"
+        "User=app\n"
+        "Restart=on-failure\n\n"
+        "[Install]\n"
+        "WantedBy=multi-user.target"
+    )
     progress = _account_read_only_command(
         definition,
         state,
@@ -317,13 +344,25 @@ def set_systemd_exec_start(
         definition,
         state,
         ResourceAttributeUpdate(
-            resource_id=resource_id,
+            resource_id=resource.resource_id,
             attribute="configured_exec_start",
             value=target,
         ),
         command_cost=definition.scoring.command_cost,
         now=now,
     )
+    service_name = str(resource.attributes.get("service_name", resource_id))
+    app_name = service_name.removesuffix(".service")
+    unit_path = f"/etc/systemd/system/{service_name}"
+    unit = state.virtual_rocky.filesystem.get(unit_path)
+    if unit is not None:
+        trailing_newline = "\n" if unit.content.endswith("\n") else ""
+        unit.content = "\n".join(
+            f"ExecStart=/opt/{app_name}/{target}"
+            if line.startswith("ExecStart=")
+            else line
+            for line in unit.content.splitlines()
+        ) + trailing_newline
     return CommandExecutionResult(
         output=f"Ustawiono kontrolowany cel startowy usługi {resource_id}: {target}.",
         success=True,
@@ -397,7 +436,7 @@ def restore_systemd_environment(
         definition,
         state,
         ResourceAttributeUpdate(
-            resource_id=resource_id,
+            resource_id=resource.resource_id,
             attribute=f"environment.{variable}",
             value=expected_value,
         ),
@@ -476,6 +515,24 @@ def restore_controlled_file_permissions(
         command_cost=definition.scoring.command_cost,
         now=now,
     )
+    service = next(
+        (
+            candidate
+            for candidate in state.world_state.resources.values()
+            if candidate.resource_type is ResourceType.SERVICE
+            and candidate.attributes.get("executable_resource_id") == resource.resource_id
+        ),
+        None,
+    )
+    if service is not None:
+        service_name = str(service.attributes.get("service_name", service.resource_id))
+        app_name = service_name.removesuffix(".service")
+        exec_target = str(service.attributes.get("expected_exec_start", app_name))
+        executable = state.virtual_rocky.filesystem.get(
+            f"/opt/{app_name}/{exec_target}"
+        )
+        if executable is not None:
+            executable.mode = expected_mode
     return CommandExecutionResult(
         output=f"Przywrócono kontrolowany tryb {expected_mode} dla {resource_id}.",
         success=True,

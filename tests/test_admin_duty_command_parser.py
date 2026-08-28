@@ -66,8 +66,6 @@ def test_unknown_or_wrong_case_program_is_rejected(command):
 @pytest.mark.parametrize(
     "command",
     [
-        "systemctl stop service-api",
-        "systemctl start service-api",
         "systemctl STATUS service-api",
         "systemctl RESTART service-api",
     ],
@@ -89,7 +87,7 @@ def test_invalid_resource_identifier_is_wrapped(command):
     with pytest.raises(CommandParseError) as error:
         parse_dynamic_command(command)
 
-    assert isinstance(error.value.__cause__, ValidationError)
+    assert "identyfikator" in str(error.value)
 
 
 def test_non_string_command_is_rejected():
@@ -131,6 +129,8 @@ def test_systemctl_mapping_contains_exactly_supported_commands_and_is_immutable(
     assert dict(SYSTEMCTL_COMMANDS) == {
         "status": "systemd.status",
         "restart": "systemd.restart",
+        "start": "systemd.start",
+        "stop": "systemd.stop",
         "cat": "systemd.cat",
         "set-exec-start": "systemd.set-exec-start",
     }

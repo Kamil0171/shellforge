@@ -79,9 +79,7 @@ def test_restart_systemd_service_runs_complete_dynamic_flow():
     )
 
     assert result.success is True
-    assert result.output == (
-        "Usługa service-api została ponownie uruchomiona."
-    )
+    assert result.output == ""
     assert state.world_state.resources["service-api"].current_state == "running"
     assert state.completed_objective_ids == {"restart-service"}
     assert state.status is SessionStatus.COMPLETED
@@ -150,7 +148,7 @@ def test_restart_of_running_service_is_full_no_op():
     )
 
     assert result.success is True
-    assert result.output == "Usługa service-api już działa."
+    assert result.output == ""
     assert service.current_state == "running"
     assert state.commands_used == 1
     assert state.score == 995
@@ -352,11 +350,9 @@ def test_systemd_status_reports_failed_service_and_accounts_command():
     )
 
     assert result.success is True
-    assert result.output == (
-        "● service-api\n"
-        "   Loaded: loaded\n"
-        "   Active: failed"
-    )
+    assert result.output.startswith("● service-api - Virtual Rocky service")
+    assert "Loaded: loaded (/etc/systemd/system/service-api" in result.output
+    assert "Active: failed (Result: exit-code)" in result.output
     assert state.world_state.model_dump_json() == world_before
     assert state.commands_used == 1
     assert state.score == 995
@@ -385,11 +381,14 @@ def test_systemd_status_uses_service_name_and_reports_running_state():
         now=LATER,
     )
 
-    assert result.output == (
-        "● example-api.service\n"
-        "   Loaded: loaded\n"
-        "   Active: running"
+    assert result.output.startswith(
+        "● example-api.service - Virtual Rocky service"
     )
+    assert (
+        "Loaded: loaded (/etc/systemd/system/example-api.service"
+        in result.output
+    )
+    assert "Active: active (running)" in result.output
     assert state.world_state.model_dump_json() == world_before
     assert state.completed_objective_ids == {"restart-service"}
     assert state.status is SessionStatus.COMPLETED
