@@ -84,7 +84,7 @@ def test_complete_dynamic_api_flow(api_context):
         "user": "operator",
         "hostname": "app-01",
         "current_working_directory": "/home/operator",
-        "prompt": "operator@incident:~$",
+        "prompt": "operator@app-01:~$",
     }
     assert len(started["support_center"]["runbooks"]) >= 2
     assert started["support_center"]["operational_guidance"]
@@ -164,7 +164,14 @@ def test_api_rejects_invalid_and_unsupported_difficulty(api_context):
     )
     assert invalid.status_code == 422
 
-    for difficulty in ("medium", "hard"):
+    medium = client.post(
+        "/admin-duty/dynamic/api/start",
+        json={"difficulty": "medium", "seed": 1},
+    )
+    assert medium.status_code == 200
+    assert medium.json()["difficulty"] == "medium"
+
+    for difficulty in ("hard",):
         unsupported = client.post(
             "/admin-duty/dynamic/api/start",
             json={"difficulty": difficulty},

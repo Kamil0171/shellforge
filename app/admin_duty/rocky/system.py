@@ -109,6 +109,7 @@ def systemctl(
             f"{resource.attributes.get('service_name', resource.resource_id):28} loaded {('active running' if resource.current_state == 'running' else 'failed failed')}"
             for resource in state.world_state.resources.values()
             if resource.resource_type is ResourceType.SERVICE
+            and resource.parent_resource_id == state.active_host_id
         )
         return finish(definition, state, "\n".join(lines), engine=engine, now=now)
     service = _get_systemd_service(
@@ -260,6 +261,7 @@ def journal(definition, state, *, resource_id, arguments=(), engine=None, now=No
         "\n".join(lines[-count:]) or "-- Brak wpisów --",
         engine=engine,
         now=now,
+        fact_id=f"service-journal-inspected:{unit.resource_id}" if unit else None,
     )
 
 

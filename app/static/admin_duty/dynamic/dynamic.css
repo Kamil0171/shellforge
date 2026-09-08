@@ -516,6 +516,10 @@ body.dynamic-generation-open {
     text-align: center;
 }
 
+.end-summary {
+    overflow-y: auto;
+}
+
 .workspace-state-panel h1,
 .end-summary h1 {
     margin: 11px 0;
@@ -1479,6 +1483,53 @@ body.dynamic-generation-open {
 .end-summary-panel .dynamic-primary-button {
     width: min(100%, 260px);
     margin: 0 auto;
+}
+
+.post-incident-report {
+    margin: 0 0 24px;
+    padding: 18px;
+    border: 1px solid var(--dynamic-border);
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.55);
+    text-align: left;
+}
+
+.post-incident-report h2,
+.post-incident-report h3 {
+    color: #e2e8f0;
+}
+
+.post-incident-report h2 {
+    margin: 0 0 14px;
+    font-size: 1rem;
+}
+
+.post-incident-report h3 {
+    margin: 16px 0 8px;
+    font-size: 0.8rem;
+}
+
+.post-incident-report dl,
+.post-incident-report ul {
+    margin: 0;
+}
+
+.post-incident-report dl div {
+    margin-top: 9px;
+}
+
+.post-incident-report dt {
+    color: #64748b;
+    font-family: var(--dynamic-mono);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+}
+
+.post-incident-report dd,
+.post-incident-report li {
+    color: #cbd5e1;
+    font-size: 0.8rem;
+    line-height: 1.5;
 }
 
 @keyframes dynamic-loading-bars {

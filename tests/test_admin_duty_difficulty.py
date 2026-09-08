@@ -32,7 +32,7 @@ def test_get_difficulty_profile_returns_matching_profile(level):
     ("level", "expected_max_faults"),
     [
         (DifficultyLevel.EASY, 1),
-        (DifficultyLevel.MEDIUM, 1),
+        (DifficultyLevel.MEDIUM, 2),
         (DifficultyLevel.HARD, 2),
     ],
 )

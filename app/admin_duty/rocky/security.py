@@ -57,7 +57,14 @@ def selinux(
             f"{path} {context}"
             for path, context in security.expected_file_contexts.items()
         )
-    return finish(definition, state, output, engine=engine, now=now)
+    return finish(
+        definition,
+        state,
+        output,
+        engine=engine,
+        now=now,
+        fact_id=f"selinux-inspected:{state.active_host_id}",
+    )
 
 
 def firewall(definition, state, *, resource_id, arguments=(), engine=None, now=None):
@@ -113,7 +120,14 @@ def firewall(definition, state, *, resource_id, arguments=(), engine=None, now=N
             selected.add(value)
         else:
             selected.discard(value)
-    return finish(definition, state, output, engine=engine, now=now)
+    return finish(
+        definition,
+        state,
+        output,
+        engine=engine,
+        now=now,
+        fact_id=f"firewall-inspected:{state.active_host_id}",
+    )
 
 
 HANDLERS = {

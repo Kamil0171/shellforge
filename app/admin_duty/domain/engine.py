@@ -224,6 +224,9 @@ class DynamicIncidentEngine:
             candidate.score = max(0, candidate.score - command_cost)
             candidate.discovered_fact_ids.update(validated_fact_ids)
 
+        from app.admin_duty.domain.dependencies import reconcile_dependencies
+
+        reconcile_dependencies(definition, candidate)
         completed_objective_ids = evaluate_objectives(definition, candidate)
         candidate.completed_objective_ids = set(completed_objective_ids)
         candidate.status = (

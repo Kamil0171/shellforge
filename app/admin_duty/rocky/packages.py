@@ -112,6 +112,7 @@ def package_command(
                             resource_id="service-nginx",
                             resource_type=ResourceType.SERVICE,
                             current_state="stopped",
+                            parent_resource_id=state.active_host_id,
                             attributes={
                                 "manager": "systemd",
                                 "service_name": "nginx.service",

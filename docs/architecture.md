@@ -37,9 +37,10 @@ flowchart TB
     end
 
     subgraph simulator_core["Podsystem Symulatora"]
-        scenario["IncidentDefinition · deterministyczny generator"]
-        engine["Silnik scenariusza · cele, wynik, podpowiedzi"]
-        commands["Obsługa poleceń i interakcji"]
+        scenario["IncidentDefinition V3 · deterministyczny generator"]
+        engine["Silnik scenariusza · zależności, symptomy i cele"]
+        commands["Kontrolowane polecenia Virtual Rocky"]
+        hosts["Izolowane runtime'y wielu hostów"]
     end
 
     subgraph frontend["Frontend w przeglądarce"]
@@ -67,6 +68,8 @@ flowchart TB
     simulator --> commands
     engine --> scenario
     commands --> scenario
+    commands --> hosts
+    engine --> hosts
 
     templates --> learning_ui
     static --> learning_ui
@@ -127,13 +130,17 @@ Kod trybu „Dyżur administratora” znajduje się w `app/admin_duty/` i skład
 
 - `router.py` — współdzielone lobby;
 - `dynamic_router.py` i `services/` — API, orkiestracja, publiczne projekcje i podpowiedzi;
-- `domain/` — niemutowalna definicja, izolowany runtime, cele i punktacja;
-- `components/` i `generators/` — katalog komponentów i deterministyczne incydenty;
+- `domain/` — niemutowalna definicja V3, izolowane runtime'y hostów, zależności, cele, punktacja i kontrakty generatora;
+- `components/` i `generators/` — katalog komponentów, scenariusze poziomu łatwego i średniego oraz deterministyczny generator;
 - parser, registry i `rocky/` — kontrolowane polecenia oraz edycja VirtualFilesystem;
 - `validators/` — strukturalna walidacja i replay przez właściwy command/editor layer;
 - `repositories/` — izolowane kopie stanu, TTL i kontrola rewizji.
 
 Aktywna sesja otrzymuje identyfikator UUID. Router ogranicza rozmiar danych wejściowych, odrzuca nieznane pola, wygasza nieaktywne sesje i ogranicza ich maksymalną liczbę. Dane sesji są izolowane logicznie i przechowywane w pamięci procesu, a operacje na rejestrze sesji są synchronizowane blokadą.
+
+Definicja V3 opisuje typowane zależności usług przez usługę i host źródłowy, usługę i host docelowy, protokół, port oraz rodzaj zależności. Wymagania pakietów i konfiguracji oraz reguły propagacji symptomów pozostają osobnymi, małymi modelami. Silnik wylicza zdrowie łańcucha po każdej kontrolowanej operacji. Cele są oparte na stanie świata i odkrytych faktach diagnostycznych, a nie na jednej wymaganej sekwencji poleceń.
+
+Sesja utrzymuje osobny `VirtualRockyRuntime` dla każdego hosta. Każdy runtime ma własny filesystem, usługi, pakiety, procesy, sieć, firewalld, SELinux i stan NetworkManagera. Polecenie `ssh <host>` wyłącznie przełącza aktywny kontekst wewnątrz sesji; nie uruchamia klienta SSH, procesu potomnego ani połączenia sieciowego. Powrót na host przywraca jego wcześniejszy katalog roboczy i cały stan.
 
 Konsekwencje obecnego modelu stanu:
 
@@ -183,7 +190,7 @@ Repozytorium nie zawiera rzeczywistych plików jednostki systemd ani konfiguracj
 
 ## Granice aktualnej architektury
 
-W aktualnym repozytorium nie ma implementacji PostgreSQL, kontenerów Docker lub Podman, WebSocketów, zewnętrznego magazynu sesji Symulatora, Prometheusa, Grafany ani systemu AI. Elementy te nie są częścią powyższego diagramu.
+W aktualnym repozytorium nie ma implementacji PostgreSQL, kontenerów Docker lub Podman, WebSocketów, zewnętrznego magazynu sesji Symulatora, Prometheusa, Grafany ani podłączonego modelu AI. Istnieje wyłącznie data-only fundament przyszłego generatora: ścisły kontrakt żądania i draftu, protokół providera, fake provider, katalog możliwości i wspólny pipeline walidacji. Nie ma klucza, konfiguracji Gemma, klienta HTTP ani wywołania zewnętrznego API.
 
 ## World Engine i Virtual Rocky
 

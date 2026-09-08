@@ -190,6 +190,13 @@ def system(program, args):
 
 
 def network(program, args):
+    if program == "ssh":
+        require(
+            len(args) == 1
+            and bool(re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]*", args[0])),
+            "ssh <host>",
+        )
+        return _request("remote.ssh", args[0])
     if program == "ip":
         require(
             len(args) == 1 and args[0] in {"addr", "link", "route"},
@@ -204,8 +211,14 @@ def network(program, args):
             args in (["device", "status"], ["connection", "show"])
             or (
                 len(args) == 3 and args[0] == "connection" and args[1] in {"up", "down"}
+            )
+            or (
+                len(args) == 5
+                and args[:2] == ["connection", "modify"]
+                and args[3] == "ipv4.dns"
             ),
-            "nmcli device status | connection show|up|down [nazwa]",
+            "nmcli device status | connection show|up|down [nazwa] | "
+            "connection modify <nazwa> ipv4.dns <adres>",
         )
         return _request("networkmanager.command", arguments=args)
     if program == "getent":
@@ -321,7 +334,9 @@ PARSERS = {
         ),
         system,
     ),
-    **dict.fromkeys(("ip", "ss", "ping", "curl", "getent", "dig", "nmcli"), network),
+    **dict.fromkeys(
+        ("ip", "ss", "ping", "curl", "getent", "dig", "nmcli", "ssh"), network
+    ),
     **dict.fromkeys(("dnf", "yum", "rpm"), packages),
     **dict.fromkeys(
         (

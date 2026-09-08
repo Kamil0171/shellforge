@@ -10,6 +10,7 @@ def network(
     definition, state, *, resource_id, arguments=(), engine=None, now=None, action
 ):
     rocky = state.virtual_rocky
+    healthy_endpoint = False
     interfaces = list(rocky.network.interfaces.values())
     connected = any(item.state == "up" for item in interfaces)
     success = True
@@ -62,12 +63,21 @@ def network(
                 definition, state, "Brak nazwy hosta.", False, engine=engine, now=now
             )
         local = host in {"localhost", "127.0.0.1"}
+        dns_ready = any(
+            rocky.network.connection_dns_servers.get(name, ())
+            for name, active in rocky.network.connections.items()
+            if active
+        )
         address = "127.0.0.1" if local else rocky.network.dns_records.get(host)
+        literal_address = False
         try:
             address = str(ip_address(host))
+            literal_address = True
         except ValueError:
             pass
-        if not address or (not connected and not local):
+        if (not local and not literal_address and not dns_ready) or not address or (
+            not connected and not local
+        ):
             output, success = (
                 f"{action}: {host}: brak trasy lub wpisu DNS w wirtualnej sieci.",
                 False,
@@ -104,6 +114,20 @@ def network(
                     engine=engine,
                     now=now,
                 )
+            target_host_id = next(
+                (
+                    host_id
+                    for host_id, runtime in state.host_runtimes.items()
+                    if address
+                    in {
+                        interface.address.split("/")[0]
+                        for interface in runtime.network.interfaces.values()
+                    }
+                ),
+                None,
+            )
+            if local:
+                target_host_id = state.active_host_id
             service = next(
                 (
                     item
@@ -111,29 +135,56 @@ def network(
                     if item.resource_type is ResourceType.SERVICE
                     and item.current_state == "running"
                     and item.attributes.get("port", 8080) == port
+                    and item.parent_resource_id == target_host_id
                 ),
                 None,
             )
+            target_runtime = (
+                state.host_runtimes.get(target_host_id)
+                if target_host_id is not None
+                else None
+            )
+            target_firewall = target_runtime.firewall if target_runtime else None
             allowed = (
                 local
-                or not rocky.firewall.running
-                or f"{port}/tcp" in rocky.firewall.runtime_ports
-                or (port == 80 and "http" in rocky.firewall.runtime_services)
-                or (port == 443 and "https" in rocky.firewall.runtime_services)
+                or target_firewall is not None
+                and (
+                    not target_firewall.running
+                    or f"{port}/tcp" in target_firewall.runtime_ports
+                    or (port == 80 and "http" in target_firewall.runtime_services)
+                    or (port == 443 and "https" in target_firewall.runtime_services)
+                )
             )
-            own_address = local or address in {
-                item.address.split("/")[0] for item in interfaces
-            }
-            if service and allowed and own_address:
+            if service and allowed:
+                healthy = service.attributes.get("public_health", "healthy") == "healthy"
+                healthy_endpoint = healthy
+                status_code = 200 if healthy else int(
+                    service.attributes.get("unhealthy_status_code", 503)
+                )
+                status_text = "OK" if healthy else "Bad Gateway"
                 output = (
-                    'HTTP/1.1 200 OK\nContent-Type: application/json\n\n{"status":"ok"}'
+                    f"HTTP/1.1 {status_code} {status_text}\n"
+                    "Content-Type: application/json\n\n"
+                    f'{{"status":"{"ok" if healthy else "degraded"}"}}'
                 )
             else:
                 output, success = (
                     f"curl: (7) Failed to connect to {host} port {port}",
                     False,
                 )
-    return finish(definition, state, output, success, engine=engine, now=now)
+    fact_id = None
+    if action == "curl" and "target_host_id" in locals() and target_host_id:
+        fact_prefix = "endpoint-healthy" if healthy_endpoint else "endpoint-checked"
+        fact_id = f"{fact_prefix}:{target_host_id}:{port}"
+    return finish(
+        definition,
+        state,
+        output,
+        success,
+        engine=engine,
+        now=now,
+        fact_id=fact_id,
+    )
 
 
 def nmcli(definition, state, *, resource_id, arguments=(), engine=None, now=None):
@@ -145,9 +196,25 @@ def nmcli(definition, state, *, resource_id, arguments=(), engine=None, now=None
         )
     elif arguments[:2] == ("connection", "show"):
         output = "NAME              TYPE      DEVICE\n" + "\n".join(
-            f"{item.connection} ethernet {item.name}"
+            f"{item.connection} ethernet {item.name} dns="
+            f"{','.join(network_state.connection_dns_servers.get(item.connection, ()))}"
             for item in network_state.interfaces.values()
         )
+    elif arguments[:2] == ("connection", "modify"):
+        name = arguments[2]
+        if name not in network_state.connections:
+            return finish(
+                definition,
+                state,
+                f"nmcli: nieznane połączenie {name}.",
+                False,
+                engine=engine,
+                now=now,
+            )
+        network_state.connection_dns_servers[name] = tuple(
+            value for value in arguments[4].split(",") if value
+        )
+        output = f"Połączenie {name} zostało zmodyfikowane."
     else:
         name = arguments[2]
         if name not in network_state.connections:
@@ -167,7 +234,14 @@ def nmcli(definition, state, *, resource_id, arguments=(), engine=None, now=None
         output = (
             f"Connection {name} successfully {'activated' if up else 'deactivated'}."
         )
-    return finish(definition, state, output, engine=engine, now=now)
+    return finish(
+        definition,
+        state,
+        output,
+        engine=engine,
+        now=now,
+        fact_id=f"network-inspected:{state.active_host_id}",
+    )
 
 
 HANDLERS = {

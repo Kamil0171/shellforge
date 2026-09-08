@@ -180,6 +180,7 @@ def _error_response(error: Exception) -> JSONResponse:
 @router.post(
     "/api/start",
     response_model=DynamicSessionStartResult,
+    response_model_exclude_none=True,
 )
 def start_dynamic_session(
     payload: DynamicStartRequest,
@@ -198,6 +199,7 @@ def start_dynamic_session(
 @router.get(
     "/api/sessions/{session_id}",
     response_model=DynamicSessionView,
+    response_model_exclude_none=True,
 )
 def get_dynamic_session(
     session_id: UUID,
@@ -260,6 +262,7 @@ def save_dynamic_file(
 @router.post(
     "/api/end",
     response_model=DynamicSessionEndResult,
+    response_model_exclude_none=True,
 )
 def end_dynamic_session(
     payload: DynamicEndRequest,

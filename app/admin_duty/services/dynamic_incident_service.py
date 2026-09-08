@@ -5,6 +5,7 @@ from uuid import UUID
 from pydantic import Field
 
 from app.admin_duty.domain.definition import (
+    DependencyType,
     FrozenDomainModel,
     Hint,
     Identifier,
@@ -71,12 +72,16 @@ class PublicInfrastructureNode(FrozenDomainModel):
     status: Identifier
     role: str = Field(min_length=1, max_length=120)
     parent_id: Identifier | None = None
+    health: Identifier | None = None
 
 
 class PublicInfrastructureLink(FrozenDomainModel):
     source: Identifier
     target: Identifier
     label: str | None = Field(default=None, min_length=1, max_length=120)
+    dependency_type: DependencyType | None = None
+    protocol: str | None = Field(default=None, min_length=1, max_length=16)
+    port: int | None = Field(default=None, ge=1, le=65535)
 
 
 class PublicInfrastructure(FrozenDomainModel):
@@ -97,6 +102,17 @@ class PublicShellState(FrozenDomainModel):
     prompt: str = Field(min_length=1, max_length=1200)
 
 
+class PublicPostIncidentReport(FrozenDomainModel):
+    root_cause: str = Field(min_length=1, max_length=1000)
+    affected_services: tuple[str, ...] = Field(min_length=1, max_length=64)
+    diagnostic_milestones: tuple[Identifier, ...] = Field(default=(), max_length=512)
+    repair_actions: tuple[str, ...] = Field(default=(), max_length=512)
+    final_state: tuple[PublicInfrastructureNode, ...]
+    commands_used: tuple[str, ...] = Field(default=(), max_length=512)
+    hints_used: int = Field(ge=0)
+    score: int = Field(ge=0, le=1_000_000)
+
+
 class DynamicSessionStartResult(FrozenDomainModel):
     scenario_id: UUID
     session_id: UUID
@@ -110,6 +126,7 @@ class DynamicSessionStartResult(FrozenDomainModel):
     revealed_hints: tuple[PublicHint, ...]
     hint_limit: int = Field(ge=0)
     progress: SessionProgress
+    post_incident: PublicPostIncidentReport | None = None
 
 
 class DynamicSessionView(FrozenDomainModel):
@@ -122,11 +139,13 @@ class DynamicSessionView(FrozenDomainModel):
     revealed_hints: tuple[PublicHint, ...]
     hint_limit: int = Field(ge=0)
     progress: SessionProgress
+    post_incident: PublicPostIncidentReport | None = None
 
 
 class DynamicSessionEndResult(FrozenDomainModel):
     ended: bool
     progress: SessionProgress
+    post_incident: PublicPostIncidentReport | None = None
 
 
 class DynamicHintResult(FrozenDomainModel):
@@ -174,6 +193,9 @@ def _public_resource_label(resource) -> str:
     if resource.resource_type is ResourceType.HOST and isinstance(hostname, str):
         return hostname
 
+    service_name = resource.attributes.get("service_name")
+    if resource.resource_type is ResourceType.SERVICE and isinstance(service_name, str):
+        return service_name
     return resource.resource_id
 
 
@@ -186,7 +208,13 @@ def _public_resource_role(resource) -> str:
     return "usługa systemd"
 
 
+def _public_resource_health(resource) -> str | None:
+    health = resource.attributes.get("public_health")
+    return health if resource.resource_type is ResourceType.SERVICE and isinstance(health, str) else None
+
+
 def _get_public_infrastructure(
+    definition: IncidentDefinition,
     state: SessionRuntimeState,
 ) -> PublicInfrastructure:
     public_types = {ResourceType.HOST, ResourceType.SERVICE}
@@ -208,10 +236,11 @@ def _get_public_infrastructure(
                 if resource.parent_resource_id in public_ids
                 else None
             ),
+            health=_public_resource_health(resource),
         )
         for resource in resources
     )
-    links = tuple(
+    ownership_links = tuple(
         PublicInfrastructureLink(
             source=resource.parent_resource_id,
             target=resource.resource_id,
@@ -220,7 +249,52 @@ def _get_public_infrastructure(
         for resource in resources
         if resource.parent_resource_id in public_ids
     )
-    return PublicInfrastructure(nodes=nodes, links=links)
+    dependency_links = tuple(
+        PublicInfrastructureLink(
+            source=dependency.source_service_id,
+            target=dependency.target_service_id,
+            label="zależy od",
+            dependency_type=dependency.dependency_type,
+            protocol=dependency.protocol.value,
+            port=dependency.port,
+        )
+        for dependency in definition.service_dependencies
+        if dependency.publicly_visible
+        and dependency.source_service_id in public_ids
+        and dependency.target_service_id in public_ids
+    )
+    return PublicInfrastructure(nodes=nodes, links=(*ownership_links, *dependency_links))
+
+
+def _get_post_incident_report(
+    definition: IncidentDefinition,
+    state: SessionRuntimeState,
+) -> PublicPostIncidentReport | None:
+    post_incident = definition.post_incident
+    progress = get_session_progress(definition, state)
+    if post_incident is None or not progress.mission_complete:
+        return None
+    affected_ids = set(post_incident.affected_service_ids)
+    affected_services = tuple(
+        _public_resource_label(resource)
+        for resource in state.world_state.resources.values()
+        if resource.resource_id in affected_ids
+    )
+    repair_capabilities = set(post_incident.repair_capability_ids)
+    return PublicPostIncidentReport(
+        root_cause=post_incident.root_cause,
+        affected_services=affected_services,
+        diagnostic_milestones=tuple(sorted(state.discovered_fact_ids)),
+        repair_actions=tuple(
+            record.command
+            for record in state.command_history
+            if record.capability_id in repair_capabilities and record.success
+        ),
+        final_state=_get_public_infrastructure(definition, state).nodes,
+        commands_used=tuple(record.command for record in state.command_history),
+        hints_used=state.hints_used,
+        score=state.score,
+    )
 
 
 def _to_public_hint(hint: Hint) -> PublicHint:
@@ -248,7 +322,7 @@ def _get_public_shell(state: SessionRuntimeState) -> PublicShellState:
         user=state.virtual_rocky.user,
         hostname=state.virtual_rocky.hostname,
         current_working_directory=cwd,
-        prompt=f"operator@incident:{display_cwd}$",
+        prompt=f"{state.virtual_rocky.user}@{state.virtual_rocky.hostname}:{display_cwd}$",
     )
 
 
@@ -305,7 +379,7 @@ class DynamicIncidentService:
             session_id=state.session_id,
             difficulty=definition.difficulty,
             incident=_get_public_info(definition),
-            infrastructure=_get_public_infrastructure(state),
+            infrastructure=_get_public_infrastructure(definition, state),
             game_map=project_public_game_map(definition.initial_world_state.map, state),
             monitoring=project_public_monitoring(definition, state),
             shell=_get_public_shell(state),
@@ -366,7 +440,7 @@ class DynamicIncidentService:
         definition = self._scenarios.get(state.scenario_id)
         return DynamicSessionView(
             incident=_get_public_info(definition),
-            infrastructure=_get_public_infrastructure(state),
+            infrastructure=_get_public_infrastructure(definition, state),
             game_map=project_public_game_map(definition.initial_world_state.map, state),
             monitoring=project_public_monitoring(definition, state),
             shell=_get_public_shell(state),
@@ -374,6 +448,7 @@ class DynamicIncidentService:
             revealed_hints=_get_revealed_hints(definition, state),
             hint_limit=_get_hint_limit(definition),
             progress=get_session_progress(definition, state),
+            post_incident=_get_post_incident_report(definition, state),
         )
 
     def request_hint(
@@ -433,4 +508,5 @@ class DynamicIncidentService:
         return DynamicSessionEndResult(
             ended=True,
             progress=get_session_progress(definition, state),
+            post_incident=_get_post_incident_report(definition, state),
         )

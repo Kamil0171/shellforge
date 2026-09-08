@@ -85,30 +85,39 @@
                     </ul>
                     <button
                         id="start-easy-button"
-                        class="dynamic-primary-button"
+                        class="dynamic-primary-button start-incident-button"
                         type="button"
+                        data-difficulty="easy"
                     >
                         Rozpocznij incydent
                         <span aria-hidden="true">→</span>
                     </button>
                 </article>
 
-                <article class="difficulty-card difficulty-card-locked">
+                <article class="difficulty-card difficulty-card-active">
                     <div class="difficulty-card-top">
                         <span class="difficulty-code">MEDIUM</span>
-                        <span class="difficulty-coming-soon">Wkrótce</span>
+                        <span class="difficulty-availability">Dostępny</span>
                     </div>
                     <h3>Średni</h3>
                     <p>
-                        Więcej zależności, mniej oczywiste symptomy
-                        i większa samodzielność podczas diagnozy.
+                        Diagnozuj wiele usług na oddzielnych hostach, zależności
+                        sieciowe i symptomy oddalone od przyczyny problemu.
                     </p>
                     <ul>
-                        <li>Rozbudowane środowisko</li>
-                        <li>Dodatkowe sygnały diagnostyczne</li>
-                        <li>Mniej wskazówek</li>
+                        <li>3–5 hostów i kilka usług</li>
+                        <li>Łańcuchy zależności i pośrednie symptomy</li>
+                        <li>Maksymalnie dwie podpowiedzi</li>
                     </ul>
-                    <button type="button" disabled>Poziom w przygotowaniu</button>
+                    <button
+                        id="start-medium-button"
+                        class="dynamic-primary-button start-incident-button"
+                        type="button"
+                        data-difficulty="medium"
+                    >
+                        Rozpocznij incydent MEDIUM
+                        <span aria-hidden="true">→</span>
+                    </button>
                 </article>
 
                 <article class="difficulty-card difficulty-card-locked">
