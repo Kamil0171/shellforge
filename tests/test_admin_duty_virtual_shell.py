@@ -70,7 +70,9 @@ def test_ls_cat_head_tail_grep_and_stat_use_only_virtual_filesystem():
     tail = execute(definition, state, service, "tail -n 2 example-api.service")
     grep = execute(definition, state, service, "grep ExecStart example-api.service")
     stat = execute(definition, state, service, "stat example-api.service")
-    missing = execute(definition, state, service, "cat C:/Windows/System32/drivers/etc/hosts")
+    missing = execute(
+        definition, state, service, "cat C:/Windows/System32/drivers/etc/hosts"
+    )
 
     assert "example-api.service" in listing.output
     assert "ExecStart=/opt/example-api/legacy-api-server" in unit.output
@@ -96,11 +98,12 @@ def test_virtual_filesystem_tracks_exec_start_and_permission_fault_repairs():
         service,
         "cat /etc/systemd/system/example-api.service",
     )
-    execute(
+    service.save_file(
         definition,
         state,
-        service,
-        "systemctl set-exec-start example-api api-server",
+        path="/etc/systemd/system/example-api.service",
+        content=before_unit.output.replace("legacy-api-server", "api-server"),
+        now=NOW,
     )
     after_unit = execute(
         definition,
@@ -109,17 +112,13 @@ def test_virtual_filesystem_tracks_exec_start_and_permission_fault_repairs():
         "cat /etc/systemd/system/example-api.service",
     )
 
-    assert before_listing.output == "api-server"
+    assert "api-server" in before_listing.output
+    assert "README.md" in before_listing.output
     assert "legacy-api-server" in before_unit.output
     assert "ExecStart=/opt/example-api/api-server" in after_unit.output
     assert "legacy-api-server" not in after_unit.output
 
     permission_definition, permission_state, permission_service = build_shell(seed=0)
-    permission_file = next(
-        resource
-        for resource in permission_state.world_state.resources.values()
-        if resource.resource_type is ResourceType.FILE
-    )
     permission_unit = next(
         resource
         for resource in permission_state.world_state.resources.values()
@@ -139,7 +138,7 @@ def test_virtual_filesystem_tracks_exec_start_and_permission_fault_repairs():
         permission_definition,
         permission_state,
         permission_service,
-        f"chmod restore {permission_file.resource_id}",
+        f"chmod 755 {permission_path}",
     )
     after_mode = execute(
         permission_definition,
@@ -195,7 +194,7 @@ def test_systemd_status_cat_and_journal_accept_unit_name_or_resource_id():
     assert "Loaded: loaded (/etc/systemd/system/example-api.service" in status.output
     assert "ExecStart=/opt/example-api/legacy-api-server" in unit.output
     assert "Failed at step EXEC" in journal.output
-    assert "A start job for a unit has failed" in extended.output
+    assert "Failed at step EXEC" in extended.output
 
 
 def test_start_stop_and_restart_mutate_only_controlled_virtual_service():
@@ -254,16 +253,30 @@ def test_wrong_exec_start_scenario_has_real_shell_diagnosis_and_controlled_repai
         "systemctl status example-api",
         "journalctl -u example-api",
         "systemctl cat example-api",
-        "systemctl set-exec-start example-api api-server",
+        "nano /etc/systemd/system/example-api.service",
+        "systemctl daemon-reload",
         "systemctl restart example-api",
     )
 
-    results = [execute(definition, state, service, command) for command in commands]
+    results = []
+    for command in commands:
+        result = execute(definition, state, service, command)
+        results.append(result)
+        if result.editor:
+            service.save_file(
+                definition,
+                state,
+                path=result.editor.path,
+                content=result.editor.content.replace(
+                    "legacy-api-server", "api-server"
+                ),
+                now=NOW,
+            )
 
     assert results[0].output == "/home/operator"
     assert "legacy-api-server" in results[4].output
     assert "legacy-api-server" in results[5].output
     assert results[-1].progress.mission_complete
     assert state.status.value == "completed"
-    assert state.commands_used == len(commands)
-    assert state.score == 1000 - len(commands) * definition.scoring.command_cost
+    assert state.commands_used == len(commands) + 1
+    assert state.score == 1000 - (len(commands) + 1) * definition.scoring.command_cost

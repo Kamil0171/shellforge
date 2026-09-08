@@ -1,77 +1,93 @@
-# Dynamic Incident — notatki developerskie
+# Dynamic Incident — World Engine V2 i Virtual Rocky V2
 
-## Podział odpowiedzialności
+## Granice odpowiedzialności
 
-Backend pozostaje źródłem prawdy dla sesji, mapy, stanu zasobów, punktacji i podpowiedzi. `MapSnapshot` jest modelem wewnętrznym generatora. Klient otrzymuje niezależny, allowlistowany `PublicGameMap`, który zawiera wyłącznie renderowalne wymiary, geometrię kolizji, obiekty dekoracyjne i bezpieczne interakcje.
+Backend jest źródłem prawdy dla definicji, sesji, zasobów, celów, punktacji i podpowiedzi. Frontend steruje prezentacją, ruchem, kamerą i odkrywaniem mapy. Publiczne DTO nie zawiera filesystemu, rozwiązania, ukrytych atrybutów ani przyszłych podpowiedzi. `revealed_hints` jest prefiksem faktycznie odkrytym przez daną sesję.
 
-Lista `revealed_hints` jest zawsze dokładnym prefiksem `definition.hints[:state.hints_used]`. Przyszłe podpowiedzi nie są serializowane do publicznego DTO.
+## World Engine V2
 
-Frontend jest podzielony na:
+- `components/maps/modern_noc.json` — jedna kompozycja Modern NOC, pięć sektorów i 34 obiekty; geometria, warianty, kolizje i interakcje.
+- `definition.py` — walidowany `MapDefinition` / `PublicGameMap`: wymiary, spawn, sektory, obiekty i interakcje; sprawdza unikalność identyfikatorów, granice i dostępność interakcji.
+- `loader.py` — odczyt zaufanego pliku mapy przy inicjalizacji, nie z polecenia użytkownika.
+- `world-core.js` — MapLoader, RuntimeBridge, CameraController, DiscoveryState i wybór najbliższej interakcji.
+- `world-renderers.js` — proceduralne tekstury podłóg, ścian, drzwi, biurek, racków, tablic i dekoracji.
+- `world-systems.js` — animacja gracza, wspólny zegar otoczenia, światło, gradientowa maska odkrywania i interakcje.
+- `game.js` — składanie sceny Phaser, fizyka, kolizje, kamera i lifecycle.
+- `scenario.js` — API, HUD, overlaye, wsparcie, desktop gate i zakończenie.
+- `terminal.js` — komendy, historia, prompt, focus, Escape i edytor; `clear` / `cls` działają lokalnie.
+- `index.js` — lobby i start sesji.
 
-- `game.js` — scena Phaser, renderer mapy, ruch, kolizje, kamera i interakcje;
-- `terminal.js` — focus, Enter, historia, ESC i cykl requestu terminala; `clear`/`cls` są obsługiwane lokalnie i nie mutują sesji;
-- `scenario.js` — API, publiczne projekcje, HUD, overlaye, desktop gate i lifecycle sesji;
-- `index.js` — lobby i generowanie nowej sesji.
+Geometria nie zależy od identyfikatora incydentu. Powiązania racków i monitoringu pochodzą z publicznej projekcji backendu. Sześć wariantów racków, cztery materiały podłogi, szklane przegrody i drzwi rozdzielają strefę operacyjną, monitoring, serwerownię, wsparcie i wejście. Triage jest stanowiskiem wizualnym, bez osobnej interakcji.
 
-## Virtual Rocky Linux v1
+Kamera używa płynnego śledzenia i granic świata. Kolizje pochodzą z tej samej definicji co obiekty. Depth wynika z położenia podstawy obiektu; gracz ma cień, cztery kierunki, idle i chód. Odkrywanie zachowuje odsłoniętą maskę podczas eksploracji sceny. Po przeładowaniu strony maska i pozycja zaczynają się od nowa — nie są zapisywane w sesji backendowej.
 
-Terminal Dynamic Incident nie uruchamia poleceń systemu operacyjnego. Każde polecenie przechodzi przez trzy kontrolowane warstwy:
+Format oddziela dane od renderowania i pozwala później napisać adapter Tiled. Nie ma obecnie importera TMX ani natywnego JSON Tiled. Oświetlenie jest stylizowanym efektem Canvas, nie fizycznym modelem światła. Animacje racków i monitorów korzystają ze wspólnej aktualizacji, bez timera dla każdego obiektu.
+
+## Virtual Rocky V2
 
 ```text
-Shell Parser -> Command Registry -> Virtual Rocky Runtime
+Polecenie / zapis edytora
+  -> parser i allowlista capabilities
+  -> głęboka kopia runtime sesji
+  -> handler należący do aplikacji
+  -> accounting, cele i walidacja
+  -> atomowy commit / kontrola rewizji
+  -> bezpieczna projekcja publiczna
 ```
 
-Parser rozpoznaje tylko wspieraną składnię, registry mapuje capability na kod należący do ShellForge, a runtime przechowuje odrębny stan każdej sesji. Definicja incydentu może wskazać wymagane capabilities i dane wejściowe, ale nie może dostarczyć handlera ani kodu wykonywalnego. Dzięki temu przyszły generator AI może tworzyć walidowany `IncidentDefinition`, lecz nie otrzymuje dostępu do shella ani hosta.
+`VirtualRockyRuntime` przechowuje filesystem, cwd, procesy, zasoby, cache jednostek, pakiety, sieć, DNS, SELinux i firewalld. Moduły `rocky/filesystem.py`, `system.py`, `network.py`, `packages.py` i `security.py` współdzielą ten model. Nie są adapterami systemu hosta.
 
-`VirtualRockyRuntime` zawiera wirtualną nazwę hosta, użytkownika, katalog domowy i kontrolowany filesystem. Stan sesji przechowuje bieżący katalog roboczy. Obsługiwane są ścieżki absolutne i względne, `.`, `..` oraz `~`; wejście do `/root` zwraca błąd uprawnień. Bazowe drzewo obejmuje `/etc`, `/var`, `/home`, `/opt`, `/srv` i `/tmp`, a generator dodaje pliki jednostek systemd, logi oraz katalogi aplikacji wynikające z definicji incydentu.
+Obsługiwany jest kontrolowany podzbiór składni:
 
-Pierwszy katalog realnych składniowo poleceń obejmuje:
+- filesystem: `pwd`, `cd`, `ls`, `cat`, `head`, `tail`, `grep`, `find`, `stat`, `du`, `mkdir`, `touch`, `cp`, `mv`, `rm`, `rmdir`, `chmod`, `chown`;
+- edycja: `nano <plik>` oraz zapis przez `/admin-duty/dynamic/api/file`;
+- system: `hostname`, `hostnamectl`, `uname`, `uptime`, `whoami`, `id`, `date`, `ps`, `free`, `df`;
+- systemd: `status`, `start`, `stop`, `restart`, `cat`, `enable`, `disable`, `is-active`, `is-enabled`, `list-units`, `daemon-reload`;
+- journal: wszystkie wpisy lub filtry `-u`, `-xe`, `-n`, `--since`;
+- sieć: `ip addr|link|route`, `ss`, `ping`, `curl`, `getent hosts`, `dig`;
+- pakiety: `dnf` i `yum` — lista, informacje, repozytoria, instalacja, usuwanie i aktualizacja; `rpm` — odczyt zainstalowanych pakietów;
+- bezpieczeństwo: `getenforce`, `sestatus`, `setenforce`, `restorecon`, odczyt `semanage fcontext -l`, `firewall-cmd`;
+- NetworkManager: `nmcli device status`, `connection show|up|down`.
 
-- pliki i nawigację: `pwd`, `cd`, `ls`, `ls -l`, `ls -la`, `cat`, `head`, `tail`, `grep`, `stat`;
-- system: `hostname`, `uname`, `uptime`, `whoami`, `id`;
-- systemd i logi: `systemctl status|start|stop|restart|cat`, `journalctl -u`, `journalctl -xe`;
-- zasoby: `free -h`, `df -h`;
-- sieć: `ip addr`, `ip route`, `ss -lntp`.
+Nie jest to pełny bash ani pełna emulacja Rocky Linux. Parser odrzuca skrypty, potoki, przekierowania i łączenie poleceń. `grep` filtruje tekst literalnie, nie realizuje pełnego regex. Edytor zapisuje istniejące pliki wirtualne, z limitem 32 KiB UTF-8; nowy plik można wcześniej utworzyć przez `touch`. Historia terminala jest lokalna dla strony, cwd należy do sesji.
 
-Outputy są deterministycznie składane ze stanu runtime i stylizowane na Rocky Linux/RHEL. `clear` pozostaje lokalnym poleceniem UI bez kosztu. Pozostałe rozpoznane polecenia, w tym błędy ścieżek i niepoprawna składnia, przechodzą przez istniejący command accounting; nieobsługiwane dane nie zmieniają świata. Prompt zwracany przez API odzwierciedla cwd, na przykład `operator@incident:~$` i `operator@incident:/etc/systemd/system$`.
+## Realistyczne naprawy
 
-Warstwa wykonawcza nie korzysta z `subprocess`, `shell=True`, `os.system`, hostowego filesystemu ani prawdziwych `systemctl`, `journalctl` czy `chmod`. Dane wyjściowe pochodzą wyłącznie z kontrolowanego runtime sesji.
+Diagnostyka zaczyna się od `systemctl status`, `journalctl -u`, `systemctl cat` i plików aplikacji. Wirtualny `/opt/<aplikacja>/README.md` zawiera wymagania uruchomieniowe, aby rozwiązanie można było ustalić bez ukrytej definicji.
 
-Diagnostyka korzysta już z naturalnych poleceń. Kontrolowane naprawy pozostają tymczasowo dostępne dla istniejących fault flows: `systemctl set-exec-start`, `env inspect`, `env restore` i `chmod restore`. Powinny być zastępowane przez przyszłe, bezpieczne mechanizmy edycji wirtualnej konfiguracji.
+- Błędny ExecStart: edycja jednostki przez `nano`, poprawienie ścieżki, zapis, `systemctl daemon-reload`, restart.
+- Brak zmiennej: edycja `Environment` w jednostce, zapis, przeładowanie definicji, restart.
+- Odmowa wykonania: `ls -l` / `stat`, zwykłe `chmod`, w razie potrzeby `chown`, restart.
+- Zatrzymana usługa: diagnostyka i zwykłe `systemctl start` / `restart`.
 
-## Modern NOC i Centrum wsparcia
+Zapis jednostki zmienia plik, ale nie załadowany cache. Dopiero `daemon-reload` aktualizuje definicje używane przez restart. Restart sprawdza wirtualny executable, uprawnienia, wymagane środowisko, pakiety i SELinux; aktualizuje procesy, logi i zasób.
 
-Modern NOC jest pierwszą mapą produkcyjną. Jej role przestrzenne rozdzielają monitoring symptomów, racki infrastruktury, stanowisko terminalowe i Support Bay. Publiczny katalog map pozwala później dodawać kolejne kompozycje niezależne od konkretnego faultu.
+Usunięto sztuczne `systemctl set-exec-start`, `env inspect`, `env restore` i `chmod restore`. Rozwiązania generatora i validator wykonują normalne polecenia oraz ten sam bezpieczny zapis pliku co UI. Nie ma uprzywilejowanego skrótu naprawy.
 
-Centrum wsparcia udostępnia kontrolowany katalog runbooków, bezpłatne wskazówki operacyjne oraz atomowy Hint Service. Runbooki są dobierane po bezpiecznych tagach scenariusza i uczą procesu diagnostycznego bez ujawniania rozwiązania. Podpowiedzi pobierane są pojedynczo z backendu, kosztują punkty, a klient widzi wyłącznie ujawniony prefiks.
+DNF i YUM delegują do tego samego handlera i `PackageManagerState`. Instalacja nginx tworzy wirtualny executable, jednostkę i usługę; RPM widzi ten sam katalog pakietów. Brak pobierania pakietów. `curl` odpowiada na podstawie usług, portów, połączeń i firewalla; DNS jest tabelą runtime. Firewalld ma osobny stan runtime/permanent oraz reload. NetworkManager aktualizuje interfejsy i dostępność tras. Jest to ograniczona symulacja jednej maszyny, nie pełny emulator sieci wielu hostów.
 
-Nowa mapa wymaga komponentu w katalogu map oraz publicznej kompozycji renderowalnych obiektów. Scena nie zawiera identyfikatorów konkretnego incydentu.
+## Bezpieczeństwo i spójność
 
-Workspace sesji zajmuje pozostałą część `100dvh` pod navbarem i blokuje scroll dokumentu. Briefing oraz podpowiedzi korzystają z wewnętrznego drawera, a terminal i szczegóły węzłów z overlayów. Przejście lobby → sesja używa `location.replace()`, dzięki czemu Back wraca do menu trybów zamiast do ekranu generowania.
+W ścieżce poleceń nie ma `subprocess`, `os.system`, `shell=True`, `eval`, `exec`, odczytu hostowego filesystemu ani rzeczywistych klientów sieciowych. Zaufany loader mapy odczytuje plik repozytorium podczas inicjalizacji; nie przyjmuje ścieżki od gracza. HTTP przeglądarki do aplikacji i ładowanie bibliotek strony nie są ruchem wirtualnych poleceń.
 
-## Walidacja
+Błędna operacja nie pozostawia częściowej mutacji świata. Obsłużony błąd może naliczyć komendę i jej koszt zgodnie z regułami sesji. Zapis używa kontroli rewizji, a sesje mają niezależne kopie danych. Testy blokują funkcje systemowe, plikowe i sieciowe podczas reprezentatywnych poleceń oraz zapisu edytora.
 
-Pełny lokalny gate:
+Architektura umożliwia przyszły generator AI zwracający dane `IncidentDefinition`, poddane walidacji i odtworzeniu rozwiązania. Nie wdraża AI, kont, generowania kodu ani shella. Sesje pozostają w pamięci procesu, z TTL; nie przeżywają restartu aplikacji.
+
+## Interfejs i wsparcie
+
+Workspace mieści się w `100dvh` pod navbarem. Overlaye mają wewnętrzne przewijanie treści. Desktop gate blokuje małe viewporty i urządzenia dotykowe zgodnie z kontrolą klienta. Nie ma joysticka. Zmiana rozmiaru nie kończy sesji.
+
+Centrum wsparcia udostępnia runbooki, wskazówki operacyjne i płatne podpowiedzi. Podpowiedzi są pobierane pojedynczo, atomowo odejmują punkty i ujawniają tylko dozwolony prefiks. Monitoring i racki korzystają wyłącznie z publicznych danych. Po ukończeniu można przeglądać świat, ale terminal nie pozwala dalej zmieniać incydentu.
+
+## Quality workflow i cleanup
 
 ```powershell
 python scripts/check.py
-```
-
-Kontrola składni automatycznie wykrywa wszystkie pliki `*.js` w `app/static/admin_duty/dynamic/`. Smoke test uruchomionej aplikacji sprawdza start sesji, publiczną projekcję Modern NOC, Support Bay, podstawowe polecenia Virtual Rocky i zakończenie:
-
-```powershell
 python scripts/smoke_test.py --base-url http://127.0.0.1:8000
+pre-commit run --all-files
 ```
 
-## Audit legacy INC-001
+`check.py` uruchamia Ruff, pełny pytest, kontrolę wszystkich Dynamic Incident JS, testy World Engine w Node i `git diff --check`. Smoke test wymaga działającej aplikacji i sprawdza publiczne strony oraz sesję API. `requirements-dev.txt` i `.pre-commit-config.yaml` pozostają aktywną częścią workflow opisanego w README; GitHub Actions uruchamia testy i JS checks.
 
-INC-001 nadal działa i w tym milestone nie jest usuwany. Po podjęciu osobnej decyzji o wyłączeniu klasycznego scenariusza dokładna lista plików do usunięcia to:
-
-- `app/admin_duty/scenarios/incident_001.py`;
-- `app/admin_duty/scenarios/__init__.py`;
-- `app/admin_duty/commands.py`;
-- `app/admin_duty/engine.py`;
-- `app/templates/admin_duty/scenario.html`;
-- `app/static/admin_duty/js/scenario.js`.
-
-Usunięcie wymaga też punktowych zmian, ale nie kasowania całych plików: oczyszczenia klasycznych endpointów i importów w `app/admin_duty/router.py`, usunięcia testów INC-001 z `tests/test_basic.py`, aktualizacji karty w `app/templates/admin_duty/index.html`, wzmianki na stronie głównej oraz dokumentacji. `app/static/admin_duty/css/admin_duty.css` i `app/static/admin_duty/js/admin_duty.js` pozostają potrzebne lobby Symulatora.
+Dedykowany stos INC-001 został usunięty: commands/engine/scenarios, osobny template i JS, endpointy, testy tej funkcji oraz nieużywane style. Wspólne lobby, jego router, template, CSS i skrypt nawigacji pozostają używane. `virtual_shell.py` został zastąpiony modułami `rocky/`. Dokumentacja utrzymuje Mermaid zamiast nieaktualnego PNG architektury. Testy Virtual Rocky zachowują historyczną nazwę pliku, ponieważ sprawdzają aktywne zachowanie, nie usunięty adapter.

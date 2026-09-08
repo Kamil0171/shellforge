@@ -7,7 +7,7 @@
 {% block styles %}
 <link
     rel="stylesheet"
-    href="{{ url_for('static', path='admin_duty/css/admin_duty.css') }}?v=operations-ui-2"
+    href="{{ url_for('static', path='admin_duty/css/admin_duty.css') }}?v=world-v2-final"
 >
 {% endblock %}
 
@@ -25,13 +25,13 @@
 
                 <div class="duty-menu-status">
                     <span class="duty-status-indicator"></span>
-                    <span>SYSTEM READY</span>
+                    <span>SYSTEM GOTOWY</span>
                     <span class="duty-status-separator">/</span>
-                    <span>2 dostępne tryby</span>
+                    <span>Dynamic Incident · Modern NOC</span>
                 </div>
 
                 <span class="duty-kicker">
-                    ShellForge // Operations Simulator
+                    ShellForge // Symulator operacyjny
                 </span>
 
                 <h1>
@@ -93,8 +93,7 @@
                     </h1>
 
                     <p>
-                        Rozwiązuj dynamiczne incydenty albo wróć
-                        do klasycznego scenariusza szkoleniowego.
+                        Rozwiązuj dynamiczne incydenty w wirtualnym środowisku Rocky Linux.
                     </p>
                 </div>
 
@@ -118,7 +117,7 @@
                         </span>
 
                         <span class="scenario-difficulty">
-                            Nowa generacja
+                            Poziom podstawowy
                         </span>
 
                     </div>
@@ -140,7 +139,7 @@
                     <div class="scenario-tags">
                         <span>Dynamiczne środowisko</span>
                         <span>Terminal</span>
-                        <span>Scoring</span>
+                        <span>Punktacja</span>
                     </div>
 
                     <a
@@ -152,150 +151,6 @@
 
                 </article>
 
-                {% for scenario in scenarios %}
-
-                    <article class="scenario-card scenario-card-classic">
-
-                        <div class="scenario-card-top">
-
-                            <span class="scenario-id">
-                                SCENARIUSZ KLASYCZNY
-                            </span>
-
-                            <span class="scenario-difficulty">
-                                Poziom {{ scenario.difficulty_level }}
-                            </span>
-
-                        </div>
-
-                        <h2>
-                            {{ scenario.title }}
-                        </h2>
-
-                        <p>
-                            {{ scenario.description }}
-                        </p>
-
-                        <div class="scenario-meta">
-
-                            <span>
-                                {{ scenario.difficulty }}
-                            </span>
-
-                        </div>
-
-                        <div class="scenario-tags">
-
-                            {% for tag in scenario.tags %}
-                                <span>
-                                    {{ tag }}
-                                </span>
-                            {% endfor %}
-
-                        </div>
-
-                        <button
-                            type="button"
-                            class="duty-primary-button select-scenario"
-                            data-scenario-context="{{ scenario.id }} · {{ scenario.company }}"
-                        >
-                            Zagraj w {{ scenario.id }}
-                        </button>
-
-                    </article>
-
-                {% endfor %}
-
-
-            </div>
-
-        </section>
-
-
-        {% set scenario = scenarios[0] %}
-
-        <section
-            id="briefing-screen"
-            class="duty-screen"
-            hidden
-        >
-
-            <div class="briefing-panel">
-
-                <div class="briefing-status-line">
-                    <span>INCIDENT BRIEFING</span>
-                    <span>STATUS: ACTIVE</span>
-                </div>
-
-                <div class="briefing-label">
-                    {{ scenario.id }}
-                </div>
-
-                <h1>
-                    {{ scenario.title }}
-                </h1>
-
-                <div class="briefing-divider"></div>
-
-                <div class="briefing-section">
-                    <span>ŚRODOWISKO</span>
-
-                    <strong>
-                        {{ scenario.company }}
-                        ·
-                        {{ scenario.environment }}
-                    </strong>
-                </div>
-
-                <div class="briefing-section">
-                    <span>SYTUACJA</span>
-
-                    <p>
-                        {{ scenario.briefing }}
-                    </p>
-                </div>
-
-                <div class="briefing-section">
-                    <span>CEL</span>
-
-                    <p>
-                        {{ scenario.objective }}
-                    </p>
-                </div>
-
-                <div class="briefing-section">
-                    <span>DOSTĘPNE NARZĘDZIA</span>
-
-                    <ul>
-                        {% for tool in scenario.available_tools %}
-                            <li>
-                                {{ tool }}
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-
-                <div class="briefing-actions">
-
-                    <button
-                        id="briefing-back-button"
-                        type="button"
-                        class="duty-secondary-button"
-                    >
-                        ← Scenariusze
-                    </button>
-
-                    <button
-                        id="start-duty-button"
-                        type="button"
-                        class="duty-primary-button"
-                        data-scenario-id="{{ scenario.id }}"
-                        data-scenario-context="{{ scenario.id }} · {{ scenario.company }}"
-                    >
-                        Rozpocznij dyżur
-                    </button>
-
-                </div>
 
             </div>
 
@@ -489,8 +344,8 @@
                         <h2>Punktacja i samodzielność</h2>
                         <p>
                             Punktacja odzwierciedla samodzielność rozwiązania.
-                            Eksploracja nie obniża wyniku, natomiast korzystanie
-                            z pomocy ma wpływ na końcową liczbę punktów.
+                            Ruch po mapie jest bezpłatny. Polecenia i zapisy plików mają koszt punktowy,
+                            a podpowiedzi dodatkowo obniżają wynik.
                         </p>
                     </article>
 
@@ -506,8 +361,7 @@
                         <h2>Podpowiedzi i rozwiązanie</h2>
                         <p>
                             Podpowiedzi stopniowo naprowadzają na właściwy trop
-                            i kosztują punkty. Pełne rozwiązanie jest drogą
-                            awaryjną i mocniej ogranicza możliwy wynik.
+                            i kosztują punkty. Korzystaj z runbooków w Centrum wsparcia, zanim poprosisz o kolejny trop.
                         </p>
                     </article>
 
@@ -539,42 +393,8 @@
 </section>
 
 
-<div
-    id="duty-transition"
-    class="duty-transition"
-    aria-hidden="true"
->
-    <div
-        class="duty-transition-content"
-        aria-live="polite"
-    >
-
-        <span class="duty-transition-kicker">
-            ShellForge
-        </span>
-
-        <h2 id="transition-title">
-            Rozpoczynanie dyżuru
-        </h2>
-
-        <strong id="transition-context">
-            INC-001 · IronVale Systems
-        </strong>
-
-        <div class="transition-loader">
-            <span></span>
-        </div>
-
-        <p id="transition-status">
-            Przygotowywanie sesji operacyjnej...
-        </p>
-
-    </div>
-</div>
-
-
 <script
-    src="{{ url_for('static', path='admin_duty/js/admin_duty.js') }}?v=operations-ui-1">
+    src="{{ url_for('static', path='admin_duty/js/admin_duty.js') }}?v=world-v2-final">
 </script>
 
 {% endblock %}

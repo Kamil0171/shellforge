@@ -422,3 +422,35 @@ body.dynamic-session-page.dynamic-device-blocked > main.page-content {
         min-height: 36px;
     }
 }
+.virtual-editor {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px;
+    color: #dbe8ec;
+}
+.virtual-editor textarea {
+    width: 100%;
+    min-height: 250px;
+    flex: 1;
+    resize: none;
+    color: #dbe8ec;
+    background: #12212b;
+    border: 1px solid #536a79;
+    padding: 12px;
+    font: 14px/1.5 monospace;
+}
+.virtual-editor button {
+    padding: 8px 14px;
+    margin-right: 8px;
+    color: #e4edef;
+    background: #324f61;
+    border: 1px solid #617e8d;
+    border-radius: 5px;
+}
+.terminal-overlay-panel:has(.virtual-editor:not([hidden])) .terminal-output {
+    max-height: 80px;
+    flex: 0 0 80px;
+}

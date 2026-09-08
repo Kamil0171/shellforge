@@ -318,9 +318,7 @@ def test_hint_lifecycle_exposes_only_revealed_prefix(api_context):
         initial_score - definition.hints[0].cost,
     )
 
-    refreshed = client.get(
-        f"/admin-duty/dynamic/api/sessions/{session_id}"
-    ).json()
+    refreshed = client.get(f"/admin-duty/dynamic/api/sessions/{session_id}").json()
     assert refreshed["revealed_hints"] == payload["revealed_hints"]
     assert len(refreshed["revealed_hints"]) == refreshed["progress"]["hints_used"]
     assert all(
@@ -392,9 +390,7 @@ def test_public_infrastructure_tracks_runtime_without_fault_leaks(api_context):
     )
     assert restarted.status_code == 200
 
-    current = client.get(
-        f"/admin-duty/dynamic/api/sessions/{session_id}"
-    ).json()
+    current = client.get(f"/admin-duty/dynamic/api/sessions/{session_id}").json()
     current_service = next(
         node
         for node in current["infrastructure"]["nodes"]
@@ -410,7 +406,9 @@ def test_public_infrastructure_tracks_runtime_without_fault_leaks(api_context):
     assert current_signal["severity"] == "ok"
 
 
-def test_public_game_map_matches_selected_component_without_internal_wrapper(api_context):
+def test_public_game_map_matches_selected_component_without_internal_wrapper(
+    api_context,
+):
     started = start_easy(seed=1).json()
     definition = api_context["scenarios"].get(UUID(started["scenario_id"]))
     public_map = started["game_map"]
@@ -482,8 +480,60 @@ def test_dynamic_api_never_calls_host_execution(monkeypatch, api_context):
     assert response.status_code == 200
 
 
-def test_legacy_admin_duty_still_responds(api_context):
+def test_shared_admin_duty_lobby_still_responds(api_context):
     response = client.get("/admin-duty/")
 
     assert response.status_code == 200
     assert "Dyżur administratora" in response.text
+
+
+def test_virtual_editor_api_round_trip_and_session_isolation(api_context):
+    first = start_easy().json()["session_id"]
+    second = start_easy().json()["session_id"]
+    payload = {"session_id": first, "path": "/etc/os-release", "content": "test-host\n"}
+    saved = client.post("/admin-duty/dynamic/api/file", json=payload)
+    assert saved.status_code == 200
+    assert saved.json()["success"]
+    opened = client.post(
+        "/admin-duty/dynamic/api/command",
+        json={"session_id": first, "command": "nano /etc/os-release"},
+    )
+    assert opened.json()["editor"] == {
+        "path": "/etc/os-release",
+        "content": "test-host\n",
+    }
+    other = client.post(
+        "/admin-duty/dynamic/api/command",
+        json={"session_id": second, "command": "cat /etc/os-release"},
+    )
+    assert other.json()["output"] != "test-host"
+    client.post("/admin-duty/dynamic/api/end", json={"session_id": first})
+    assert client.post("/admin-duty/dynamic/api/file", json=payload).status_code == 409
+    payload["session_id"] = str(uuid4())
+    assert client.post("/admin-duty/dynamic/api/file", json=payload).status_code == 404
+
+
+@pytest.mark.parametrize(
+    "updates",
+    [
+        {"content": "x" * 32769},
+        {"path": ""},
+        {"path": "x" * 1025},
+        {"unexpected": True},
+        {"session_id": "invalid"},
+    ],
+)
+def test_virtual_editor_api_rejects_invalid_payload_without_mutation(
+    api_context, updates
+):
+    session_id = start_easy().json()["session_id"]
+    before = client.get(f"/admin-duty/dynamic/api/sessions/{session_id}").json()
+    payload = {
+        "session_id": session_id,
+        "path": "/etc/os-release",
+        "content": "test-host\n",
+        **updates,
+    }
+    response = client.post("/admin-duty/dynamic/api/file", json=payload)
+    assert response.status_code == 422
+    assert client.get(f"/admin-duty/dynamic/api/sessions/{session_id}").json() == before

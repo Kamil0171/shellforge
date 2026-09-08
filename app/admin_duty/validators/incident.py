@@ -176,8 +176,21 @@ class IncidentValidator:
                     definition,
                     state,
                     step.input,
-                    now=definition.created_at + timedelta(seconds=index),
+                    now=definition.created_at + timedelta(seconds=index * 2),
                 )
+                if step.capability_id == "filesystem.edit":
+                    content = _field_map(step.parameters).get("content")
+                    if not isinstance(content, str) or result.editor is None:
+                        raise IncidentValidationError(
+                            "Reference solution edycji wymaga treści pliku."
+                        )
+                    result = service.save_file(
+                        definition,
+                        state,
+                        path=result.editor.path,
+                        content=content,
+                        now=definition.created_at + timedelta(seconds=index * 2 + 1),
+                    )
                 if not result.success:
                     raise IncidentValidationError(
                         "Krok reference solution zakończył się niepowodzeniem."

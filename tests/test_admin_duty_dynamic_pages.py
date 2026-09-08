@@ -19,13 +19,9 @@ def test_dynamic_lobby_renders_difficulty_selection_and_assets():
     assert response.text.count("Poziom w przygotowaniu") == 2
     assert 'id="generation-overlay"' in response.text
     assert (
-        'href="http://testserver/static/admin_duty/dynamic/dynamic.css'
-        in response.text
+        'href="http://testserver/static/admin_duty/dynamic/dynamic.css' in response.text
     )
-    assert (
-        'src="http://testserver/static/admin_duty/dynamic/index.js'
-        in response.text
-    )
+    assert 'src="http://testserver/static/admin_duty/dynamic/index.js' in response.text
 
     source = client.get("/static/admin_duty/dynamic/index.js")
     assert source.status_code == 200
@@ -36,9 +32,7 @@ def test_dynamic_lobby_renders_difficulty_selection_and_assets():
 def test_dynamic_workspace_bootstraps_only_session_id_and_frontend_containers():
     session_id = uuid4()
 
-    response = client.get(
-        f"/admin-duty/dynamic/sessions/{session_id}"
-    )
+    response = client.get(f"/admin-duty/dynamic/sessions/{session_id}")
 
     assert response.status_code == 200
     assert f'data-session-id="{session_id}"' in response.text
@@ -71,17 +65,12 @@ def test_dynamic_workspace_bootstraps_only_session_id_and_frontend_containers():
         'src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"'
         in response.text
     )
+    assert 'src="http://testserver/static/admin_duty/dynamic/game.js' in response.text
     assert (
-        'src="http://testserver/static/admin_duty/dynamic/game.js'
-        in response.text
+        'src="http://testserver/static/admin_duty/dynamic/terminal.js' in response.text
     )
     assert (
-        'src="http://testserver/static/admin_duty/dynamic/terminal.js'
-        in response.text
-    )
-    assert (
-        'src="http://testserver/static/admin_duty/dynamic/scenario.js'
-        in response.text
+        'src="http://testserver/static/admin_duty/dynamic/scenario.js' in response.text
     )
 
 
@@ -93,27 +82,27 @@ def test_dynamic_gameplay_assets_include_keyboard_and_overlay_contracts():
     assert game.status_code == 200
     assert "Phaser.Input.Keyboard.JustDown" in game.text
     assert "scene.input.keyboard.enabled = !locked" in game.text
-    assert 'game.canvas.focus({ preventScroll: true })' in game.text
-    assert "createFogOfWar" in game.text
-    assert "discoveredSectors" in game.text
+    assert "game.canvas.focus({ preventScroll: true })" in game.text
+    assert "W.DiscoverySystem" in game.text
+    systems = client.get("/static/admin_duty/dynamic/world-systems.js")
+    assert "createRadialGradient" in systems.text
+    assert "destination-out" in systems.text
     assert terminal.status_code == 200
     assert 'form.addEventListener("submit"' in terminal.text
     assert 'event.key === "Enter"' in terminal.text
     assert '["clear", "cls"]' in terminal.text
     assert "output.replaceChildren()" in terminal.text
     assert 'event.key === "Escape"' in terminal.text
-    assert 'input.focus({ preventScroll: true })' in terminal.text
+    assert "input.focus({ preventScroll: true })" in terminal.text
     assert scenario.status_code == 200
-    assert 'window.innerWidth >= 1024' in scenario.text
+    assert "window.innerWidth >= 1024" in scenario.text
     assert "navigator.maxTouchPoints" in scenario.text
     assert 'window.scrollTo({ top: 0, left: 0, behavior: "instant" })' in scenario.text
     assert 'window.location.replace("/admin-duty/dynamic/")' in scenario.text
 
 
 def test_dynamic_workspace_rejects_invalid_uuid():
-    response = client.get(
-        "/admin-duty/dynamic/sessions/not-a-uuid"
-    )
+    response = client.get("/admin-duty/dynamic/sessions/not-a-uuid")
 
     assert response.status_code == 422
     assert response.json() == {"detail": "Nieprawidłowe dane żądania."}
@@ -141,14 +130,13 @@ def test_dynamic_pages_do_not_embed_backend_only_incident_data():
             assert value not in response.text
 
 
-def test_admin_duty_lobby_links_dynamic_and_classic_modes():
+def test_admin_duty_lobby_links_only_dynamic_mode():
     response = client.get("/admin-duty/")
 
     assert response.status_code == 200
     assert 'href="/admin-duty/dynamic/"' in response.text
     assert "Dynamic Incident Lab" in response.text
-    assert "SCENARIUSZ KLASYCZNY" in response.text
-    assert "INC-001" in response.text
-    assert 'data-scenario-id="INC-001"' in response.text
+    assert "SCENARIUSZ KLASYCZNY" not in response.text
+    assert "INC-001" not in response.text
     assert "INC-002" not in response.text
     assert "INC-003" not in response.text

@@ -202,7 +202,7 @@ def test_validator_rejects_nondeterministic_ordering():
 def test_validator_rejects_solution_capability_mismatch():
     definition = generated(seed=4)
     step = definition.solution[0].model_copy(
-        update={"capability_id": "environment.inspect"}
+        update={"capability_id": "filesystem.read"}
     )
     solution = (step, *definition.solution[1:])
 
@@ -219,7 +219,7 @@ def test_validator_rejects_solution_with_unavailable_capability():
             "command_capability_ids": tuple(
                 capability
                 for capability in definition.capabilities.command_capability_ids
-                if capability != "environment.restore"
+                if capability != "filesystem.edit"
             )
         }
     )
@@ -233,7 +233,7 @@ def test_validator_rejects_solution_with_unavailable_capability():
 def test_validator_rejects_reference_solution_that_does_not_complete_mission():
     definition = generated(seed=3)
     final_step = SolutionStep(
-        order=4,
+        order=definition.solution[-1].order,
         capability_id="systemd.status",
         input="systemctl status service-api",
         purpose="Ponownie sprawdź stan.",

@@ -66,6 +66,12 @@ class DynamicEndRequest(StrictRequestModel):
     session_id: UUID
 
 
+class DynamicFileRequest(StrictRequestModel):
+    session_id: UUID
+    path: str = Field(min_length=1, max_length=1024)
+    content: str = Field(max_length=32768)
+
+
 class DynamicHintRequest(StrictRequestModel):
     session_id: UUID
 
@@ -231,6 +237,22 @@ def request_dynamic_hint(
 ):
     try:
         return service.request_hint(payload.session_id, now=utc_now())
+    except Exception as error:
+        return _error_response(error)
+
+
+@router.post("/api/file", response_model=CommandExecutionResult)
+def save_dynamic_file(
+    payload: DynamicFileRequest,
+    service: DynamicIncidentService = Depends(get_dynamic_incident_service),
+):
+    try:
+        return service.save_file(
+            payload.session_id,
+            path=payload.path,
+            content=payload.content,
+            now=utc_now(),
+        )
     except Exception as error:
         return _error_response(error)
 

@@ -114,7 +114,7 @@
     }
 
     function renderSectorState(state) {
-        document.getElementById("game-sector-label").textContent = state.current.label.toUpperCase();
+        document.getElementById("game-sector-label").textContent = (state.current?.label || "Korytarz").toUpperCase();
         if (!state.newlyDiscovered || state.discovered === 1) return;
         const announcement = document.getElementById("game-announcement");
         announcement.textContent = `Odkryto sektor: ${state.current.label}`;
@@ -145,6 +145,16 @@
     }
 
     const terminal = window.ShellForgeDynamicTerminal.createTerminalController({
+        async onSaveFile(path, content) {
+            const result = await requestJson("/admin-duty/dynamic/api/file", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ session_id: sessionId, path, content }),
+            });
+            renderProgress(result.progress, { showSuccess: false });
+            await refreshSessionProjection();
+            return result;
+        },
         async onSubmit(command) {
             try {
                 const result = await requestJson("/admin-duty/dynamic/api/command", {

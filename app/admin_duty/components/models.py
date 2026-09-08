@@ -136,6 +136,7 @@ class ObjectiveTemplate(FrozenDomainModel):
 
 
 class SolutionStepTemplate(FrozenDomainModel):
+    content_template: str | None = Field(default=None, max_length=32768)
     order: int = Field(ge=1, le=200)
     capability_id: Identifier
     input_template: str = Field(min_length=1, max_length=1024)

@@ -1,5 +1,5 @@
 (() => {
-    function createTerminalController({ onSubmit, onOpenChange }) {
+    function createTerminalController({ onSubmit, onSaveFile, onOpenChange }) {
         const overlay = document.getElementById("terminal-overlay");
         const form = document.getElementById("terminal-form");
         const input = document.getElementById("terminal-input");
@@ -13,6 +13,45 @@
         let pending = false;
         let available = true;
         let prompt = "operator@incident:~$";
+        const editor = document.getElementById("virtual-editor");
+        const editorText = document.getElementById("virtual-editor-content");
+        const editorPath = document.getElementById("virtual-editor-path");
+        const editorSave = document.getElementById("virtual-editor-save");
+        let editingPath = null;
+
+        function closeEditor() {
+            if (pending) return;
+            editor.hidden = true;
+            form.hidden = false;
+            editingPath = null;
+            sync();
+        }
+
+        document.getElementById("virtual-editor-cancel").addEventListener("click", closeEditor);
+        editor.addEventListener("keydown", (event) => {
+            event.stopPropagation();
+            if (event.key === "Escape") {
+                event.preventDefault();
+                closeEditor();
+            }
+        });
+        editorSave.addEventListener("click", async () => {
+            if (pending || !editingPath) return;
+            pending = true;
+            editorSave.disabled = true;
+            try {
+                const result = await onSaveFile(editingPath, editorText.value);
+                append(result.success ? "output" : "error", result.output);
+                pending = false;
+                if (result.success) closeEditor();
+            } catch (error) {
+                state.textContent = error.message;
+            } finally {
+                pending = false;
+                editorSave.disabled = false;
+                sync();
+            }
+        });
 
         function append(type, text) {
             const entry = document.createElement("div");
@@ -29,7 +68,7 @@
             input.disabled = !enabled;
             submit.disabled = !enabled;
             form.classList.toggle("is-disabled", !enabled);
-            if (enabled && !overlay.hidden) {
+            if (enabled && !overlay.hidden && !editingPath) {
                 window.requestAnimationFrame(() => input.focus({ preventScroll: true }));
             }
         }
@@ -40,7 +79,7 @@
             document.body.classList.add("dynamic-modal-open");
             onOpenChange(true);
             sync();
-            input.focus({ preventScroll: true });
+            (available ? input : closeButton).focus({ preventScroll: true });
         }
 
         function close() {
@@ -85,6 +124,14 @@
                 const result = await onSubmit(command);
                 setPrompt(result.prompt);
                 if (result.output) append("output", result.output);
+                if (result.editor) {
+                    editingPath = result.editor.path;
+                    editorPath.textContent = editingPath;
+                    editorText.value = result.editor.content;
+                    editor.hidden = false;
+                    form.hidden = true;
+                    editorText.focus();
+                }
                 state.textContent = "Terminal gotowy";
             } catch (error) {
                 append("error", error.message || "Nie udało się wykonać polecenia.");
@@ -137,6 +184,12 @@
         });
 
         closeButton.addEventListener("click", close);
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key !== "Escape" || overlay.hidden || editingPath) return;
+            event.preventDefault();
+            close();
+        });
 
         return { open, close, append, setAvailable, setPrompt, isOpen: () => !overlay.hidden };
     }
