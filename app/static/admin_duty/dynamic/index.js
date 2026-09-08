@@ -5,7 +5,7 @@
         return;
     }
 
-    const startButton = document.getElementById("start-easy-button");
+    const startButtons = Array.from(document.querySelectorAll(".start-incident-button"));
     const retryButton = document.getElementById("retry-start-button");
     const errorPanel = document.getElementById("start-error");
     const errorMessage = document.getElementById("start-error-message");
@@ -20,6 +20,7 @@
     let activeStep = 0;
     let stepTimer = null;
     let requestInProgress = false;
+    let selectedDifficulty = "easy";
 
     function wait(duration) {
         return new Promise((resolve) => {
@@ -116,13 +117,14 @@
         });
     }
 
-    async function startIncident() {
+    async function startIncident(difficulty = selectedDifficulty) {
         if (requestInProgress) {
             return;
         }
 
         requestInProgress = true;
-        startButton.disabled = true;
+        selectedDifficulty = difficulty;
+        startButtons.forEach((button) => { button.disabled = true; });
         retryButton.disabled = true;
         showPreparation();
 
@@ -132,7 +134,7 @@
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ difficulty: "easy" }),
+                body: JSON.stringify({ difficulty }),
             });
 
             if (!response.ok) {
@@ -162,14 +164,14 @@
             }
 
             requestInProgress = false;
-            startButton.disabled = false;
+            startButtons.forEach((button) => { button.disabled = false; });
             retryButton.disabled = false;
         }
     }
 
-    startButton.addEventListener("click", () => {
-        void startIncident();
-    });
+    startButtons.forEach((button) => button.addEventListener("click", () => {
+        void startIncident(button.dataset.difficulty || "easy");
+    }));
 
     retryButton.addEventListener("click", () => {
         void startIncident();

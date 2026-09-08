@@ -63,6 +63,38 @@ class ResourceType(StrEnum):
     DOMAIN = "domain"
 
 
+class DependencyType(StrEnum):
+    SERVICE = "service"
+    NETWORK = "network"
+
+
+class NetworkProtocol(StrEnum):
+    TCP = "tcp"
+    UDP = "udp"
+    HTTP = "http"
+    HTTPS = "https"
+
+
+class ObjectiveType(StrEnum):
+    CONFIRM_SYMPTOM = "confirm_symptom"
+    INSPECT_SERVICE = "inspect_service"
+    IDENTIFY_DEPENDENCY = "identify_dependency"
+    RESTORE_DEPENDENCY = "restore_dependency"
+    VERIFY_SERVICE = "verify_service"
+    VERIFY_END_TO_END = "verify_end_to_end"
+
+
+class GenerationSource(StrEnum):
+    DETERMINISTIC = "deterministic"
+    AI = "ai"
+
+
+class ValidationStatus(StrEnum):
+    DRAFT = "draft"
+    VALID = "valid"
+    INVALID = "invalid"
+
+
 class FaultSeverity(StrEnum):
     LOW = "low"
     MEDIUM = "medium"
@@ -115,6 +147,8 @@ class GenerationMetadata(FrozenDomainModel):
         min_length=2,
         max_length=128,
     )
+    generation_source: GenerationSource = GenerationSource.DETERMINISTIC
+    model: str | None = Field(default=None, min_length=1, max_length=120)
 
 
 class IncidentPresentation(FrozenDomainModel):
@@ -200,6 +234,41 @@ class WorldResource(FrozenDomainModel):
     attributes: tuple[DataField, ...] = Field(default=(), max_length=64)
 
 
+class ServiceDependency(FrozenDomainModel):
+    dependency_id: Identifier
+    source_host_id: Identifier
+    source_service_id: Identifier
+    target_service_id: Identifier
+    target_host_id: Identifier
+    dependency_type: DependencyType
+    protocol: NetworkProtocol
+    port: int = Field(ge=1, le=65535)
+    required: bool = True
+    publicly_visible: bool = True
+
+
+class PackageRequirement(FrozenDomainModel):
+    requirement_id: Identifier
+    service_id: Identifier
+    host_id: Identifier
+    package_name: Identifier
+
+
+class ConfigurationRequirement(FrozenDomainModel):
+    requirement_id: Identifier
+    service_id: Identifier
+    host_id: Identifier
+    file_resource_id: Identifier
+
+
+class SymptomPropagationRule(FrozenDomainModel):
+    rule_id: Identifier
+    dependency_id: Identifier
+    affected_resource_id: Identifier
+    unhealthy_state: Identifier
+    healthy_state: Identifier
+
+
 class InitialWorldState(FrozenDomainModel):
     environment_id: Identifier
     environment_version: Version
@@ -239,9 +308,11 @@ class Objective(FrozenDomainModel):
     objective_id: Identifier
     label: str = Field(min_length=1, max_length=240)
     required: bool = True
-    completion_condition: CompletionCondition
+    completion_condition: CompletionCondition | None = None
     order: int = Field(ge=1, le=100)
     weight: int = Field(default=1, ge=1, le=100)
+    objective_type: ObjectiveType = ObjectiveType.RESTORE_DEPENDENCY
+    completion_fact_ids: tuple[Identifier, ...] = Field(default=(), max_length=16)
 
 
 class CapabilitySet(FrozenDomainModel):
@@ -279,11 +350,29 @@ class SolutionStep(FrozenDomainModel):
     input: str = Field(min_length=1, max_length=32768)
     purpose: str = Field(min_length=1, max_length=600)
     parameters: tuple[DataField, ...] = Field(default=(), max_length=64)
+    expected_success: bool = True
+
+
+class PostIncidentDefinition(FrozenDomainModel):
+    root_cause: str = Field(min_length=1, max_length=1000)
+    affected_service_ids: tuple[Identifier, ...] = Field(min_length=1, max_length=64)
+    repair_capability_ids: tuple[Identifier, ...] = Field(min_length=1, max_length=64)
+
+
+class ScenarioPoolMetadata(FrozenDomainModel):
+    scenario_id: UUID
+    generation_source: GenerationSource
+    model: str | None = Field(default=None, min_length=1, max_length=120)
+    created_at: AwareDatetime
+    difficulty: DifficultyLevel
+    validation_status: ValidationStatus
+    quality_score: int | None = Field(default=None, ge=0, le=100)
+    quality_version: Version
 
 
 class IncidentDefinition(FrozenDomainModel):
     scenario_id: UUID
-    schema_version: Literal["1.0"]
+    schema_version: Literal["1.0", "3.0"]
     difficulty: DifficultyLevel
     created_at: AwareDatetime
     generation: GenerationMetadata
@@ -296,6 +385,19 @@ class IncidentDefinition(FrozenDomainModel):
     scoring: ScoringRules
     hints: tuple[Hint, ...] = Field(default=(), max_length=20)
     solution: tuple[SolutionStep, ...] = Field(min_length=1, max_length=200)
+    service_dependencies: tuple[ServiceDependency, ...] = Field(
+        default=(), max_length=128
+    )
+    package_requirements: tuple[PackageRequirement, ...] = Field(
+        default=(), max_length=128
+    )
+    configuration_requirements: tuple[ConfigurationRequirement, ...] = Field(
+        default=(), max_length=128
+    )
+    symptom_propagation: tuple[SymptomPropagationRule, ...] = Field(
+        default=(), max_length=128
+    )
+    post_incident: PostIncidentDefinition | None = None
 
     @model_validator(mode="after")
     def validate_component_snapshots(self):

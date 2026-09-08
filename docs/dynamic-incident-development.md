@@ -1,4 +1,4 @@
-# Dynamic Incident — World Engine V2 i Virtual Rocky V2
+# Dynamic Incident — IncidentDefinition V3 i wielohostowy Virtual Rocky
 
 ## Granice odpowiedzialności
 
@@ -23,7 +23,7 @@ Kamera używa płynnego śledzenia i granic świata. Kolizje pochodzą z tej sam
 
 Format oddziela dane od renderowania i pozwala później napisać adapter Tiled. Nie ma obecnie importera TMX ani natywnego JSON Tiled. Oświetlenie jest stylizowanym efektem Canvas, nie fizycznym modelem światła. Animacje racków i monitorów korzystają ze wspólnej aktualizacji, bez timera dla każdego obiektu.
 
-## Virtual Rocky V2
+## Virtual Rocky wielu hostów
 
 ```text
 Polecenie / zapis edytora
@@ -35,7 +35,7 @@ Polecenie / zapis edytora
   -> bezpieczna projekcja publiczna
 ```
 
-`VirtualRockyRuntime` przechowuje filesystem, cwd, procesy, zasoby, cache jednostek, pakiety, sieć, DNS, SELinux i firewalld. Moduły `rocky/filesystem.py`, `system.py`, `network.py`, `packages.py` i `security.py` współdzielą ten model. Nie są adapterami systemu hosta.
+Każdy `VirtualRockyRuntime` przechowuje własny filesystem, cwd, procesy, zasoby, cache jednostek, pakiety, sieć, DNS, SELinux, firewalld i NetworkManager. `SessionRuntimeState` utrzymuje słownik runtime'ów hostów oraz aktywny kontekst. Moduły `rocky/filesystem.py`, `system.py`, `network.py`, `packages.py`, `security.py` i `access.py` pracują wyłącznie na tym modelu. Nie są adapterami systemu hosta.
 
 Obsługiwany jest kontrolowany podzbiór składni:
 
@@ -47,9 +47,26 @@ Obsługiwany jest kontrolowany podzbiór składni:
 - sieć: `ip addr|link|route`, `ss`, `ping`, `curl`, `getent hosts`, `dig`;
 - pakiety: `dnf` i `yum` — lista, informacje, repozytoria, instalacja, usuwanie i aktualizacja; `rpm` — odczyt zainstalowanych pakietów;
 - bezpieczeństwo: `getenforce`, `sestatus`, `setenforce`, `restorecon`, odczyt `semanage fcontext -l`, `firewall-cmd`;
-- NetworkManager: `nmcli device status`, `connection show|up|down`.
+- NetworkManager: `nmcli device status`, `connection show|up|down` oraz `connection modify <nazwa> ipv4.dns <adres>`.
+- dostęp: `ssh <identyfikator-hosta|hostname>` przełącza aktywny kontekst w bieżącej sesji.
 
-Nie jest to pełny bash ani pełna emulacja Rocky Linux. Parser odrzuca skrypty, potoki, przekierowania i łączenie poleceń. `grep` filtruje tekst literalnie, nie realizuje pełnego regex. Edytor zapisuje istniejące pliki wirtualne, z limitem 32 KiB UTF-8; nowy plik można wcześniej utworzyć przez `touch`. Historia terminala jest lokalna dla strony, cwd należy do sesji.
+Nie jest to pełny bash ani pełna emulacja Rocky Linux. Parser odrzuca skrypty, potoki, przekierowania i łączenie poleceń. `grep` filtruje tekst literalnie, nie realizuje pełnego regex. Edytor zapisuje istniejące pliki wirtualne, z limitem 32 KiB UTF-8; nowy plik można wcześniej utworzyć przez `touch`. Hosty zachowują oddzielne katalogi robocze i cały swój stan podczas przełączania. Historia wykonanych poleceń należy do sesji i zasila podsumowanie po incydencie.
+
+`ssh` nie korzysta z klienta systemowego, `subprocess`, gniazda ani sieci. Nie uwierzytelnia użytkownika i nie symuluje transportu SSH — jest kontrolowaną nawigacją po zdefiniowanych hostach laboratorium. Nieznany host kończy się bezpiecznym błędem bez zmiany kontekstu.
+
+## IncidentDefinition V3 i zależności
+
+Rdzeń `ServiceDependency` pozostaje mały i typowany: host i usługa źródłowa, host i usługa docelowa, rodzaj zależności, protokół oraz port. Pakiety, konfiguracje i reguły propagacji symptomów są osobnymi modelami. Validator sprawdza referencje, zgodność hostów, porty, adresy IP, cykle grafu, możliwości komend i odtwarza rozwiązanie przez ten sam parser, registry, handler i runtime co sesja gracza.
+
+Poziom MEDIUM zawiera pięć kategorii scenariuszy:
+
+- blokada połączenia do zależności przez firewalld;
+- brak pakietu wymaganego przez usługę;
+- nieprawidłowy kontekst SELinux;
+- błędna konfiguracja DNS zarządzana przez NetworkManager;
+- niezgodność zewnętrznej reguły firewalla dla portu usługi.
+
+Scenariusze używają trzech lub czterech hostów i kilku usług. Awaria zależności może pozostawić proces usługi w stanie `running`, a jednocześnie oznaczyć publiczne zdrowie usługi jako `unhealthy` oraz propagować błąd do endpointu. Monitoring i publiczna topologia pokazują tylko dozwolone węzły, zdrowie oraz jawne krawędzie zależności.
 
 ## Realistyczne naprawy
 
@@ -64,7 +81,7 @@ Zapis jednostki zmienia plik, ale nie załadowany cache. Dopiero `daemon-reload`
 
 Usunięto sztuczne `systemctl set-exec-start`, `env inspect`, `env restore` i `chmod restore`. Rozwiązania generatora i validator wykonują normalne polecenia oraz ten sam bezpieczny zapis pliku co UI. Nie ma uprzywilejowanego skrótu naprawy.
 
-DNF i YUM delegują do tego samego handlera i `PackageManagerState`. Instalacja nginx tworzy wirtualny executable, jednostkę i usługę; RPM widzi ten sam katalog pakietów. Brak pobierania pakietów. `curl` odpowiada na podstawie usług, portów, połączeń i firewalla; DNS jest tabelą runtime. Firewalld ma osobny stan runtime/permanent oraz reload. NetworkManager aktualizuje interfejsy i dostępność tras. Jest to ograniczona symulacja jednej maszyny, nie pełny emulator sieci wielu hostów.
+DNF i YUM delegują do tego samego handlera i `PackageManagerState`. Instalacja nginx tworzy wirtualny executable, jednostkę i usługę; RPM widzi katalog pakietów konkretnego hosta. Brak pobierania pakietów. `curl` odpowiada na podstawie usług, zależności, portów, połączeń i firewalla; DNS jest tabelą runtime hosta. Firewalld ma osobny stan runtime/permanent oraz reload. NetworkManager aktualizuje interfejsy, serwery DNS i dostępność tras. Jest to kontrolowana symulacja wielu maszyn, a nie pełny emulator sieci lub dystrybucji.
 
 ## Bezpieczeństwo i spójność
 
@@ -72,7 +89,9 @@ W ścieżce poleceń nie ma `subprocess`, `os.system`, `shell=True`, `eval`, `ex
 
 Błędna operacja nie pozostawia częściowej mutacji świata. Obsłużony błąd może naliczyć komendę i jej koszt zgodnie z regułami sesji. Zapis używa kontroli rewizji, a sesje mają niezależne kopie danych. Testy blokują funkcje systemowe, plikowe i sieciowe podczas reprezentatywnych poleceń oraz zapisu edytora.
 
-Architektura umożliwia przyszły generator AI zwracający dane `IncidentDefinition`, poddane walidacji i odtworzeniu rozwiązania. Nie wdraża AI, kont, generowania kodu ani shella. Sesje pozostają w pamięci procesu, z TTL; nie przeżywają restartu aplikacji.
+Architektura przygotowuje przyszły generator AI zwracający wyłącznie ścisły draft danych. `IncidentGenerationRequest`, `GeneratedIncidentDraft`, asynchroniczny protokół providera, fake provider i katalog możliwości prowadzą do tego samego validatora strukturalnego, semantycznego i replay co generator deterministyczny. Nie ma integracji Gemma, klucza, klienta HTTP, kont, generowania kodu ani shella. Sesje pozostają w pamięci procesu, z TTL; nie przeżywają restartu aplikacji.
+
+Po ukończeniu wymaganych celów API może ujawnić raport po incydencie: przyczynę źródłową, dotknięte usługi, odkryte kamienie milowe, skuteczne działania naprawcze, końcowy stan infrastruktury, historię komend, liczbę podpowiedzi i wynik. Raport nie jest dostępny przed ukończeniem misji.
 
 ## Interfejs i wsparcie
 

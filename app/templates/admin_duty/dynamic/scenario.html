@@ -172,7 +172,22 @@
     </div>
 
     <div id="end-summary" class="end-summary" hidden>
-        <div class="end-summary-panel"><span class="end-summary-code">SESSION ENDED</span><h1>Incydent zakończony</h1><p>Wynik i postęp pozostaną dostępne do czasu wygaśnięcia sesji.</p><div class="end-summary-grid"><div><span>Poziom</span><strong id="summary-difficulty">—</strong></div><div><span>Wynik</span><strong id="summary-score">—</strong></div><div><span>Komendy</span><strong id="summary-commands">—</strong></div><div><span>Cele</span><strong id="summary-objectives">—</strong></div></div><a href="/admin-duty/dynamic/" class="dynamic-primary-button">Nowy incydent <span aria-hidden="true">→</span></a></div>
+        <div class="end-summary-panel">
+            <span class="end-summary-code">SESJA ZAKOŃCZONA</span>
+            <h1>Incydent zakończony</h1>
+            <p>Wynik i postęp pozostaną dostępne do czasu wygaśnięcia sesji.</p>
+            <div class="end-summary-grid"><div><span>Poziom</span><strong id="summary-difficulty">—</strong></div><div><span>Wynik</span><strong id="summary-score">—</strong></div><div><span>Komendy</span><strong id="summary-commands">—</strong></div><div><span>Cele</span><strong id="summary-objectives">—</strong></div></div>
+            <section id="post-incident-report" class="post-incident-report" hidden>
+                <h2>Podsumowanie po incydencie</h2>
+                <dl>
+                    <div><dt>Przyczyna źródłowa</dt><dd id="post-incident-root-cause">—</dd></div>
+                    <div><dt>Dotknięte usługi</dt><dd id="post-incident-services">—</dd></div>
+                </dl>
+                <h3>Skuteczne działania naprawcze</h3>
+                <ul id="post-incident-actions"></ul>
+            </section>
+            <a href="/admin-duty/dynamic/" class="dynamic-primary-button">Nowy incydent <span aria-hidden="true">→</span></a>
+        </div>
     </div>
 </section>
 {% endblock %}

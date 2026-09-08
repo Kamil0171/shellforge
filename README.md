@@ -37,7 +37,7 @@ ShellForge udostępnia obecnie:
 
 ## Symulator „Dyżur administratora”
 
-Symulator udostępnia Dynamic Incident — generowane deterministycznie incydenty na mapie Modern NOC. Cztery rodzaje usterek usług działają w trzech profilach infrastruktury. Każda sesja ma izolowany Virtual Rocky Linux i własną punktację.
+Symulator udostępnia Dynamic Incident — generowane deterministycznie incydenty na mapie Modern NOC. Poziom łatwy obejmuje awarie pojedynczego hosta, a poziom średni zależności między trzema lub czterema hostami: firewalld, brak pakietu, SELinux, DNS/NetworkManager i niezgodność reguł dostępu. Każda sesja ma izolowane hosty Virtual Rocky i własną punktację.
 
 Scenariusz obejmuje między innymi:
 
@@ -49,8 +49,10 @@ Scenariusz obejmuje między innymi:
 - punktację premiującą samodzielną diagnostykę;
 - stopniowane podpowiedzi;
 - runbooki i dokumentację wdrożenia dostępną w wirtualnym filesystemie.
+- kontrolowane przełączanie między hostami przez `ssh <host>` bez klienta SSH i bez połączenia sieciowego;
+- podsumowanie przyczyny, dotkniętych usług i działań naprawczych po ukończeniu incydentu.
 
-Tryb Dynamic Incident łączy eksplorowaną mapę 2D Modern NOC z izolowanym środowiskiem Virtual Rocky Linux. Gracz korzysta z monitoringu, racków, Centrum wsparcia i terminala obsługującego kontrolowany katalog realnych składniowo poleceń Linux. Symulacja nigdy nie wykonuje poleceń na hoście aplikacji.
+Tryb Dynamic Incident łączy eksplorowaną mapę 2D Modern NOC z izolowanym, wielohostowym środowiskiem Virtual Rocky Linux. Gracz korzysta z monitoringu, racków, Centrum wsparcia i terminala obsługującego kontrolowany katalog realnych składniowo poleceń Linux. Symulacja nigdy nie wykonuje poleceń na hoście aplikacji ani nie inicjuje rzeczywistego SSH lub ruchu sieciowego.
 
 ## Zakres edukacyjny
 
@@ -144,7 +146,7 @@ Najważniejsze elementy repozytorium:
 ```text
 app/
 ├── admin_duty/
-│   ├── components/     # katalog środowisk, usterek i JSON mapy
+│   ├── components/     # katalog środowisk, usterek, scenariuszy i JSON mapy
 │   ├── domain/         # definicja, runtime, cele i punktacja
 │   ├── rocky/          # wirtualne polecenia według kategorii
 │   ├── generators/     # deterministyczne incydenty

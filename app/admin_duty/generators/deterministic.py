@@ -12,6 +12,10 @@ from app.admin_duty.components import (
     get_map_template,
 )
 from app.admin_duty.components.models import AttributeMutationTemplate
+from app.admin_duty.components.scenarios import (
+    MEDIUM_SCENARIO_CATEGORIES,
+    build_medium_draft,
+)
 from app.admin_duty.domain.definition import (
     CapabilitySet,
     CompletionCondition,
@@ -20,6 +24,7 @@ from app.admin_duty.domain.definition import (
     DataField,
     FaultInstance,
     GenerationMetadata,
+    GenerationSource,
     IncidentDefinition,
     IncidentPresentation,
     InitialWorldState,
@@ -31,6 +36,10 @@ from app.admin_duty.domain.definition import (
     WorldResource,
 )
 from app.admin_duty.domain.difficulty import DifficultyLevel, get_difficulty_profile
+from app.admin_duty.domain.generation import (
+    IncidentGenerationRequest,
+    convert_draft_to_definition,
+)
 from app.admin_duty.rocky.registry import HANDLERS
 from app.admin_duty.validators import IncidentValidationError, IncidentValidator
 
@@ -366,7 +375,7 @@ class DeterministicIncidentGenerator:
         seed: int | None = None,
         now: datetime | None = None,
     ) -> IncidentDefinition:
-        if difficulty is not DifficultyLevel.EASY:
+        if difficulty is DifficultyLevel.HARD:
             raise UnsupportedDifficultyError(
                 f"Poziom trudności {difficulty!s} nie jest jeszcze obsługiwany."
             )
@@ -374,6 +383,22 @@ class DeterministicIncidentGenerator:
         effective_seed = seed if seed is not None else secrets.randbelow(2**63)
         rng = random.Random(effective_seed)
         created_at = now if now is not None else utc_now()
+        if difficulty is DifficultyLevel.MEDIUM:
+            last_error = None
+            for _ in range(MAX_GENERATION_ATTEMPTS):
+                category = rng.choice(MEDIUM_SCENARIO_CATEGORIES)
+                candidate = convert_draft_to_definition(
+                    build_medium_draft(category, seed=effective_seed),
+                    created_at=created_at,
+                )
+                try:
+                    return self._validator.validate(candidate)
+                except IncidentValidationError as error:
+                    last_error = error
+            raise GenerationError(
+                "Nie udało się zbudować poprawnego incydentu MEDIUM po 10 próbach."
+            ) from last_error
+
         environments = [
             environment
             for environment in ENVIRONMENT_TEMPLATES
@@ -410,3 +435,32 @@ class DeterministicIncidentGenerator:
         raise GenerationError(
             "Nie udało się zbudować poprawnego incydentu po 10 próbach."
         ) from last_error
+
+    def generate_from_request(
+        self,
+        request: IncidentGenerationRequest,
+        *,
+        now: datetime | None = None,
+    ) -> IncidentDefinition:
+        if request.generation_source is not GenerationSource.DETERMINISTIC:
+            raise GenerationError("Generator deterministyczny nie obsługuje źródła AI.")
+        if request.map_id not in {None, "web-operations-room"} and (
+            request.difficulty is DifficultyLevel.MEDIUM
+        ):
+            raise GenerationError("MEDIUM obsługuje obecnie mapę Modern NOC.")
+        if request.allowed_fault_categories and request.difficulty is DifficultyLevel.MEDIUM:
+            allowed = tuple(
+                category
+                for category in MEDIUM_SCENARIO_CATEGORIES
+                if category in request.allowed_fault_categories
+            )
+            if not allowed:
+                raise GenerationError("Żądanie nie zawiera obsługiwanej kategorii faultu.")
+            effective_seed = request.seed if request.seed is not None else secrets.randbelow(2**63)
+            category = random.Random(effective_seed).choice(allowed)
+            candidate = convert_draft_to_definition(
+                build_medium_draft(category, seed=effective_seed),
+                created_at=now or utc_now(),
+            )
+            return self._validator.validate(candidate)
+        return self.generate(request.difficulty, seed=request.seed, now=now)

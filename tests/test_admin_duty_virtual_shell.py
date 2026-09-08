@@ -33,7 +33,7 @@ def test_pwd_and_cd_support_absolute_relative_parent_and_home_paths():
     assert execute(definition, state, service, "pwd").output == "/home/operator"
     absolute = execute(definition, state, service, "cd /etc/systemd/system")
     assert absolute.current_working_directory == "/etc/systemd/system"
-    assert absolute.prompt == "operator@incident:/etc/systemd/system$"
+    assert absolute.prompt == "operator@app-01:/etc/systemd/system$"
     execute(definition, state, service, "cd ..")
     assert state.current_working_directory == "/etc/systemd"
     execute(definition, state, service, "cd system")

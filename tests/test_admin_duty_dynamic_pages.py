@@ -16,12 +16,14 @@ def test_dynamic_lobby_renders_difficulty_selection_and_assets():
     assert "Łatwy" in response.text
     assert "Średni" in response.text
     assert "Trudny" in response.text
-    assert response.text.count("Poziom w przygotowaniu") == 2
+    assert response.text.count("Poziom w przygotowaniu") == 1
+    assert 'id="start-medium-button"' in response.text
     assert 'id="generation-overlay"' in response.text
     assert (
         'href="http://testserver/static/admin_duty/dynamic/dynamic.css' in response.text
     )
     assert 'src="http://testserver/static/admin_duty/dynamic/index.js' in response.text
+    assert "index.js?v=incident-v3" in response.text
 
     source = client.get("/static/admin_duty/dynamic/index.js")
     assert source.status_code == 200
@@ -43,6 +45,8 @@ def test_dynamic_workspace_bootstraps_only_session_id_and_frontend_containers():
     assert 'id="objectives-list"' in response.text
     assert 'id="completion-overlay"' in response.text
     assert 'id="end-summary"' in response.text
+    assert 'id="post-incident-report"' in response.text
+    assert "Podsumowanie po incydencie" in response.text
     assert 'id="game-canvas"' in response.text
     assert 'id="desktop-gate"' in response.text
     assert 'id="mission-drawer"' in response.text
@@ -99,6 +103,8 @@ def test_dynamic_gameplay_assets_include_keyboard_and_overlay_contracts():
     assert "navigator.maxTouchPoints" in scenario.text
     assert 'window.scrollTo({ top: 0, left: 0, behavior: "instant" })' in scenario.text
     assert 'window.location.replace("/admin-duty/dynamic/")' in scenario.text
+    assert 'link.label === "zależy od"' in scenario.text
+    assert "post_incident" in scenario.text
 
 
 def test_dynamic_workspace_rejects_invalid_uuid():

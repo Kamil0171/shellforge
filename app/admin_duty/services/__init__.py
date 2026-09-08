@@ -20,6 +20,7 @@ from app.admin_duty.services.dynamic_incident_service import (
     PublicInfrastructure,
     PublicInfrastructureLink,
     PublicInfrastructureNode,
+    PublicPostIncidentReport,
     PublicShellState,
 )
 from app.admin_duty.services.support_center import PublicRunbook, PublicSupportCenter
@@ -45,6 +46,7 @@ __all__ = [
     "PublicSupportCenter",
     "PublicInfrastructureLink",
     "PublicInfrastructureNode",
+    "PublicPostIncidentReport",
     "PublicMonitoring",
     "PublicMonitoringSignal",
 ]

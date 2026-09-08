@@ -119,7 +119,7 @@ def test_generator_retries_validation_at_most_ten_times():
     assert validator.calls == 10
 
 
-@pytest.mark.parametrize("difficulty", [DifficultyLevel.MEDIUM, DifficultyLevel.HARD])
+@pytest.mark.parametrize("difficulty", [DifficultyLevel.HARD])
 def test_generator_rejects_unimplemented_difficulties(difficulty):
     with pytest.raises(UnsupportedDifficultyError):
         DeterministicIncidentGenerator().generate(difficulty, now=FIXED_NOW)

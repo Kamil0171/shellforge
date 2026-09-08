@@ -1,6 +1,7 @@
-from app.admin_duty.rocky import filesystem, network, packages, security, system
+from app.admin_duty.rocky import access, filesystem, network, packages, security, system
 
 HANDLERS = {
+    **access.HANDLERS,
     **system.HANDLERS,
     **network.HANDLERS,
     **packages.HANDLERS,

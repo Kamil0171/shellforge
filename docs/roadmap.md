@@ -29,14 +29,17 @@ Roadmapa opisuje aktualny stan i kierunek rozwoju projektu. Sekcja przyszłych p
 ### Praktyka
 
 - Symulator „Dyżur administratora”;
-- Dynamic Incident: cztery rodzaje usterek, trzy profile infrastruktury;
+- Dynamic Incident: poziomy łatwy i średni oraz pięć kategorii awarii zależności;
 - data-driven Modern NOC, kamera i stopniowe odkrywanie świata;
-- Virtual Rocky V2 z edytorem plików, DNF/YUM, siecią i systemd;
+- wielohostowy Virtual Rocky z izolowanym stanem hostów, kontrolowanym `ssh`, edytorem plików, DNF/YUM, siecią i systemd;
 - interaktywne środowisko scenariusza wykorzystujące Phaser 3;
 - symulowany terminal i działania administracyjne;
 - cele incydentu, postęp i punktacja;
 - stopniowane podpowiedzi, runbooki i walidowane rozwiązania referencyjne;
-- limity wejścia, wygasanie sesji oraz kontrola liczby aktywnych sesji.
+- limity wejścia, wygasanie sesji oraz kontrola liczby aktywnych sesji;
+- typowany graf zależności, propagacja symptomów i stanowe cele Validatora V3;
+- data-only fundament przyszłego generatora AI, bez podłączonego modelu lub zewnętrznego API;
+- raport po ukończeniu incydentu z przyczyną, działaniami naprawczymi i końcowym stanem.
 
 ### Jakość i utrzymanie repozytorium
 

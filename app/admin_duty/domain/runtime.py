@@ -9,6 +9,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    field_serializer,
     field_validator,
     model_validator,
 )
@@ -108,6 +109,10 @@ class PackageManagerState(MutableDomainModel):
     )
     cache_clean: bool = False
 
+    @field_serializer("enabled_repositories", when_used="json")
+    def serialize_enabled_repositories(self, repositories: set[str]) -> list[str]:
+        return sorted(repositories)
+
 
 class VirtualNetworkInterface(MutableDomainModel):
     name: Identifier
@@ -121,6 +126,12 @@ class VirtualNetworkState(MutableDomainModel):
     routes: list[str] = Field(default_factory=list, max_length=64)
     dns_records: dict[str, str] = Field(default_factory=dict, max_length=128)
     connections: dict[Identifier, bool] = Field(default_factory=dict, max_length=64)
+    connection_dns_servers: dict[Identifier, tuple[str, ...]] = Field(
+        default_factory=dict, max_length=64
+    )
+    expected_dns_servers: dict[Identifier, tuple[str, ...]] = Field(
+        default_factory=dict, max_length=64
+    )
 
 
 class VirtualSelinuxState(MutableDomainModel):
@@ -139,6 +150,7 @@ class VirtualFirewallState(MutableDomainModel):
 
 
 class VirtualRockyRuntime(MutableDomainModel):
+    host_resource_id: Identifier = "host-primary"
     hostname: str = Field(default="incident-host", min_length=1, max_length=253)
     user: str = Field(default="operator", min_length=1, max_length=64)
     home_directory: str = Field(default="/home/operator", min_length=1, max_length=1024)
@@ -167,6 +179,15 @@ class VirtualRockyRuntime(MutableDomainModel):
         return self
 
 
+class CommandRecord(MutableDomainModel):
+    order: int = Field(ge=1)
+    command: str = Field(min_length=1, max_length=1024)
+    capability_id: Identifier
+    host_id: Identifier
+    success: bool
+    occurred_at: AwareDatetime
+
+
 class SessionRuntimeState(MutableDomainModel):
     scenario_id: UUID
     session_id: UUID
@@ -174,7 +195,13 @@ class SessionRuntimeState(MutableDomainModel):
     last_activity: AwareDatetime
     status: SessionStatus
     current_working_directory: str = Field(min_length=1, max_length=1024)
-    virtual_rocky: VirtualRockyRuntime = Field(default_factory=VirtualRockyRuntime)
+    active_host_id: Identifier
+    host_runtimes: dict[Identifier, VirtualRockyRuntime] = Field(
+        default_factory=dict, min_length=1, max_length=16
+    )
+    host_working_directories: dict[Identifier, str] = Field(
+        default_factory=dict, max_length=16
+    )
     world_state: RuntimeWorldState
     score: int = Field(ge=0, le=1_000_000)
     commands_used: int = Field(default=0, ge=0)
@@ -182,7 +209,12 @@ class SessionRuntimeState(MutableDomainModel):
     solution_viewed: bool = False
     completed_objective_ids: set[Identifier] = Field(default_factory=set)
     discovered_fact_ids: set[Identifier] = Field(default_factory=set)
+    command_history: list[CommandRecord] = Field(default_factory=list, max_length=512)
     revision: int = Field(default=0, ge=0)
+
+    @property
+    def virtual_rocky(self) -> VirtualRockyRuntime:
+        return self.host_runtimes[self.active_host_id]
 
     @field_validator("current_working_directory")
     @classmethod
@@ -199,6 +231,15 @@ class SessionRuntimeState(MutableDomainModel):
                 "Ostatnia aktywność nie może być wcześniejsza niż utworzenie sesji."
             )
 
+        if self.active_host_id not in self.host_runtimes:
+            raise ValueError("Aktywny host nie ma runtime Virtual Rocky.")
+        if any(
+            host_id != runtime.host_resource_id
+            for host_id, runtime in self.host_runtimes.items()
+        ):
+            raise ValueError("Klucz runtime hosta musi odpowiadać host_resource_id.")
+        if any(host_id not in self.host_runtimes for host_id in self.host_working_directories):
+            raise ValueError("Katalog roboczy wskazuje nieznany host.")
         return self
 
 
@@ -249,41 +290,71 @@ def _virtual_file(
     )
 
 
-def create_virtual_rocky_runtime(definition: IncidentDefinition) -> VirtualRockyRuntime:
-    resources = definition.initial_world_state.resources
-    service = next(
-        resource
-        for resource in resources
-        if resource.resource_type is ResourceType.SERVICE
-    )
-    attributes = {field.key: field.value for field in service.attributes}
-    host = next(
-        resource for resource in resources if resource.resource_id == service.parent_id
-    )
-    host_attributes = {field.key: field.value for field in host.attributes}
-    hostname = str(host_attributes.get("hostname", "incident-host"))
-    service_name = str(attributes.get("service_name", f"{service.resource_id}.service"))
-    app_name = service_name.removesuffix(".service")
-    configured_exec_target = str(attributes.get("configured_exec_start", app_name))
-    expected_exec_target = str(
-        attributes.get("expected_exec_start", configured_exec_target)
-    )
-    executable = next(
-        (
-            resource
-            for resource in resources
-            if resource.resource_id == attributes.get("executable_resource_id")
+def _field_map(fields) -> dict[str, JsonValue]:
+    return {field.key: field.value for field in fields}
+
+
+def _string_tuple(value: JsonValue, default: tuple[str, ...] = ()) -> tuple[str, ...]:
+    if isinstance(value, tuple) and all(isinstance(item, str) for item in value):
+        return value
+    return default
+
+
+def _package_catalog() -> dict[Identifier, VirtualPackage]:
+    packages = (
+        VirtualPackage(
+            name="bash",
+            version="5.1.8-9.el9",
+            repository="baseos",
+            summary="Powłoka GNU Bourne Again",
         ),
-        None,
+        VirtualPackage(
+            name="systemd",
+            version="252-51.el9",
+            repository="baseos",
+            summary="Menedżer systemu i usług",
+        ),
+        VirtualPackage(
+            name="rocky-release",
+            version="9.6-1.2.el9",
+            repository="baseos",
+            summary="Pliki wydania Rocky Linux",
+        ),
+        VirtualPackage(
+            name="nginx",
+            version="1.20.1-22.el9",
+            repository="appstream",
+            summary="Serwer HTTP i reverse proxy",
+        ),
+        VirtualPackage(
+            name="bind-utils",
+            version="9.16.23-31.el9",
+            repository="appstream",
+            summary="Narzędzia diagnostyczne DNS",
+        ),
+        VirtualPackage(
+            name="policycoreutils-python-utils",
+            version="3.6-2.1.el9",
+            repository="baseos",
+            summary="Narzędzia zarządzania SELinux",
+        ),
+        VirtualPackage(
+            name="python3-psycopg2",
+            version="2.9.6-1.el9",
+            repository="appstream",
+            summary="Sterownik PostgreSQL dla Pythona",
+        ),
     )
-    executable_attributes = (
-        {field.key: field.value for field in executable.attributes}
-        if executable is not None
-        else {}
+    return {package.name: package for package in packages}
+
+
+def _service_unit(service, attributes: dict[str, JsonValue]) -> tuple[str, str, str]:
+    service_name = str(
+        attributes.get("service_name", f"{service.resource_id}.service")
     )
-    app_directory = f"/opt/{app_name}"
-    service_path = f"/etc/systemd/system/{service_name}"
-    log_path = f"/var/log/{app_name}.log"
+    app_name = service_name.removesuffix(".service")
+    app_directory = str(attributes.get("app_directory", f"/opt/{app_name}"))
+    configured_exec_target = str(attributes.get("configured_exec_start", app_name))
     environment_variable = attributes.get("required_environment_variable")
     environment_value = attributes.get(
         f"environment.{environment_variable}"
@@ -308,114 +379,164 @@ def create_virtual_rocky_runtime(definition: IncidentDefinition) -> VirtualRocky
         "[Install]\n"
         "WantedBy=multi-user.target\n"
     )
+    return service_name, app_directory, unit_content
+
+
+def _base_filesystem(hostname: str) -> dict[str, VirtualFileEntry]:
     entries = (
         _virtual_directory("/"),
         _virtual_directory("/etc"),
         _virtual_directory("/etc/systemd"),
         _virtual_directory("/etc/systemd/system"),
+        _virtual_directory("/etc/NetworkManager"),
+        _virtual_directory("/etc/NetworkManager/system-connections", mode="0700"),
         _virtual_directory("/var"),
         _virtual_directory("/var/log", mode="0750"),
         _virtual_directory("/home"),
         _virtual_directory("/home/operator", owner="operator"),
         _virtual_file(
             "/home/operator/README.txt",
-            "Środowisko szkoleniowe ShellForge.\n",
+            f"Środowisko szkoleniowe ShellForge. Host: {hostname}.\n",
             owner="operator",
         ),
         _virtual_directory("/opt"),
-        _virtual_directory(app_directory, mode="0755", owner="app"),
-        _virtual_file(
-            f"{app_directory}/README.md",
-            f"# Dokumentacja wdrożenia {app_name}\n"
-            f"Jednostka: {service_name}\n"
-            f"Plik wykonywalny: {app_directory}/{expected_exec_target}\n"
-            "Użytkownik usługi: app. Plik wykonywalny wymaga prawa wykonania.\n"
-            + (
-                f"Wymagane środowisko: {environment_variable}={attributes.get('expected_environment_value')}\n"
-                if environment_variable
-                else ""
-            )
-            + "Po zmianie jednostki wykonaj systemctl daemon-reload, a następnie restart usługi.\n",
-        ),
-        _virtual_file(
-            f"{app_directory}/{expected_exec_target}",
-            "ELF virtual executable\n",
-            mode=str(executable_attributes.get("current_mode", "0755")),
-            owner=str(executable_attributes.get("owner", "app")),
-        ),
         _virtual_directory("/srv"),
-        _virtual_directory(f"/srv/{app_name}", owner="app"),
         _virtual_directory("/tmp", mode="1777"),
         _virtual_directory("/root", mode="0700"),
-        _virtual_file(service_path, unit_content),
-        _virtual_file(
-            log_path,
-            f"{app_name}: oczekiwanie na diagnostykę operatora\n",
-            mode="0640",
-            owner="app",
-            group="app",
-        ),
         _virtual_file(
             "/etc/os-release",
             'NAME="Rocky Linux"\nVERSION="9.6 (Blue Onyx)"\nID="rocky"\nVERSION_ID="9.6"\n',
         ),
     )
-    packages = {
-        package.name: package
-        for package in (
-            VirtualPackage(
-                name="bash",
-                version="5.1.8-9.el9",
-                repository="baseos",
-                summary="Powłoka GNU Bourne Again",
-            ),
-            VirtualPackage(
-                name="systemd",
-                version="252-51.el9",
-                repository="baseos",
-                summary="Menedżer systemu i usług",
-            ),
-            VirtualPackage(
-                name="rocky-release",
-                version="9.6-1.2.el9",
-                repository="baseos",
-                summary="Pliki wydania Rocky Linux",
-            ),
+    return {entry.path: entry for entry in entries}
+
+
+def _create_host_runtime(
+    definition: IncidentDefinition,
+    host,
+    *,
+    host_index: int,
+    dns_records: dict[str, str],
+) -> VirtualRockyRuntime:
+    resources = definition.initial_world_state.resources
+    host_attributes = _field_map(host.attributes)
+    hostname = str(host_attributes.get("hostname", host.resource_id))
+    address = str(host_attributes.get("address", f"10.24.8.{17 + host_index}/24"))
+    plain_address = address.split("/")[0]
+    filesystem = _base_filesystem(hostname)
+    unit_cache: dict[str, str] = {}
+    enabled_units: set[str] = set()
+    file_contexts: dict[str, str] = {}
+    expected_file_contexts: dict[str, str] = {}
+
+    services = [
+        resource
+        for resource in resources
+        if resource.resource_type is ResourceType.SERVICE
+        and resource.parent_id == host.resource_id
+    ]
+    resource_by_id = {resource.resource_id: resource for resource in resources}
+    for service in services:
+        attributes = _field_map(service.attributes)
+        service_name, app_directory, unit_content = _service_unit(service, attributes)
+        app_name = service_name.removesuffix(".service")
+        expected_exec_target = str(
+            attributes.get(
+                "expected_exec_start",
+                attributes.get("configured_exec_start", app_name),
+            )
         )
-    }
-    available_packages = {
-        package.name: package
-        for package in (
-            *packages.values(),
-            VirtualPackage(
-                name="nginx",
-                version="1.20.1-22.el9",
-                repository="appstream",
-                summary="Serwer HTTP i reverse proxy",
-            ),
-            VirtualPackage(
-                name="bind-utils",
-                version="9.16.23-31.el9",
-                repository="appstream",
-                summary="Narzędzia diagnostyczne DNS",
-            ),
-            VirtualPackage(
-                name="policycoreutils-python-utils",
-                version="3.6-2.1.el9",
-                repository="baseos",
-                summary="Narzędzia zarządzania SELinux",
-            ),
+        executable = resource_by_id.get(str(attributes.get("executable_resource_id")))
+        executable_attributes = _field_map(executable.attributes) if executable else {}
+        executable_path = f"{app_directory}/{expected_exec_target}"
+        filesystem.setdefault(
+            app_directory,
+            _virtual_directory(app_directory, mode="0755", owner="app"),
         )
+        filesystem[f"{app_directory}/README.md"] = _virtual_file(
+            f"{app_directory}/README.md",
+            f"# Dokumentacja wdrożenia {app_name}\n"
+            f"Jednostka: {service_name}\n"
+            f"Plik wykonywalny: {executable_path}\n"
+            "Użytkownik usługi: app. Plik wykonywalny wymaga prawa wykonania.\n"
+            + (
+                "Wymagane środowisko: "
+                f"{attributes['required_environment_variable']}="
+                f"{attributes.get('expected_environment_value')}\n"
+                if attributes.get("required_environment_variable")
+                else ""
+            )
+            + "Po zmianie jednostki wykonaj systemctl daemon-reload, a następnie restart usługi.\n",
+        )
+        filesystem[executable_path] = _virtual_file(
+            executable_path,
+            "ELF virtual executable\n",
+            mode=str(executable_attributes.get("current_mode", "0755")),
+            owner=str(executable_attributes.get("owner", "app")),
+        )
+        unit_path = f"/etc/systemd/system/{service_name}"
+        filesystem[unit_path] = _virtual_file(unit_path, unit_content)
+        filesystem[f"/var/log/{app_name}.log"] = _virtual_file(
+            f"/var/log/{app_name}.log",
+            f"{app_name}: oczekiwanie na diagnostykę operatora\n",
+            mode="0640",
+            owner="app",
+            group="app",
+        )
+        unit_cache[service_name] = unit_content
+        enabled_units.add(service_name)
+        expected_context = str(
+            attributes.get("expected_selinux_context", "system_u:object_r:usr_t:s0")
+        )
+        current_context = str(attributes.get("current_selinux_context", expected_context))
+        expected_file_contexts[app_directory] = expected_context
+        file_contexts[app_directory] = current_context
+
+    for resource in resources:
+        if resource.resource_type is not ResourceType.FILE or resource.parent_id != host.resource_id:
+            continue
+        attributes = _field_map(resource.attributes)
+        path = attributes.get("path")
+        if not isinstance(path, str) or path in filesystem:
+            continue
+        filesystem[path] = _virtual_file(
+            path,
+            str(attributes.get("content", "")),
+            mode=str(attributes.get("current_mode", "0644")),
+            owner=str(attributes.get("owner", "root")),
+        )
+
+    catalog = _package_catalog()
+    installed_names = {
+        "bash",
+        "systemd",
+        "rocky-release",
+        *_string_tuple(host_attributes.get("installed_packages")),
     }
+    installed = {
+        name: catalog[name].model_copy(deep=True)
+        for name in installed_names
+        if name in catalog
+    }
+    connection_name = str(host_attributes.get("connection", "System-ens192"))
+    dns_servers = _string_tuple(
+        host_attributes.get("dns_servers"),
+        ("10.24.8.53",),
+    )
+    expected_dns_servers = _string_tuple(
+        host_attributes.get("expected_dns_servers"),
+        ("10.24.8.53",),
+    )
     connection = VirtualNetworkInterface(
         name="ens192",
-        address="10.24.8.17/24",
-        state="up",
-        connection="System-ens192",
+        address=address,
+        state="up" if host.state in {"running", "healthy"} else "down",
+        connection=connection_name,
     )
     return VirtualRockyRuntime(
+        host_resource_id=host.resource_id,
         hostname=hostname,
-        filesystem={entry.path: entry for entry in entries},
+        filesystem=filesystem,
         processes={
             1: VirtualProcess(pid=1, user="root", command="/usr/lib/systemd/systemd"),
             812: VirtualProcess(
@@ -423,30 +544,104 @@ def create_virtual_rocky_runtime(definition: IncidentDefinition) -> VirtualRocky
             ),
         },
         packages=PackageManagerState(
-            installed_packages=packages,
-            available_packages=available_packages,
+            installed_packages=installed,
+            available_packages={
+                name: package.model_copy(deep=True) for name, package in catalog.items()
+            },
         ),
         network=VirtualNetworkState(
             interfaces={connection.name: connection},
             routes=[
                 "default via 10.24.8.1 dev ens192 proto static metric 100",
-                "10.24.8.0/24 dev ens192 proto kernel scope link src 10.24.8.17 metric 100",
+                f"10.24.8.0/24 dev ens192 proto kernel scope link src {plain_address} metric 100",
             ],
-            dns_records={
-                hostname: "10.24.8.17",
-                "repo.rockylinux.org": "151.101.2.132",
-                "example.internal": "10.24.8.40",
-            },
+            dns_records=dns_records,
             connections={connection.connection: True},
+            connection_dns_servers={connection.connection: dns_servers},
+            expected_dns_servers={connection.connection: expected_dns_servers},
         ),
         selinux=VirtualSelinuxState(
-            file_contexts={app_directory: "system_u:object_r:usr_t:s0"},
-            expected_file_contexts={app_directory: "system_u:object_r:usr_t:s0"},
+            file_contexts=file_contexts,
+            expected_file_contexts=expected_file_contexts,
+        ),
+        firewall=VirtualFirewallState(
+            running=bool(host_attributes.get("firewall_running", True)),
+            runtime_services=set(
+                _string_tuple(host_attributes.get("firewall_runtime_services"), ("ssh",))
+            ),
+            permanent_services=set(
+                _string_tuple(host_attributes.get("firewall_permanent_services"), ("ssh",))
+            ),
+            runtime_ports=set(_string_tuple(host_attributes.get("firewall_runtime_ports"))),
+            permanent_ports=set(
+                _string_tuple(host_attributes.get("firewall_permanent_ports"))
+            ),
         ),
         journal_entries=[f"systemd[1]: Utworzono wirtualną sesję hosta {hostname}."],
-        systemd_unit_cache={service_name: unit_content},
-        systemd_enabled_units={service_name},
+        systemd_unit_cache=unit_cache,
+        systemd_enabled_units=enabled_units,
     )
+
+
+def _primary_host_id(definition: IncidentDefinition) -> Identifier:
+    terminal_host = next(
+        (
+            interaction.target_resource_id
+            for interaction in definition.initial_world_state.map.interactions
+            if interaction.capability_id == "terminal" and interaction.target_resource_id
+        ),
+        None,
+    )
+    if terminal_host is not None:
+        return terminal_host
+    return next(
+        resource.resource_id
+        for resource in definition.initial_world_state.resources
+        if resource.resource_type is ResourceType.HOST
+    )
+
+
+def create_virtual_rocky_hosts(
+    definition: IncidentDefinition,
+) -> dict[Identifier, VirtualRockyRuntime]:
+    hosts = [
+        resource
+        for resource in definition.initial_world_state.resources
+        if resource.resource_type is ResourceType.HOST
+    ]
+    dns_records = {
+        str(_field_map(host.attributes).get("hostname", host.resource_id)): str(
+            _field_map(host.attributes).get("address", f"10.24.8.{17 + index}/24")
+        ).split("/")[0]
+        for index, host in enumerate(hosts)
+    }
+    dns_records.update(
+        {
+            "repo.rockylinux.org": "151.101.2.132",
+            "example.internal": "10.24.8.40",
+        }
+    )
+    for resource in definition.initial_world_state.resources:
+        if resource.resource_type is not ResourceType.DOMAIN:
+            continue
+        attributes = _field_map(resource.attributes)
+        name = attributes.get("name")
+        address = attributes.get("address")
+        if isinstance(name, str) and isinstance(address, str):
+            dns_records[name] = address
+    return {
+        host.resource_id: _create_host_runtime(
+            definition,
+            host,
+            host_index=index,
+            dns_records=dns_records,
+        )
+        for index, host in enumerate(hosts)
+    }
+
+
+def create_virtual_rocky_runtime(definition: IncidentDefinition) -> VirtualRockyRuntime:
+    return create_virtual_rocky_hosts(definition)[_primary_host_id(definition)]
 
 
 def create_session_runtime(
@@ -462,6 +657,8 @@ def create_session_runtime(
         for resource in definition.initial_world_state.resources
     }
 
+    host_runtimes = create_virtual_rocky_hosts(definition)
+    primary_host_id = _primary_host_id(definition)
     state = SessionRuntimeState(
         scenario_id=definition.scenario_id,
         session_id=session_id if session_id is not None else uuid4(),
@@ -469,42 +666,58 @@ def create_session_runtime(
         last_activity=current_time,
         status=SessionStatus.ACTIVE,
         current_working_directory=current_working_directory,
-        virtual_rocky=create_virtual_rocky_runtime(definition),
+        active_host_id=primary_host_id,
+        host_runtimes=host_runtimes,
+        host_working_directories={
+            host_id: current_working_directory for host_id in host_runtimes
+        },
         world_state=RuntimeWorldState(resources=runtime_resources),
         score=definition.scoring.initial_score,
     )
     from app.admin_duty.rocky.system import service_failure
 
-    for resource in state.world_state.resources.values():
-        if resource.resource_type is not ResourceType.SERVICE:
-            continue
-        name = str(
-            resource.attributes.get("service_name", f"{resource.resource_id}.service")
-        )
-        detail = (
-            service_failure(state, resource, synchronize=False)
-            if resource.current_state != "running"
-            else None
-        )
-        state.virtual_rocky.journal_entries.append(
-            f"{current_time.isoformat()} {state.virtual_rocky.hostname} systemd[1]: {name}: "
-            + (
-                detail
-                or (
-                    "Started"
-                    if resource.current_state == "running"
-                    else "Main process exited, status=1/FAILURE"
+    for host_id in host_runtimes:
+        state.active_host_id = host_id
+        for resource in state.world_state.resources.values():
+            if (
+                resource.resource_type is not ResourceType.SERVICE
+                or resource.parent_resource_id != host_id
+            ):
+                continue
+            name = str(
+                resource.attributes.get(
+                    "service_name", f"{resource.resource_id}.service"
                 )
             )
-        )
-        if resource.current_state == "running":
-            pid = 1421 + len(state.virtual_rocky.processes)
-            state.virtual_rocky.processes[pid] = VirtualProcess(
-                pid=pid,
-                user="app",
-                command=name,
-                service_resource_id=resource.resource_id,
+            detail = (
+                service_failure(state, resource, synchronize=False)
+                if resource.current_state != "running"
+                else None
             )
+            state.virtual_rocky.journal_entries.append(
+                f"{current_time.isoformat()} {state.virtual_rocky.hostname} "
+                f"systemd[1]: {name}: "
+                + (
+                    detail
+                    or (
+                        "Started"
+                        if resource.current_state == "running"
+                        else "Main process exited, status=1/FAILURE"
+                    )
+                )
+            )
+            if resource.current_state == "running":
+                pid = 1421 + len(state.virtual_rocky.processes)
+                state.virtual_rocky.processes[pid] = VirtualProcess(
+                    pid=pid,
+                    user="app",
+                    command=name,
+                    service_resource_id=resource.resource_id,
+                )
+    state.active_host_id = primary_host_id
+    from app.admin_duty.domain.dependencies import reconcile_dependencies
+
+    reconcile_dependencies(definition, state)
     return state
 
 

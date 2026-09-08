@@ -131,6 +131,8 @@ def evaluate_objective(
     objective: Objective,
     world: RuntimeWorldState,
 ) -> bool:
+    if objective.completion_condition is None:
+        return True
     return evaluate_condition(objective.completion_condition, world)
 
 
@@ -147,4 +149,5 @@ def evaluate_objectives(
         objective.objective_id
         for objective in definition.objectives
         if evaluate_objective(objective, state.world_state)
+        and set(objective.completion_fact_ids) <= state.discovered_fact_ids
     )

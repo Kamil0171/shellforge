@@ -71,6 +71,11 @@ def _get_systemd_service(
     if resource.resource_type is not ResourceType.SERVICE:
         raise CommandExecutionError(f"Zasób {resource_id} nie jest usługą.")
 
+    if resource.parent_resource_id != state.active_host_id:
+        raise CommandExecutionError(
+            f"Usługa {resource_id} działa na innym hoście. Użyj ssh <host>."
+        )
+
     if resource.attributes.get("manager") != SYSTEMD_MANAGER:
         raise CommandExecutionError(
             f"Usługa {resource_id} nie jest zarządzana przez systemd."

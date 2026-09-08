@@ -314,6 +314,13 @@
         container.replaceChildren();
         const resource = currentInfrastructure.nodes.find((node) => node.id === resourceId) || currentInfrastructure.nodes.find((node) => node.type === "host");
         const linked = currentInfrastructure.nodes.filter((node) => node.parent_id === resource?.id);
+        const visibleServiceIds = new Set([
+            ...(resource?.type === "service" ? [resource.id] : []),
+            ...linked.map((node) => node.id),
+        ]);
+        const dependencies = currentInfrastructure.links.filter(
+            (link) => link.label === "zależy od" && (visibleServiceIds.has(link.source) || visibleServiceIds.has(link.target)),
+        );
         const heading = document.createElement("div");
         heading.className = "rack-resource-heading";
         const name = document.createElement("strong");
@@ -323,7 +330,7 @@
         heading.append(name, status);
         container.appendChild(heading);
         const details = document.createElement("dl");
-        [["Identyfikator", resource?.id || "—"], ["Typ", resourceTypeLabels[resource?.type] || resource?.type || "—"], ["Rola", resource?.role || "—"], ["Usługi w szafie", linked.length ? linked.map((node) => `${node.label} · ${node.status}`).join(", ") : "brak publicznych powiązań"]].forEach(([term, value]) => {
+        [["Identyfikator", resource?.id || "—"], ["Typ", resourceTypeLabels[resource?.type] || resource?.type || "—"], ["Rola", resource?.role || "—"], ["Usługi w szafie", linked.length ? linked.map((node) => `${node.label} · ${node.health || node.status}`).join(", ") : "brak publicznych powiązań"], ["Zależności usług", dependencies.length ? dependencies.map((link) => `${link.source} → ${link.target} · ${link.protocol.toUpperCase()}/${link.port}`).join(", ") : "brak publicznych zależności"]].forEach(([term, value]) => {
             const row = document.createElement("div");
             const dt = document.createElement("dt");
             const dd = document.createElement("dd");
@@ -374,6 +381,20 @@
         document.getElementById("summary-score").textContent = progress.score;
         document.getElementById("summary-commands").textContent = progress.commands_used;
         document.getElementById("summary-objectives").textContent = `${progress.completed_objectives} / ${progress.total_objectives}`;
+        const report = sessionData?.post_incident;
+        const reportPanel = document.getElementById("post-incident-report");
+        reportPanel.hidden = !report;
+        if (report) {
+            document.getElementById("post-incident-root-cause").textContent = report.root_cause;
+            document.getElementById("post-incident-services").textContent = report.affected_services.join(", ");
+            const actions = document.getElementById("post-incident-actions");
+            actions.replaceChildren();
+            report.repair_actions.forEach((action) => {
+                const item = document.createElement("li");
+                item.textContent = action;
+                actions.appendChild(item);
+            });
+        }
     }
 
     function showWorkspace(data) {
@@ -498,6 +519,7 @@
                 window.location.replace("/admin-duty/dynamic/");
                 return;
             }
+            sessionData = { ...sessionData, post_incident: result.post_incident };
             renderProgress(result.progress);
         } catch (error) {
             sessionEnding = false;

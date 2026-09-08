@@ -71,13 +71,30 @@ def _public_label(resource) -> str:
     hostname = resource.attributes.get("hostname")
     if resource.resource_type is ResourceType.HOST and isinstance(hostname, str):
         return hostname
+    service_name = resource.attributes.get("service_name")
+    if resource.resource_type is ResourceType.SERVICE and isinstance(service_name, str):
+        return service_name
     return resource.resource_id
+
+
+def _public_status(resource) -> str:
+    health = resource.attributes.get("public_health")
+    if resource.resource_type is ResourceType.SERVICE and isinstance(health, str):
+        return health
+    return resource.current_state
 
 
 def _signal_severity(status: str) -> Literal["ok", "warning", "critical"]:
     if status in {"running", "active", "present", "healthy"}:
         return "ok"
-    if status in {"failed", "stopped", "missing", "unhealthy"}:
+    if status in {
+        "failed",
+        "stopped",
+        "missing",
+        "unhealthy",
+        "http-502",
+        "unreachable",
+    }:
         return "critical"
     return "warning"
 
@@ -89,7 +106,8 @@ def project_public_monitoring(
     resources = tuple(
         resource
         for resource in state.world_state.resources.values()
-        if resource.resource_type in {ResourceType.HOST, ResourceType.SERVICE}
+        if resource.resource_type
+        in {ResourceType.HOST, ResourceType.SERVICE, ResourceType.ENDPOINT}
     )
     return PublicMonitoring(
         title=f"Monitoring · {definition.presentation.environment_label}",
@@ -97,8 +115,8 @@ def project_public_monitoring(
             PublicMonitoringSignal(
                 id=f"signal-{resource.resource_id}",
                 label=_public_label(resource),
-                status=resource.current_state,
-                severity=_signal_severity(resource.current_state),
+                status=_public_status(resource),
+                severity=_signal_severity(_public_status(resource)),
                 resource_id=resource.resource_id,
             )
             for resource in resources
