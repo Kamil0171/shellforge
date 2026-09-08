@@ -26,9 +26,13 @@ env/
 *.db
 *.sqlite
 *.sqlite3
-app/data/*.db
-app/data/*.sqlite
-app/data/*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+*.tmp
 
 # Logs
 *.log

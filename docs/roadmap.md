@@ -29,11 +29,13 @@ Roadmapa opisuje aktualny stan i kierunek rozwoju projektu. Sekcja przyszłych p
 ### Praktyka
 
 - Symulator „Dyżur administratora”;
-- scenariusz INC-001 „502 po wdrożeniu”;
+- Dynamic Incident: cztery rodzaje usterek, trzy profile infrastruktury;
+- data-driven Modern NOC, kamera i stopniowe odkrywanie świata;
+- Virtual Rocky V2 z edytorem plików, DNF/YUM, siecią i systemd;
 - interaktywne środowisko scenariusza wykorzystujące Phaser 3;
 - symulowany terminal i działania administracyjne;
 - cele incydentu, postęp i punktacja;
-- stopniowane podpowiedzi i pełne rozwiązanie;
+- stopniowane podpowiedzi, runbooki i walidowane rozwiązania referencyjne;
 - limity wejścia, wygasanie sesji oraz kontrola liczby aktywnych sesji.
 
 ### Jakość i utrzymanie repozytorium

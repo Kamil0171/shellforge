@@ -231,9 +231,7 @@ def _get_revealed_hints(
     definition: IncidentDefinition,
     state: SessionRuntimeState,
 ) -> tuple[PublicHint, ...]:
-    return tuple(
-        _to_public_hint(hint) for hint in definition.hints[: state.hints_used]
-    )
+    return tuple(_to_public_hint(hint) for hint in definition.hints[: state.hints_used])
 
 
 def _get_hint_limit(definition: IncidentDefinition) -> int:
@@ -308,7 +306,7 @@ class DynamicIncidentService:
             difficulty=definition.difficulty,
             incident=_get_public_info(definition),
             infrastructure=_get_public_infrastructure(state),
-            game_map=project_public_game_map(definition.initial_world_state.map),
+            game_map=project_public_game_map(definition.initial_world_state.map, state),
             monitoring=project_public_monitoring(definition, state),
             shell=_get_public_shell(state),
             support_center=project_public_support_center(definition),
@@ -342,6 +340,20 @@ class DynamicIncidentService:
         )
         return result
 
+    def save_file(self, session_id, *, path, content, now=None):
+        current_time = _resolve_now(now)
+        self._cleanup(current_time)
+        state = self._sessions.get(session_id, now=current_time)
+        expected_revision = state.revision
+        definition = self._scenarios.get(state.scenario_id)
+        result = self._commands.save_file(
+            definition, state, path=path, content=content, now=current_time
+        )
+        self._sessions.update(
+            state, expected_revision=expected_revision, now=current_time
+        )
+        return result
+
     def get_progress(
         self,
         session_id: UUID,
@@ -355,7 +367,7 @@ class DynamicIncidentService:
         return DynamicSessionView(
             incident=_get_public_info(definition),
             infrastructure=_get_public_infrastructure(state),
-            game_map=project_public_game_map(definition.initial_world_state.map),
+            game_map=project_public_game_map(definition.initial_world_state.map, state),
             monitoring=project_public_monitoring(definition, state),
             shell=_get_public_shell(state),
             support_center=project_public_support_center(definition),

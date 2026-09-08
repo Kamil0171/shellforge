@@ -2,10 +2,6 @@
 
 Ten dokument opisuje aktualnie istniejącą architekturę ShellForge. Nie jest roadmapą i nie przedstawia planowanych technologii jako elementów działającego systemu.
 
-![Architektura ShellForge](../app/static/img/shellforge-architecture.png)
-
-Grafika przedstawia czytelny przegląd głównych elementów platformy: FastAPI, obszaru nauki, warstwy SQLModel/SQLite, Symulatora, frontendu oraz środowiska produkcyjnego. Diagram Mermaid poniżej uzupełnia ją o techniczny i strukturalny opis przepływów.
-
 ## Widok wysokiego poziomu
 
 ShellForge jest aplikacją webową zbudowaną wokół FastAPI. Uvicorn uruchamia aplikację ASGI, FastAPI obsługuje routing i zasoby statyczne, a widoki HTML są renderowane przez Jinja2. Interfejs korzysta z Bootstrapa, dedykowanego CSS i JavaScriptu. Symulator dodatkowo używa Phaser 3.
@@ -41,7 +37,7 @@ flowchart TB
     end
 
     subgraph simulator_core["Podsystem Symulatora"]
-        scenario["Definicja scenariusza INC-001"]
+        scenario["IncidentDefinition · deterministyczny generator"]
         engine["Silnik scenariusza · cele, wynik, podpowiedzi"]
         commands["Obsługa poleceń i interakcji"]
     end
@@ -76,7 +72,7 @@ flowchart TB
     static --> learning_ui
     templates --> simulator_ui
     static --> simulator_ui
-    simulator_ui -.->|żądania /admin-duty/api/*| nginx
+    simulator_ui -.->|żądania /admin-duty/dynamic/api/*| nginx
 ```
 
 ## Główne komponenty
@@ -129,10 +125,13 @@ Pliki w `app/content/` są źródłem treści utrzymywanym w repozytorium, natom
 
 Kod trybu „Dyżur administratora” znajduje się w `app/admin_duty/` i składa się z:
 
-- `router.py` — widoki scenariusza i endpointy API;
-- `engine.py` — cele, postęp, punktacja, podpowiedzi i pełne rozwiązanie;
-- `commands.py` — interpretacja obsługiwanych poleceń oraz interakcji;
-- `scenarios/incident_001.py` — definicja incydentu INC-001 i jego stan początkowy.
+- `router.py` — współdzielone lobby;
+- `dynamic_router.py` i `services/` — API, orkiestracja, publiczne projekcje i podpowiedzi;
+- `domain/` — niemutowalna definicja, izolowany runtime, cele i punktacja;
+- `components/` i `generators/` — katalog komponentów i deterministyczne incydenty;
+- parser, registry i `rocky/` — kontrolowane polecenia oraz edycja VirtualFilesystem;
+- `validators/` — strukturalna walidacja i replay przez właściwy command/editor layer;
+- `repositories/` — izolowane kopie stanu, TTL i kontrola rewizji.
 
 Aktywna sesja otrzymuje identyfikator UUID. Router ogranicza rozmiar danych wejściowych, odrzuca nieznane pola, wygasza nieaktywne sesje i ogranicza ich maksymalną liczbę. Dane sesji są izolowane logicznie i przechowywane w pamięci procesu, a operacje na rejestrze sesji są synchronizowane blokadą.
 
@@ -146,7 +145,7 @@ Konsekwencje obecnego modelu stanu:
 
 Wspólny frontend wykorzystuje szablony Jinja2, HTML, Bootstrap, dedykowany CSS i JavaScript. FastAPI udostępnia zasoby z katalogu `app/static`.
 
-Frontend Symulatora rozszerza ten zestaw o Phaser 3. JavaScript steruje interfejsem scenariusza i wysyła żądania do endpointów `/admin-duty/api/*`, między innymi w celu uruchomienia scenariusza, wykonania polecenia, zapisania zmiany, pobrania podpowiedzi i wyświetlenia rozwiązania.
+Frontend Symulatora rozszerza ten zestaw o Phaser 3. JavaScript steruje interfejsem scenariusza i wysyła żądania do endpointów `/admin-duty/dynamic/api/*`, między innymi w celu uruchomienia scenariusza, wykonania polecenia, zapisania zmiany, pobrania podpowiedzi i pobrania stanu sesji.
 
 ## Przepływ żądania strony edukacyjnej
 
@@ -160,7 +159,7 @@ Frontend Symulatora rozszerza ten zestaw o Phaser 3. JavaScript steruje interfej
 ## Przepływ akcji w Symulatorze
 
 1. Widok scenariusza jest renderowany przez FastAPI i Jinja2.
-2. JavaScript w przeglądarce wywołuje odpowiedni endpoint `/admin-duty/api/*`.
+2. JavaScript w przeglądarce wywołuje odpowiedni endpoint `/admin-duty/dynamic/api/*`.
 3. Router odszukuje aktywną sesję w pamięci procesu.
 4. Obsługa poleceń lub silnik scenariusza aktualizuje jego stan.
 5. API zwraca wynik działania i aktualny postęp.
@@ -186,6 +185,6 @@ Repozytorium nie zawiera rzeczywistych plików jednostki systemd ani konfiguracj
 
 W aktualnym repozytorium nie ma implementacji PostgreSQL, kontenerów Docker lub Podman, WebSocketów, zewnętrznego magazynu sesji Symulatora, Prometheusa, Grafany ani systemu AI. Elementy te nie są częścią powyższego diagramu.
 
-## Grafika i diagram techniczny
+## World Engine i Virtual Rocky
 
-Grafika PNG pełni rolę czytelnej wizualizacji architektury dla użytkownika. Diagram Mermaid pozostaje technicznym opisem komponentów, zależności i przepływów aktualnej aplikacji.
+Szczegółowy podział modułów świata, format JSON mapy, obsługiwane polecenia, ograniczenia symulacji i repository cleanup audit znajdują się w [notatkach developerskich Dynamic Incident](dynamic-incident-development.md). Diagram Mermaid powyżej jest aktualnym przeglądem systemu; zastąpił nieaktualną grafikę rastrową.

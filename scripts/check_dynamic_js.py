@@ -35,7 +35,11 @@ def main() -> int:
             return completed.returncode
         print(f"OK  {relative.as_posix()}")
 
-    return 0
+    return subprocess.run(
+        [node, "--test", "tests/world_engine.test.js"],
+        cwd=REPOSITORY_ROOT,
+        check=False,
+    ).returncode
 
 
 if __name__ == "__main__":

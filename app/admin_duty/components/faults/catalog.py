@@ -141,7 +141,7 @@ FAULT_TEMPLATES = (
         required_capabilities=(
             "systemd.status",
             "systemd.cat",
-            "systemd.set-exec-start",
+            "filesystem.edit",
             "systemd.restart",
         ),
         symptom=_symptom(
@@ -158,7 +158,9 @@ FAULT_TEMPLATES = (
             Hint(order=1, text="Sprawdź stan usługi po ostatnim wdrożeniu.", cost=20),
             Hint(order=2, text="Porównaj aktywny cel startowy z oczekiwanym.", cost=30),
             Hint(
-                order=3, text="Ustaw dozwolony cel startowy i uruchom usługę.", cost=40
+                order=3,
+                text="Popraw ExecStart w pliku jednostki, wykonaj daemon-reload i restart.",
+                cost=40,
             ),
         ),
         solution=(
@@ -176,10 +178,9 @@ FAULT_TEMPLATES = (
             ),
             SolutionStepTemplate(
                 order=3,
-                capability_id="systemd.set-exec-start",
-                input_template=(
-                    "systemctl set-exec-start {primary_service} {expected_exec_target}"
-                ),
+                capability_id="filesystem.edit",
+                content_template="{healthy_unit}",
+                input_template=("nano {unit_path}"),
                 purpose="Przywróć dozwolony cel startowy.",
             ),
             SolutionStepTemplate(
@@ -221,8 +222,8 @@ FAULT_TEMPLATES = (
         ),
         required_capabilities=(
             "systemd.status",
-            "environment.inspect",
-            "environment.restore",
+            "systemd.cat",
+            "filesystem.edit",
             "systemd.restart",
         ),
         symptom=_symptom(
@@ -240,7 +241,7 @@ FAULT_TEMPLATES = (
             Hint(order=2, text="Sprawdź wymagane środowisko procesu.", cost=30),
             Hint(
                 order=3,
-                text="Przywróć brakujący wpis środowiska i wykonaj restart.",
+                text="Uzupełnij Environment w pliku jednostki, wykonaj daemon-reload i restart.",
                 cost=40,
             ),
         ),
@@ -253,14 +254,15 @@ FAULT_TEMPLATES = (
             ),
             SolutionStepTemplate(
                 order=2,
-                capability_id="environment.inspect",
-                input_template="env inspect {primary_service}",
+                capability_id="systemd.cat",
+                input_template="systemctl cat {service_name}",
                 purpose="Sprawdź wymagane środowisko usługi.",
             ),
             SolutionStepTemplate(
                 order=3,
-                capability_id="environment.restore",
-                input_template=("env restore {primary_service} {environment_variable}"),
+                capability_id="filesystem.edit",
+                content_template="{healthy_unit}",
+                input_template=("nano {unit_path}"),
                 purpose="Przywróć kontrolowaną wartość środowiska.",
             ),
             SolutionStepTemplate(
@@ -307,8 +309,8 @@ FAULT_TEMPLATES = (
         ),
         required_capabilities=(
             "systemd.status",
-            "filesystem.stat",
-            "filesystem.restore-permissions",
+            "filesystem.path-stat",
+            "filesystem.chmod",
             "systemd.restart",
         ),
         symptom=_symptom(
@@ -347,14 +349,14 @@ FAULT_TEMPLATES = (
             ),
             SolutionStepTemplate(
                 order=2,
-                capability_id="filesystem.stat",
-                input_template="stat {executable_file}",
+                capability_id="filesystem.path-stat",
+                input_template="stat {executable_path}",
                 purpose="Sprawdź kontrolowany stan pliku wykonywalnego.",
             ),
             SolutionStepTemplate(
                 order=3,
-                capability_id="filesystem.restore-permissions",
-                input_template="chmod restore {executable_file}",
+                capability_id="filesystem.chmod",
+                input_template="chmod 755 {executable_path}",
                 purpose="Przywróć oczekiwany tryb pliku.",
             ),
             SolutionStepTemplate(

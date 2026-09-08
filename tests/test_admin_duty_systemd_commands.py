@@ -12,7 +12,6 @@ from app.admin_duty.domain.definition import (
 )
 from app.admin_duty.domain.engine import (
     DynamicIncidentEngine,
-    ResourceStateUpdate,
 )
 from app.admin_duty.domain.progress import get_session_progress
 from app.admin_duty.domain.runtime import (
@@ -21,13 +20,34 @@ from app.admin_duty.domain.runtime import (
     SessionStatus,
     create_session_runtime,
 )
+from app.admin_duty.dynamic_command_registry import (
+    DynamicCommandDispatcher,
+    DynamicCommandRequest,
+)
 from app.admin_duty.dynamic_commands import (
     CommandExecutionError,
     CommandExecutionResult,
-    get_systemd_service_status,
-    restart_systemd_service,
 )
 from tests.test_admin_duty_incident_definition import build_incident_definition
+
+
+def run_command(definition, state, *, command_id, resource_id, engine=None, now=None):
+    return DynamicCommandDispatcher().dispatch(
+        definition,
+        state,
+        DynamicCommandRequest(command_id=command_id, resource_id=resource_id),
+        engine=engine,
+        now=now,
+    )
+
+
+def restart_systemd_service(definition, state, **kwargs):
+    return run_command(definition, state, command_id="systemd.restart", **kwargs)
+
+
+def get_systemd_service_status(definition, state, **kwargs):
+    return run_command(definition, state, command_id="systemd.status", **kwargs)
+
 
 FIXED_NOW = datetime(2026, 8, 25, 14, 0, tzinfo=UTC)
 LATER = FIXED_NOW + timedelta(minutes=1)
@@ -94,9 +114,8 @@ def test_restart_systemd_service_runs_complete_dynamic_flow():
     assert result.progress.revision == state.revision
 
 
-def test_handler_delegates_resource_state_update_without_direct_mutation():
+def test_handler_accounts_mutated_candidate_through_engine():
     definition, state = build_context()
-    before = state.model_dump_json()
 
     class RecordingEngine(DynamicIncidentEngine):
         def __init__(self):
@@ -110,6 +129,7 @@ def test_handler_delegates_resource_state_update_without_direct_mutation():
             action,
             *,
             command_cost,
+            discovered_fact_ids=(),
             now=None,
         ):
             self.action = action
@@ -126,12 +146,10 @@ def test_handler_delegates_resource_state_update_without_direct_mutation():
         now=LATER,
     )
 
-    assert engine.action == ResourceStateUpdate(
-        resource_id="service-api",
-        new_state="running",
-    )
+    assert engine.action is None
     assert engine.command_cost == definition.scoring.command_cost
-    assert state.model_dump_json() == before
+    assert state.world_state.resources["service-api"].current_state == "running"
+    assert state.virtual_rocky.processes
 
 
 def test_restart_of_running_service_is_full_no_op():
@@ -188,7 +206,7 @@ def test_missing_restart_capability_is_rejected_without_mutation():
     definition = definition.model_copy(update={"capabilities": capabilities})
     before = state.model_dump_json()
 
-    with pytest.raises(CommandExecutionError, match="capability"):
+    with pytest.raises(CommandExecutionError, match="nie jest dostępna"):
         restart_systemd_service(
             definition,
             state,
@@ -350,7 +368,7 @@ def test_systemd_status_reports_failed_service_and_accounts_command():
     )
 
     assert result.success is True
-    assert result.output.startswith("● service-api - Virtual Rocky service")
+    assert result.output.startswith("● service-api.service")
     assert "Loaded: loaded (/etc/systemd/system/service-api" in result.output
     assert "Active: failed (Result: exit-code)" in result.output
     assert state.world_state.model_dump_json() == world_before
@@ -358,9 +376,7 @@ def test_systemd_status_reports_failed_service_and_accounts_command():
     assert state.score == 995
     assert state.revision == 1
     assert state.last_activity == LATER
-    assert state.discovered_fact_ids == {
-        "service-status-inspected:service-api"
-    }
+    assert state.discovered_fact_ids == {"service-status-inspected:service-api"}
     assert state.status is SessionStatus.ACTIVE
     assert result.progress.revision == 1
 
@@ -381,13 +397,8 @@ def test_systemd_status_uses_service_name_and_reports_running_state():
         now=LATER,
     )
 
-    assert result.output.startswith(
-        "● example-api.service - Virtual Rocky service"
-    )
-    assert (
-        "Loaded: loaded (/etc/systemd/system/example-api.service"
-        in result.output
-    )
+    assert result.output.startswith("● example-api.service")
+    assert "Loaded: loaded (/etc/systemd/system/example-api.service" in result.output
     assert "Active: active (running)" in result.output
     assert state.world_state.model_dump_json() == world_before
     assert state.completed_objective_ids == {"restart-service"}
@@ -414,9 +425,7 @@ def test_repeated_systemd_status_counts_again_without_duplicate_fact():
     )
 
     assert state.world_state.model_dump_json() == world_before
-    assert state.discovered_fact_ids == {
-        "service-status-inspected:service-api"
-    }
+    assert state.discovered_fact_ids == {"service-status-inspected:service-api"}
     assert state.commands_used == 2
     assert state.score == 990
     assert state.revision == 2
@@ -546,9 +555,7 @@ def test_systemd_status_keeps_sessions_independent():
     )
 
     assert first.commands_used == 1
-    assert first.discovered_fact_ids == {
-        "service-status-inspected:service-api"
-    }
+    assert first.discovered_fact_ids == {"service-status-inspected:service-api"}
     assert second.commands_used == 0
     assert second.discovered_fact_ids == set()
     assert second.revision == 0
@@ -563,9 +570,7 @@ def test_command_execution_result_is_frozen_and_json_serializable():
         now=LATER,
     )
 
-    restored = CommandExecutionResult.model_validate_json(
-        result.model_dump_json()
-    )
+    restored = CommandExecutionResult.model_validate_json(result.model_dump_json())
 
     assert restored == result
 

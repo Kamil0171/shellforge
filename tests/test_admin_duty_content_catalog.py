@@ -80,7 +80,8 @@ def test_catalog_contains_four_distinct_solvable_fault_specs():
         "systemd_missing_environment_variable",
         "systemd_permission_denied",
     }
-    assert len({item.required_capabilities for item in FAULT_TEMPLATES}) == 4
+    assert len({item.required_capabilities for item in FAULT_TEMPLATES}) == 3
+    assert len({item.fault_type for item in FAULT_TEMPLATES}) == 4
 
     for fault in FAULT_TEMPLATES:
         assert fault.state_mutations

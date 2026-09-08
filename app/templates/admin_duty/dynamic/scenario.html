@@ -5,7 +5,7 @@
 
 {% block styles %}
 <link rel="stylesheet" href="{{ url_for('static', path='admin_duty/dynamic/dynamic.css') }}?v=gameplay-2">
-<link rel="stylesheet" href="{{ url_for('static', path='admin_duty/dynamic/gameplay.css') }}?v=gameplay-3">
+<link rel="stylesheet" href="{{ url_for('static', path='admin_duty/dynamic/gameplay.css') }}?v=world-v2-final">
 {% endblock %}
 
 {% block content %}
@@ -114,6 +114,12 @@
                 <input id="terminal-input" name="command" type="text" maxlength="1024" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Wpisz polecenie i naciśnij Enter...">
                 <button id="terminal-submit" type="submit">Wykonaj</button>
             </form>
+            <section id="virtual-editor" class="virtual-editor" hidden aria-label="Edytor pliku">
+                <strong id="virtual-editor-path"></strong>
+                <label for="virtual-editor-content">Treść pliku</label>
+                <textarea id="virtual-editor-content" spellcheck="false" maxlength="32768"></textarea>
+                <div><button id="virtual-editor-save" type="button">Zapisz plik</button><button id="virtual-editor-cancel" type="button">Anuluj / ESC</button></div>
+            </section>
             <footer class="terminal-footer"><span id="terminal-state">Terminal gotowy</span><span><kbd>Enter</kbd> wykonaj · <kbd>↑↓</kbd> historia · <kbd>Esc</kbd> zamknij</span></footer>
         </section>
     </div>
@@ -173,7 +179,10 @@
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"></script>
-<script src="{{ url_for('static', path='admin_duty/dynamic/game.js') }}?v=rocky-shell-1"></script>
-<script src="{{ url_for('static', path='admin_duty/dynamic/terminal.js') }}?v=rocky-shell-1"></script>
-<script src="{{ url_for('static', path='admin_duty/dynamic/scenario.js') }}?v=rocky-shell-1"></script>
+<script src="{{ url_for('static', path='admin_duty/dynamic/world-core.js') }}?v=world-v2-final"></script>
+<script src="{{ url_for('static', path='admin_duty/dynamic/world-renderers.js') }}?v=world-v2-final"></script>
+<script src="{{ url_for('static', path='admin_duty/dynamic/world-systems.js') }}?v=world-v2-final"></script>
+<script src="{{ url_for('static', path='admin_duty/dynamic/game.js') }}?v=world-v2-final"></script>
+<script src="{{ url_for('static', path='admin_duty/dynamic/terminal.js') }}?v=world-v2-final"></script>
+<script src="{{ url_for('static', path='admin_duty/dynamic/scenario.js') }}?v=world-v2-final"></script>
 {% endblock %}

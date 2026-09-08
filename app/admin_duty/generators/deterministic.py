@@ -31,8 +31,8 @@ from app.admin_duty.domain.definition import (
     WorldResource,
 )
 from app.admin_duty.domain.difficulty import DifficultyLevel, get_difficulty_profile
+from app.admin_duty.rocky.registry import HANDLERS
 from app.admin_duty.validators import IncidentValidationError, IncidentValidator
-from app.admin_duty.virtual_shell import SHELL_CAPABILITIES
 
 GENERATOR_ID = "shellforge.deterministic"
 GENERATOR_VERSION = "2.0"
@@ -67,7 +67,53 @@ def _context(environment: EnvironmentTemplate) -> dict[str, str]:
                 f"Context środowiska zawiera nieobsługiwaną wartość: {field.key}."
             )
         values[field.key] = field.value
+    service = next(
+        item for item in environment.resources if item.resource_type.value == "service"
+    )
+    attrs = _field_map(service.attributes)
+    name = str(attrs["service_name"])
+    values["service_name"] = name
+    values["unit_path"] = f"/etc/systemd/system/{name}"
+    values["executable_path"] = (
+        f"/opt/{name.removesuffix('.service')}/{values['expected_exec_target']}"
+    )
+    values["healthy_unit"] = (
+        f"[Unit]\nDescription=Usługa aplikacyjna\nAfter=network-online.target\n\n"
+        f"[Service]\nType=simple\nExecStart={values['executable_path']}\n"
+        f'Environment="{values["environment_variable"]}={values["environment_value"]}"\n'
+        "User=app\nRestart=on-failure\n\n[Install]\nWantedBy=multi-user.target\n"
+    )
     return values
+
+
+def _solution(fault, context):
+    result = []
+    for step in fault.solution:
+        result.append(
+            SolutionStep(
+                order=len(result) + 1,
+                capability_id=step.capability_id,
+                input=step.input_template.format_map(context),
+                purpose=step.purpose,
+                parameters=(
+                    DataField(
+                        key="content", value=step.content_template.format_map(context)
+                    ),
+                )
+                if step.content_template
+                else (),
+            )
+        )
+        if step.content_template:
+            result.append(
+                SolutionStep(
+                    order=len(result) + 1,
+                    capability_id="systemd.daemon-reload",
+                    input="systemctl daemon-reload",
+                    purpose="Przeładuj definicje jednostek.",
+                )
+            )
+    return tuple(result)
 
 
 def _resource_for_role(
@@ -290,10 +336,11 @@ def _build_candidate(
         capabilities=CapabilitySet(
             interfaces=(
                 InterfaceCapability.TERMINAL,
+                InterfaceCapability.FILE_EDITOR,
                 InterfaceCapability.MONITORING,
             ),
             command_capability_ids=tuple(
-                dict.fromkeys((*fault.required_capabilities, *SHELL_CAPABILITIES))
+                dict.fromkeys((*fault.required_capabilities, *HANDLERS))
             ),
         ),
         scoring=ScoringRules(
@@ -304,15 +351,7 @@ def _build_candidate(
             solution_score_cap=500,
         ),
         hints=fault.hints[: profile.hint_limit],
-        solution=tuple(
-            SolutionStep(
-                order=step.order,
-                capability_id=step.capability_id,
-                input=step.input_template.format_map(context),
-                purpose=step.purpose,
-            )
-            for step in fault.solution
-        ),
+        solution=_solution(fault, context),
     )
 
 

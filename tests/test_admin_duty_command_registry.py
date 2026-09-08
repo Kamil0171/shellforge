@@ -19,9 +19,8 @@ from app.admin_duty.dynamic_command_registry import (
 from app.admin_duty.dynamic_commands import (
     CommandExecutionError,
     CommandExecutionResult,
-    get_systemd_service_status,
-    restart_systemd_service,
 )
+from app.admin_duty.rocky.registry import HANDLERS
 from tests.test_admin_duty_systemd_commands import build_definition
 
 FIXED_NOW = datetime(2026, 8, 25, 16, 0, tzinfo=UTC)
@@ -39,11 +38,9 @@ def test_registry_contains_all_controlled_handlers():
         "systemd.status",
         "systemd.restart",
         "systemd.cat",
-        "systemd.set-exec-start",
-        "environment.inspect",
-        "environment.restore",
-        "filesystem.stat",
-        "filesystem.restore-permissions",
+        "filesystem.edit",
+        "filesystem.chmod",
+        "systemd.daemon-reload",
     } < set(COMMAND_HANDLERS)
     assert {
         "shell.pwd",
@@ -54,13 +51,13 @@ def test_registry_contains_all_controlled_handlers():
         "resources.memory",
         "network.listeners",
     } <= set(COMMAND_HANDLERS)
-    assert COMMAND_HANDLERS["systemd.status"] is get_systemd_service_status
-    assert COMMAND_HANDLERS["systemd.restart"] is restart_systemd_service
+    assert COMMAND_HANDLERS["systemd.status"] is HANDLERS["systemd.status"]
+    assert COMMAND_HANDLERS["systemd.restart"] is HANDLERS["systemd.restart"]
 
 
 def test_registry_is_immutable():
     with pytest.raises(TypeError):
-        COMMAND_HANDLERS["systemd.stop"] = get_systemd_service_status
+        COMMAND_HANDLERS["systemd.stop"] = HANDLERS["systemd.status"]
 
 
 def test_dynamic_command_request_is_frozen_forbids_extra_and_round_trips_json():

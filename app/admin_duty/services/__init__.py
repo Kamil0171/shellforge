@@ -1,3 +1,13 @@
+from app.admin_duty.components.maps.definition import (
+    PublicGameInteraction,
+    PublicGameMap,
+    PublicGameObject,
+    PublicGamePoint,
+    PublicGameRect,
+    PublicGameSector,
+    PublicMonitoring,
+    PublicMonitoringSignal,
+)
 from app.admin_duty.services.dynamic_incident_service import (
     DynamicHintResult,
     DynamicIncidentPublicInfo,
@@ -11,16 +21,6 @@ from app.admin_duty.services.dynamic_incident_service import (
     PublicInfrastructureLink,
     PublicInfrastructureNode,
     PublicShellState,
-)
-from app.admin_duty.services.public_gameplay import (
-    PublicGameInteraction,
-    PublicGameMap,
-    PublicGameObject,
-    PublicGamePoint,
-    PublicGameRect,
-    PublicGameSector,
-    PublicMonitoring,
-    PublicMonitoringSignal,
 )
 from app.admin_duty.services.support_center import PublicRunbook, PublicSupportCenter
 

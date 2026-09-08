@@ -40,7 +40,6 @@ def test_empty_command_is_rejected(command):
     "command",
     [
         "systemctl",
-        "systemctl status",
         "systemctl restart",
         "systemctl status service-api extra",
     ],
@@ -54,7 +53,7 @@ def test_systemctl_command_rejects_wrong_argument_count(command):
     "command",
     [
         "service status service-api",
-        "curl status service-api",
+        "wget status service-api",
         "SYSTEMCTL status service-api",
     ],
 )
@@ -132,7 +131,17 @@ def test_systemctl_mapping_contains_exactly_supported_commands_and_is_immutable(
         "start": "systemd.start",
         "stop": "systemd.stop",
         "cat": "systemd.cat",
-        "set-exec-start": "systemd.set-exec-start",
+        **{
+            action: f"systemd.{action}"
+            for action in (
+                "enable",
+                "disable",
+                "is-active",
+                "is-enabled",
+                "list-units",
+                "daemon-reload",
+            )
+        },
     }
 
     with pytest.raises(TypeError):
@@ -153,24 +162,18 @@ def test_parsed_request_is_frozen_and_round_trips_json():
     ("command", "command_id", "resource_id", "arguments"),
     [
         (
-            "systemctl set-exec-start service-api api-server",
-            "systemd.set-exec-start",
-            "service-api",
-            ("api-server",),
-        ),
-        ("env inspect service-worker", "environment.inspect", "service-worker", ()),
-        (
-            "env restore service-worker QUEUE_URL",
-            "environment.restore",
-            "service-worker",
-            ("QUEUE_URL",),
-        ),
-        ("stat file-api-binary", "filesystem.stat", "file-api-binary", ()),
-        (
-            "chmod restore file-api-binary",
-            "filesystem.restore-permissions",
-            "file-api-binary",
+            "nano /etc/systemd/system/example.service",
+            "filesystem.edit",
+            "/etc/systemd/system/example.service",
             (),
+        ),
+        ("systemctl daemon-reload", "systemd.daemon-reload", ".", ()),
+        ("stat /opt/example/api", "filesystem.path-stat", "/opt/example/api", ()),
+        (
+            "chmod 755 /opt/example/api",
+            "filesystem.chmod",
+            "/opt/example/api",
+            ("0755",),
         ),
     ],
 )
@@ -191,7 +194,7 @@ def test_parse_all_content_engine_grammars(command, command_id, resource_id, arg
         "stat",
         "stat file-api extra",
         "chmod file-api",
-        "chmod 0755 file-api",
+        "chmod 0999 file-api",
         "systemctl set-exec-start service-api invalid/target",
         "env restore service-api $DATABASE_URL",
     ],

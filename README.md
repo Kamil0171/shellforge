@@ -37,7 +37,7 @@ ShellForge udostępnia obecnie:
 
 ## Symulator „Dyżur administratora”
 
-Symulator jest interaktywnym trybem praktycznego rozwiązywania incydentów administracyjnych. Dostępny scenariusz **INC-001 „502 po wdrożeniu”** polega na zdiagnozowaniu awarii usługi aplikacyjnej i przywróceniu jej działania.
+Symulator udostępnia Dynamic Incident — generowane deterministycznie incydenty na mapie Modern NOC. Cztery rodzaje usterek usług działają w trzech profilach infrastruktury. Każda sesja ma izolowany Virtual Rocky Linux i własną punktację.
 
 Scenariusz obejmuje między innymi:
 
@@ -48,9 +48,9 @@ Scenariusz obejmuje między innymi:
 - cele incydentu i śledzenie postępu;
 - punktację premiującą samodzielną diagnostykę;
 - stopniowane podpowiedzi;
-- pełne rozwiązanie dostępne na żądanie.
+- runbooki i dokumentację wdrożenia dostępną w wirtualnym filesystemie.
 
-Rozwijany tryb Dynamic Incident łączy eksplorowaną mapę 2D Modern NOC z izolowanym środowiskiem Virtual Rocky Linux. Gracz korzysta z monitoringu, racków, Centrum wsparcia i terminala obsługującego kontrolowany katalog realnych składniowo poleceń Linux. Symulacja nigdy nie wykonuje poleceń na hoście aplikacji.
+Tryb Dynamic Incident łączy eksplorowaną mapę 2D Modern NOC z izolowanym środowiskiem Virtual Rocky Linux. Gracz korzysta z monitoringu, racków, Centrum wsparcia i terminala obsługującego kontrolowany katalog realnych składniowo poleceń Linux. Symulacja nigdy nie wykonuje poleceń na hoście aplikacji.
 
 ## Zakres edukacyjny
 
@@ -69,8 +69,6 @@ Materiały dostępne w aplikacji obejmują:
 ## Architektura
 
 ShellForge jest aplikacją FastAPI renderującą widoki Jinja2 i udostępniającą zasoby statyczne oraz endpointy wykorzystywane przez interaktywny frontend. Dane edukacyjne są synchronizowane z SQLite przez SQLModel podczas startu aplikacji. Symulator stanowi osobny podsystem z routerem, silnikiem scenariusza i obsługą poleceń.
-
-![Architektura ShellForge](app/static/img/shellforge-architecture.png)
 
 W środowisku produkcyjnym publiczny ruch przechodzi przez Nginx do Uvicorna uruchamiającego aplikację FastAPI. Proces aplikacji jest zarządzany przez systemd, a HTTPS zapewniają certyfikaty Let's Encrypt obsługiwane przez Certbota.
 
@@ -146,10 +144,13 @@ Najważniejsze elementy repozytorium:
 ```text
 app/
 ├── admin_duty/
-│   ├── scenarios/       # definicje scenariuszy
-│   ├── commands.py      # obsługa poleceń Symulatora
-│   ├── engine.py        # postęp, punktacja i podpowiedzi
-│   └── router.py        # widoki i API Symulatora
+│   ├── components/     # katalog środowisk, usterek i JSON mapy
+│   ├── domain/         # definicja, runtime, cele i punktacja
+│   ├── rocky/          # wirtualne polecenia według kategorii
+│   ├── generators/     # deterministyczne incydenty
+│   ├── validators/     # walidacja i replay rozwiązania
+│   ├── services/       # sesje i bezpieczne publiczne projekcje
+│   └── dynamic_router.py # widoki i API Dynamic Incident
 ├── content/             # treści lekcji, quizów i fiszek
 ├── routers/             # routery części edukacyjnej
 ├── static/

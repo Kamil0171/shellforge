@@ -1,0 +1,719 @@
+{
+  "id": "modern-noc",
+  "name": "Modern NOC",
+  "version": "2.0",
+  "theme": "modern-noc",
+  "width": 1800,
+  "height": 1100,
+  "player_spawn": {
+    "x": 900,
+    "y": 944
+  },
+  "sectors": [
+    {
+      "id": "entry",
+      "label": "Wejście NOC",
+      "rect": {
+        "x": 600,
+        "y": 800,
+        "width": 600,
+        "height": 240
+      }
+    },
+    {
+      "id": "operations",
+      "label": "Sala operacyjna",
+      "rect": {
+        "x": 360,
+        "y": 360,
+        "width": 840,
+        "height": 440
+      }
+    },
+    {
+      "id": "observability",
+      "label": "Monitoring",
+      "rect": {
+        "x": 360,
+        "y": 60,
+        "width": 840,
+        "height": 300
+      }
+    },
+    {
+      "id": "data-hall",
+      "label": "Serwerownia",
+      "rect": {
+        "x": 1220,
+        "y": 60,
+        "width": 520,
+        "height": 880
+      }
+    },
+    {
+      "id": "support",
+      "label": "Strefa wsparcia",
+      "rect": {
+        "x": 60,
+        "y": 220,
+        "width": 300,
+        "height": 680
+      }
+    }
+  ],
+  "objects": [
+    {
+      "id": "zone-entry",
+      "kind": "floor-zone",
+      "rect": {
+        "x": 600,
+        "y": 800,
+        "width": 600,
+        "height": 240
+      },
+      "label": "WEJŚCIE / BRIEFING",
+      "tone": "neutral",
+      "variant": "stone",
+      "binding_role": null
+    },
+    {
+      "id": "zone-ops",
+      "kind": "floor-zone",
+      "rect": {
+        "x": 360,
+        "y": 360,
+        "width": 840,
+        "height": 440
+      },
+      "label": "OPERATIONS FLOOR",
+      "tone": "blue",
+      "variant": "carpet",
+      "binding_role": null
+    },
+    {
+      "id": "zone-observability",
+      "kind": "floor-zone",
+      "rect": {
+        "x": 360,
+        "y": 60,
+        "width": 840,
+        "height": 300
+      },
+      "label": "OBSERVABILITY",
+      "tone": "cyan",
+      "variant": "carpet",
+      "binding_role": null
+    },
+    {
+      "id": "zone-data-hall",
+      "kind": "floor-zone",
+      "rect": {
+        "x": 1220,
+        "y": 60,
+        "width": 520,
+        "height": 880
+      },
+      "label": "DATA HALL",
+      "tone": "amber",
+      "variant": "raised",
+      "binding_role": null
+    },
+    {
+      "id": "zone-support",
+      "kind": "floor-zone",
+      "rect": {
+        "x": 60,
+        "y": 220,
+        "width": 300,
+        "height": 680
+      },
+      "label": "SUPPORT BAY",
+      "tone": "green",
+      "variant": "wood",
+      "binding_role": null
+    },
+    {
+      "id": "monitor-wall",
+      "kind": "monitor-wall",
+      "rect": {
+        "x": 650,
+        "y": 112,
+        "width": 500,
+        "height": 108
+      },
+      "label": "ŚCIANA MONITORINGU",
+      "tone": "cyan",
+      "variant": "default",
+      "binding_role": "service"
+    },
+    {
+      "id": "monitor-console",
+      "kind": "operator-desk",
+      "rect": {
+        "x": 770,
+        "y": 258,
+        "width": 260,
+        "height": 72
+      },
+      "label": "OBSERVABILITY CONSOLE",
+      "tone": "cyan",
+      "variant": "default",
+      "binding_role": null
+    },
+    {
+      "id": "monitor-chair",
+      "kind": "chair",
+      "rect": {
+        "x": 872,
+        "y": 338,
+        "width": 56,
+        "height": 50
+      },
+      "label": null,
+      "tone": "neutral",
+      "variant": "default",
+      "binding_role": null
+    },
+    {
+      "id": "desk-terminal",
+      "kind": "operator-desk",
+      "rect": {
+        "x": 445,
+        "y": 590,
+        "width": 238,
+        "height": 94
+      },
+      "label": "OPS-01 · TERMINAL",
+      "tone": "blue",
+      "variant": "default",
+      "binding_role": null
+    },
+    {
+      "id": "chair-terminal",
+      "kind": "chair",
+      "rect": {
+        "x": 535,
+        "y": 700,
+        "width": 56,
+        "height": 50
+      },
+      "label": null,
+      "tone": "neutral",
+      "variant": "default",
+      "binding_role": null
+    },
+    {
+      "id": "desk-triage",
+      "kind": "operator-desk",
+      "rect": {
+        "x": 760,
+        "y": 500,
+        "width": 260,
+        "height": 94
+      },
+      "label": "INCIDENT TRIAGE",
+      "tone": "neutral",
+      "variant": "triage",
+      "binding_role": null
+    },
+    {
+      "id": "chair-triage",
+      "kind": "chair",
+      "rect": {
+        "x": 862,
+        "y": 610,
+        "width": 56,
+        "height": 50
+      },
+      "label": null,
+      "tone": "neutral",
+      "variant": "default",
+      "binding_role": null
+    },
+    {
+      "id": "desk-network",
+      "kind": "operator-desk",
+      "rect": {
+        "x": 770,
+        "y": 690,
+        "width": 240,
+        "height": 82
+      },
+      "label": "NETWORK OPS",
+      "tone": "green",
+      "variant": "default",
+      "binding_role": null
+    },
+    {
+      "id": "support-desk",
+      "kind": "operator-desk",
+      "rect": {
+        "x": 105,
+        "y": 420,
+        "width": 205,
+        "height": 90
+      },
+      "label": "RUNBOOKS",
+      "tone": "green",
+      "variant": "support",
+      "binding_role": null
+    },
+    {
+      "id": "rack-a",
+      "kind": "server-rack",
+      "rect": {
+        "x": 1300,
+        "y": 180,
+        "width": 92,
+        "height": 176
+      },
+      "label": "RACK A · CORE",
+      "tone": "cyan",
+      "variant": "core",
+      "binding_role": "host"
+    },
+    {
+      "id": "rack-b",
+      "kind": "server-rack",
+      "rect": {
+        "x": 1430,
+        "y": 180,
+        "width": 92,
+        "height": 176
+      },
+      "label": "RACK B · COMPUTE",
+      "tone": "blue",
+      "variant": "compute",
+      "binding_role": "host"
+    },
+    {
+      "id": "rack-c",
+      "kind": "server-rack",
+      "rect": {
+        "x": 1560,
+        "y": 180,
+        "width": 92,
+        "height": 176
+      },
+      "label": "RACK C · PROD",
+      "tone": "amber",
+      "variant": "prod",
+      "binding_role": "service"
+    },
+    {
+      "id": "rack-d",
+      "kind": "server-rack",
+      "rect": {
+        "x": 1300,
+        "y": 480,
+        "width": 92,
+        "height": 176
+      },
+      "label": "RACK D · STORAGE",
+      "tone": "green",
+      "variant": "storage",
+      "binding_role": "host"
+    },
+    {
+      "id": "rack-e",
+      "kind": "server-rack",
+      "rect": {
+        "x": 1430,
+        "y": 480,
+        "width": 92,
+        "height": 176
+      },
+      "label": "RACK E · EDGE",
+      "tone": "blue",
+      "variant": "edge",
+      "binding_role": "host"
+    },
+    {
+      "id": "rack-f",
+      "kind": "server-rack",
+      "rect": {
+        "x": 1560,
+        "y": 480,
+        "width": 92,
+        "height": 176
+      },
+      "label": "RACK F · SPARE",
+      "tone": "neutral",
+      "variant": "spare",
+      "binding_role": "host"
+    },
+    {
+      "id": "data-partition-top",
+      "kind": "partition",
+      "rect": {
+        "x": 1196,
+        "y": 60,
+        "width": 24,
+        "height": 350
+      },
+      "label": null,
+      "tone": "neutral",
+      "variant": "glass",
+      "binding_role": null
+    },
+    {
+      "id": "data-partition-bottom",
+      "kind": "partition",
+      "rect": {
+        "x": 1196,
+        "y": 620,
+        "width": 24,
+        "height": 320
+      },
+      "label": null,
+      "tone": "neutral",
+      "variant": "glass",
+      "binding_role": null
+    },
+    {
+      "id": "support-partition-top",
+      "kind": "partition",
+      "rect": {
+        "x": 336,
+        "y": 220,
+        "width": 24,
+        "height": 230
+      },
+      "label": null,
+      "tone": "neutral",
+      "variant": "glass",
+      "binding_role": null
+    },
+    {
+      "id": "support-partition-bottom",
+      "kind": "partition",
+      "rect": {
+        "x": 336,
+        "y": 650,
+        "width": 24,
+        "height": 250
+      },
+      "label": null,
+      "tone": "neutral",
+      "variant": "glass",
+      "binding_role": null
+    },
+    {
+      "id": "entry-door",
+      "kind": "door",
+      "rect": {
+        "x": 820,
+        "y": 1002,
+        "width": 160,
+        "height": 18
+      },
+      "label": "NOC ACCESS",
+      "tone": "green",
+      "variant": "default",
+      "binding_role": null
+    },
+    {
+      "id": "cable-core",
+      "kind": "cable-tray",
+      "rect": {
+        "x": 1250,
+        "y": 780,
+        "width": 430,
+        "height": 24
+      },
+      "label": null,
+      "tone": "amber",
+      "variant": "default",
+      "binding_role": null
+    },
+    {
+      "id": "light-observability",
+      "kind": "light-strip",
+      "rect": {
+        "x": 430,
+        "y": 82,
+        "width": 700,
+        "height": 8
+      },
+      "label": null,
+      "tone": "cyan",
+      "variant": "default",
+      "binding_role": null
+    },
+    {
+      "id": "light-ops",
+      "kind": "light-strip",
+      "rect": {
+        "x": 430,
+        "y": 390,
+        "width": 700,
+        "height": 8
+      },
+      "label": null,
+      "tone": "blue",
+      "variant": "default",
+      "binding_role": null
+    },
+    {
+      "id": "marking-entry",
+      "kind": "floor-marking",
+      "rect": {
+        "x": 790,
+        "y": 840,
+        "width": 220,
+        "height": 5
+      },
+      "label": null,
+      "tone": "green",
+      "variant": "default",
+      "binding_role": null
+    },
+    {
+      "id": "marking-data",
+      "kind": "floor-marking",
+      "rect": {
+        "x": 1248,
+        "y": 408,
+        "width": 440,
+        "height": 5
+      },
+      "label": null,
+      "tone": "amber",
+      "variant": "default",
+      "binding_role": null
+    },
+    {
+      "id": "plant-entry-left",
+      "kind": "plant",
+      "rect": {
+        "x": 640,
+        "y": 906,
+        "width": 48,
+        "height": 48
+      },
+      "label": null,
+      "tone": "green",
+      "variant": "default",
+      "binding_role": null
+    },
+    {
+      "id": "plant-entry-right",
+      "kind": "plant",
+      "rect": {
+        "x": 1112,
+        "y": 906,
+        "width": 48,
+        "height": 48
+      },
+      "label": null,
+      "tone": "green",
+      "variant": "default",
+      "binding_role": null
+    },
+    {
+      "id": "support-shelf",
+      "kind": "cabinet",
+      "rect": {
+        "x": 100,
+        "y": 245,
+        "width": 202,
+        "height": 70
+      },
+      "tone": "neutral",
+      "variant": "support",
+      "label": "Documentation",
+      "binding_role": null
+    },
+    {
+      "id": "triage-board",
+      "kind": "board",
+      "rect": {
+        "x": 772,
+        "y": 420,
+        "width": 220,
+        "height": 64
+      },
+      "tone": "neutral",
+      "variant": "triage",
+      "label": "INCYDENT / ZDARZENIA",
+      "binding_role": "service"
+    }
+  ],
+  "collision_zones": [
+    {
+      "x": 0,
+      "y": 0,
+      "width": 1800,
+      "height": 42
+    },
+    {
+      "x": 0,
+      "y": 1058,
+      "width": 1800,
+      "height": 42
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "width": 42,
+      "height": 1100
+    },
+    {
+      "x": 1758,
+      "y": 0,
+      "width": 42,
+      "height": 1100
+    },
+    {
+      "x": 650,
+      "y": 112,
+      "width": 500,
+      "height": 108
+    },
+    {
+      "x": 770,
+      "y": 258,
+      "width": 260,
+      "height": 72
+    },
+    {
+      "x": 445,
+      "y": 590,
+      "width": 238,
+      "height": 94
+    },
+    {
+      "x": 760,
+      "y": 500,
+      "width": 260,
+      "height": 94
+    },
+    {
+      "x": 770,
+      "y": 690,
+      "width": 240,
+      "height": 82
+    },
+    {
+      "x": 105,
+      "y": 420,
+      "width": 205,
+      "height": 90
+    },
+    {
+      "x": 1300,
+      "y": 180,
+      "width": 92,
+      "height": 176
+    },
+    {
+      "x": 1430,
+      "y": 180,
+      "width": 92,
+      "height": 176
+    },
+    {
+      "x": 1560,
+      "y": 180,
+      "width": 92,
+      "height": 176
+    },
+    {
+      "x": 1300,
+      "y": 480,
+      "width": 92,
+      "height": 176
+    },
+    {
+      "x": 1430,
+      "y": 480,
+      "width": 92,
+      "height": 176
+    },
+    {
+      "x": 1560,
+      "y": 480,
+      "width": 92,
+      "height": 176
+    },
+    {
+      "x": 1196,
+      "y": 60,
+      "width": 24,
+      "height": 350
+    },
+    {
+      "x": 1196,
+      "y": 620,
+      "width": 24,
+      "height": 320
+    },
+    {
+      "x": 336,
+      "y": 220,
+      "width": 24,
+      "height": 230
+    },
+    {
+      "x": 336,
+      "y": 650,
+      "width": 24,
+      "height": 250
+    },
+    {
+      "x": 100,
+      "y": 270,
+      "width": 202,
+      "height": 45
+    }
+  ],
+  "interactions": [
+    {
+      "type": "terminal",
+      "id": "terminal",
+      "label": "Otwórz terminal",
+      "position": {
+        "x": 565,
+        "y": 742
+      },
+      "radius": 82,
+      "role": "primary"
+    },
+    {
+      "type": "monitoring",
+      "id": "monitoring",
+      "label": "Sprawdź monitoring",
+      "position": {
+        "x": 900,
+        "y": 378
+      },
+      "radius": 86,
+      "role": "support"
+    },
+    {
+      "type": "rack",
+      "id": "rack",
+      "label": "Sprawdź rack",
+      "position": {
+        "x": 1260,
+        "y": 548
+      },
+      "radius": 90,
+      "role": "primary"
+    },
+    {
+      "type": "support",
+      "id": "support",
+      "label": "Otwórz centrum wsparcia",
+      "position": {
+        "x": 205,
+        "y": 545
+      },
+      "radius": 88,
+      "role": "support"
+    }
+  ],
+  "ambience": {
+    "fog_radius": 230
+  }
+}
