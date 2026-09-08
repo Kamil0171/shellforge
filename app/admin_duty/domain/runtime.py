@@ -9,6 +9,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    field_serializer,
     field_validator,
     model_validator,
 )
@@ -107,6 +108,10 @@ class PackageManagerState(MutableDomainModel):
         default_factory=lambda: {"baseos", "appstream", "extras"}
     )
     cache_clean: bool = False
+
+    @field_serializer("enabled_repositories", when_used="json")
+    def serialize_enabled_repositories(self, repositories: set[str]) -> list[str]:
+        return sorted(repositories)
 
 
 class VirtualNetworkInterface(MutableDomainModel):

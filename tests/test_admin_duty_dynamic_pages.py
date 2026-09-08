@@ -23,6 +23,7 @@ def test_dynamic_lobby_renders_difficulty_selection_and_assets():
         'href="http://testserver/static/admin_duty/dynamic/dynamic.css' in response.text
     )
     assert 'src="http://testserver/static/admin_duty/dynamic/index.js' in response.text
+    assert "index.js?v=incident-v3" in response.text
 
     source = client.get("/static/admin_duty/dynamic/index.js")
     assert source.status_code == 200
