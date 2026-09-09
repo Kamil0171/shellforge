@@ -13,16 +13,20 @@ def test_dynamic_lobby_renders_difficulty_selection_and_assets():
     assert response.status_code == 200
     assert "Dynamic Incident Lab" in response.text
     assert 'id="start-easy-button"' in response.text
+    assert 'data-difficulty="easy"' in response.text
     assert "Łatwy" in response.text
     assert "Średni" in response.text
     assert "Trudny" in response.text
     assert response.text.count("Poziom w przygotowaniu") == 1
     assert 'id="start-medium-button"' in response.text
+    assert 'data-difficulty="medium"' in response.text
+    assert response.text.count('type="button" disabled') == 1
     assert 'id="generation-overlay"' in response.text
     assert (
         'href="http://testserver/static/admin_duty/dynamic/dynamic.css' in response.text
     )
     assert 'src="http://testserver/static/admin_duty/dynamic/index.js' in response.text
+    assert "dynamic.css?v=lobby-refresh-1" in response.text
     assert "index.js?v=incident-v3" in response.text
 
     source = client.get("/static/admin_duty/dynamic/index.js")

@@ -7,51 +7,110 @@
 {% block styles %}
 <link
     rel="stylesheet"
-    href="{{ url_for('static', path='admin_duty/dynamic/dynamic.css') }}?v=gameplay-ux-2"
+    href="{{ url_for('static', path='admin_duty/dynamic/dynamic.css') }}?v=lobby-refresh-1"
 >
 {% endblock %}
 
 {% block content %}
 <section id="dynamic-lab" class="dynamic-lab">
+    <div class="dynamic-lab-atmosphere" aria-hidden="true">
+        <span class="dynamic-orbit dynamic-orbit-one"></span>
+        <span class="dynamic-orbit dynamic-orbit-two"></span>
+        <span class="dynamic-light-source"></span>
+    </div>
+
     <div class="dynamic-lab-shell">
         <header class="dynamic-lab-header">
             <a class="dynamic-back-link" href="/admin-duty/">
-                <span aria-hidden="true">←</span>
+                <span class="dynamic-back-icon" aria-hidden="true">←</span>
                 Symulator
             </a>
 
             <div class="dynamic-system-state">
                 <span class="dynamic-status-dot" aria-hidden="true"></span>
-                LAB ONLINE
+                <span>LAB ONLINE</span>
             </div>
         </header>
 
         <section class="dynamic-hero" aria-labelledby="dynamic-lab-title">
-            <span class="dynamic-eyebrow">ShellForge // Incident Response</span>
-            <h1 id="dynamic-lab-title">Dynamic Incident Lab</h1>
-            <p>
-                Ćwicz diagnostykę prawdziwych problemów Linux i DevOps
-                w dynamicznie tworzonych środowiskach.
-            </p>
+            <div class="dynamic-hero-copy">
+                <span class="dynamic-eyebrow">ShellForge // Incident Response</span>
+                <h1 id="dynamic-lab-title">Dynamic Incident Lab</h1>
+                <p>
+                    Praktyczna diagnostyka Linux i DevOps w dynamicznych
+                    środowiskach, w których każda decyzja wpływa na przebieg
+                    incydentu.
+                </p>
 
-            <div class="dynamic-principles" aria-label="Zasady laboratorium">
-                <div class="dynamic-principle">
-                    <span>01</span>
-                    <strong>Nowy incydent przy każdym starcie</strong>
-                </div>
-                <div class="dynamic-principle">
-                    <span>02</span>
-                    <strong>Osobny stan każdej sesji</strong>
-                </div>
-                <div class="dynamic-principle">
-                    <span>03</span>
-                    <strong>Bezpieczna symulacja poleceń</strong>
-                </div>
-                <div class="dynamic-principle">
-                    <span>04</span>
-                    <strong>Wynik zależny od działań</strong>
+                <div class="dynamic-hero-tags" aria-label="Możliwości laboratorium">
+                    <span>Interaktywny terminal</span>
+                    <span>Zależności usług</span>
+                    <span>Wieloetapowe incydenty</span>
                 </div>
             </div>
+
+            <aside class="dynamic-ops-preview" aria-label="Status laboratorium">
+                <div class="dynamic-ops-heading">
+                    <div>
+                        <span class="dynamic-ops-kicker">Środowisko operacyjne</span>
+                        <strong>Gotowe do sesji</strong>
+                    </div>
+                    <span class="dynamic-ops-state">STABILNE</span>
+                </div>
+
+                <div class="dynamic-ops-visual" aria-hidden="true">
+                    <span class="dynamic-ops-line"></span>
+                    <span class="dynamic-ops-node dynamic-ops-node-one"></span>
+                    <span class="dynamic-ops-node dynamic-ops-node-two"></span>
+                    <span class="dynamic-ops-node dynamic-ops-node-three"></span>
+                </div>
+
+                <dl class="dynamic-ops-metrics">
+                    <div>
+                        <dt>Tryb</dt>
+                        <dd>Izolowana sesja</dd>
+                    </div>
+                    <div>
+                        <dt>Środowisko</dt>
+                        <dd>Dynamiczne</dd>
+                    </div>
+                    <div>
+                        <dt>Terminal</dt>
+                        <dd>Aktywny</dd>
+                    </div>
+                </dl>
+            </aside>
+        </section>
+
+        <section class="dynamic-feature-strip" aria-label="Zasady laboratorium">
+            <article class="dynamic-feature">
+                <span class="dynamic-feature-number">01</span>
+                <div>
+                    <strong>Dynamiczne środowiska</strong>
+                    <p>Nowy układ incydentu przy starcie sesji.</p>
+                </div>
+            </article>
+            <article class="dynamic-feature">
+                <span class="dynamic-feature-number">02</span>
+                <div>
+                    <strong>Izolowane sesje</strong>
+                    <p>Osobny, bezpieczny stan każdej rozgrywki.</p>
+                </div>
+            </article>
+            <article class="dynamic-feature">
+                <span class="dynamic-feature-number">03</span>
+                <div>
+                    <strong>Symulacja poleceń</strong>
+                    <p>Realistyczna praca bez dostępu do hosta.</p>
+                </div>
+            </article>
+            <article class="dynamic-feature">
+                <span class="dynamic-feature-number">04</span>
+                <div>
+                    <strong>Decyzje mają znaczenie</strong>
+                    <p>Wynik zależy od wykonanych działań.</p>
+                </div>
+            </article>
         </section>
 
         <section class="difficulty-section" aria-labelledby="difficulty-title">
@@ -61,27 +120,41 @@
                     <h2 id="difficulty-title">Wybierz poziom trudności</h2>
                 </div>
                 <p>
-                    Zacznij od prowadzonej diagnostyki małego środowiska.
-                    Kolejne poziomy pojawią się wraz z rozwojem laboratorium.
+                    Dopasuj skalę infrastruktury i liczbę zależności do swojego
+                    doświadczenia. Każda sesja tworzy nowy incydent.
                 </p>
             </div>
 
             <div class="difficulty-grid">
-                <article class="difficulty-card difficulty-card-active">
+                <article class="difficulty-card difficulty-card-active difficulty-card-easy">
                     <div class="difficulty-card-top">
-                        <span class="difficulty-code">EASY</span>
+                        <div class="difficulty-identity">
+                            <span class="difficulty-sequence" aria-hidden="true">01</span>
+                            <span class="difficulty-code">EASY</span>
+                        </div>
                         <span class="difficulty-availability">Dostępny</span>
                     </div>
-                    <h3>Łatwy</h3>
+
+                    <div class="difficulty-card-title">
+                        <span>Fundamenty diagnostyki</span>
+                        <h3>Łatwy</h3>
+                    </div>
                     <p>
                         Skup się na podstawowej diagnostyce i przywróceniu
                         działania niewielkiego środowiska.
                     </p>
+
+                    <div class="difficulty-complexity" aria-label="Złożoność niska">
+                        <span>Złożoność</span>
+                        <div aria-hidden="true">
+                            <i class="is-active"></i><i></i><i></i>
+                        </div>
+                    </div>
+
                     <ul>
                         <li>Mała infrastruktura</li>
                         <li>Pojedyncza główna awaria</li>
                         <li>Więcej wskazówek</li>
-                        <li>Podstawowe narzędzia administracyjne</li>
                     </ul>
                     <button
                         id="start-easy-button"
@@ -89,21 +162,36 @@
                         type="button"
                         data-difficulty="easy"
                     >
-                        Rozpocznij incydent
-                        <span aria-hidden="true">→</span>
+                        <span>Rozpocznij incydent</span>
+                        <span class="dynamic-cta-arrow" aria-hidden="true">→</span>
                     </button>
                 </article>
 
-                <article class="difficulty-card difficulty-card-active">
+                <article class="difficulty-card difficulty-card-active difficulty-card-medium">
                     <div class="difficulty-card-top">
-                        <span class="difficulty-code">MEDIUM</span>
+                        <div class="difficulty-identity">
+                            <span class="difficulty-sequence" aria-hidden="true">02</span>
+                            <span class="difficulty-code">MEDIUM</span>
+                        </div>
                         <span class="difficulty-availability">Dostępny</span>
                     </div>
-                    <h3>Średni</h3>
+
+                    <div class="difficulty-card-title">
+                        <span>Analiza zależności</span>
+                        <h3>Średni</h3>
+                    </div>
                     <p>
                         Diagnozuj wiele usług na oddzielnych hostach, zależności
                         sieciowe i symptomy oddalone od przyczyny problemu.
                     </p>
+
+                    <div class="difficulty-complexity" aria-label="Złożoność średnia">
+                        <span>Złożoność</span>
+                        <div aria-hidden="true">
+                            <i class="is-active"></i><i class="is-active"></i><i></i>
+                        </div>
+                    </div>
+
                     <ul>
                         <li>3–5 hostów i kilka usług</li>
                         <li>Łańcuchy zależności i pośrednie symptomy</li>
@@ -115,27 +203,45 @@
                         type="button"
                         data-difficulty="medium"
                     >
-                        Rozpocznij incydent MEDIUM
-                        <span aria-hidden="true">→</span>
+                        <span>Rozpocznij incydent MEDIUM</span>
+                        <span class="dynamic-cta-arrow" aria-hidden="true">→</span>
                     </button>
                 </article>
 
                 <article class="difficulty-card difficulty-card-locked">
                     <div class="difficulty-card-top">
-                        <span class="difficulty-code">HARD</span>
+                        <div class="difficulty-identity">
+                            <span class="difficulty-sequence" aria-hidden="true">03</span>
+                            <span class="difficulty-code">HARD</span>
+                        </div>
                         <span class="difficulty-coming-soon">Wkrótce</span>
                     </div>
-                    <h3>Trudny</h3>
+
+                    <div class="difficulty-card-title">
+                        <span>Pełna odpowiedzialność</span>
+                        <h3>Trudny</h3>
+                    </div>
                     <p>
                         Złożone incydenty dla osób gotowych samodzielnie
                         analizować wiele elementów infrastruktury.
                     </p>
+
+                    <div class="difficulty-complexity" aria-label="Złożoność wysoka">
+                        <span>Złożoność</span>
+                        <div aria-hidden="true">
+                            <i></i><i></i><i></i>
+                        </div>
+                    </div>
+
                     <ul>
                         <li>Wiele hostów i zależności</li>
                         <li>Ograniczony briefing</li>
                         <li>Rygorystyczny scoring</li>
                     </ul>
-                    <button type="button" disabled>Poziom w przygotowaniu</button>
+                    <button type="button" disabled>
+                        <span>Poziom w przygotowaniu</span>
+                        <span aria-hidden="true">—</span>
+                    </button>
                 </article>
             </div>
         </section>
