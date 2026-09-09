@@ -194,4 +194,6 @@ W aktualnym repozytorium nie ma implementacji PostgreSQL, kontenerów Docker lub
 
 ## World Engine i Virtual Rocky
 
-Szczegółowy podział modułów świata, format JSON mapy, obsługiwane polecenia, ograniczenia symulacji i repository cleanup audit znajdują się w [notatkach developerskich Dynamic Incident](dynamic-incident-development.md). Diagram Mermaid powyżej jest aktualnym przeglądem systemu; zastąpił nieaktualną grafikę rastrową.
+World Engine łączy mapę środowiska z publicznym stanem rozgrywki, interakcjami i celami incydentu. Virtual Rocky utrzymuje izolowany stan hostów oraz udostępnia kontrolowany zestaw poleceń administracyjnych. Cała symulacja pozostaje wewnątrz sesji aplikacji i nie wykonuje poleceń ani połączeń na rzeczywistych hostach.
+
+Diagram Mermaid powyżej przedstawia aktualny przegląd systemu i zależności między jego głównymi komponentami.

@@ -109,29 +109,6 @@ Szczegółowy opis komponentów i przepływów znajduje się w dokumencie [Archi
 - GitHub Actions
 - Dependabot
 
-## Praca lokalna
-
-Zależności developerskie, w tym pre-commit, można zainstalować poleceniem:
-
-```powershell
-python -m pip install -r requirements-dev.txt
-pre-commit install
-```
-
-Pełny lokalny quality gate:
-
-```powershell
-python scripts/check.py
-```
-
-Architektura gameplay, publiczna projekcja mapy i zasady dodawania kolejnych map są opisane w [notatkach developerskich Dynamic Incident](docs/dynamic-incident-development.md).
-
-Smoke test uruchomionej pod adresem `http://127.0.0.1:8000` aplikacji:
-
-```powershell
-python scripts/smoke_test.py
-```
-
 ### Produkcja
 
 - Rocky Linux

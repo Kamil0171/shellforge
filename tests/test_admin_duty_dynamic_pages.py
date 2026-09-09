@@ -145,7 +145,13 @@ def test_admin_duty_lobby_links_only_dynamic_mode():
 
     assert response.status_code == 200
     assert 'href="/admin-duty/dynamic/"' in response.text
+    assert 'class="back-to-menu duty-back-action"' in response.text
+    assert "Wybierz tryb Symulatora" in response.text
     assert "Dynamic Incident Lab" in response.text
+    assert "Tryb aktywny" in response.text
+    assert "Wiele hostów" in response.text
+    assert "Punktacja działań" in response.text
+    assert "admin_duty.css?v=lobby-refresh-1" in response.text
     assert "SCENARIUSZ KLASYCZNY" not in response.text
     assert "INC-001" not in response.text
     assert "INC-002" not in response.text
