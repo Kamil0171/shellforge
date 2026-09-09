@@ -7,7 +7,7 @@
 {% block styles %}
 <link
     rel="stylesheet"
-    href="{{ url_for('static', path='admin_duty/css/admin_duty.css') }}?v=world-v2-final"
+    href="{{ url_for('static', path='admin_duty/css/admin_duty.css') }}?v=lobby-refresh-1"
 >
 {% endblock %}
 
@@ -15,7 +15,13 @@
 
 <section id="admin-duty" class="admin-duty">
 
-    <div class="container py-4">
+    <div class="admin-duty-atmosphere" aria-hidden="true">
+        <span class="admin-duty-light"></span>
+        <span class="admin-duty-orbit admin-duty-orbit-one"></span>
+        <span class="admin-duty-orbit admin-duty-orbit-two"></span>
+    </div>
+
+    <div class="container">
 
         <section
             id="duty-menu-screen"
@@ -77,82 +83,102 @@
 
         <section
             id="scenario-screen"
-            class="duty-screen"
+            class="duty-screen mode-lobby-screen"
             hidden
         >
 
-            <div class="screen-header">
-
-                <div>
-                    <span class="duty-kicker">
-                        Dyżur administratora
-                    </span>
-
-                    <h1>
-                        Wybierz tryb rozgrywki
-                    </h1>
-
-                    <p>
-                        Rozwiązuj dynamiczne incydenty w wirtualnym środowisku Rocky Linux.
-                    </p>
-                </div>
-
+            <header class="mode-lobby-header">
                 <button
                     type="button"
-                    class="back-to-menu duty-secondary-button"
+                    class="back-to-menu duty-back-action"
                 >
-                    ← Menu główne
+                    <span class="duty-back-icon" aria-hidden="true">←</span>
+                    Menu główne
                 </button>
 
-            </div>
+                <div class="mode-lobby-state">
+                    <span class="duty-status-indicator" aria-hidden="true"></span>
+                    <span>ŚRODOWISKO GOTOWE</span>
+                </div>
+            </header>
 
-            <div class="scenario-grid scenario-grid-modes">
+            <section class="mode-lobby-hero" aria-labelledby="mode-lobby-title">
+                <span class="duty-kicker">ShellForge // Centrum operacji</span>
+                <h1 id="mode-lobby-title">Wybierz tryb Symulatora</h1>
+                <p>
+                    Wejdź do praktycznego środowiska administratora, analizuj
+                    objawy i przywracaj działanie usług w realistycznych
+                    incydentach operacyjnych.
+                </p>
+            </section>
 
-                <article class="scenario-card scenario-card-featured">
-
-                    <div class="scenario-card-top">
-
-                        <span class="scenario-id">
-                            TRYB DYNAMICZNY
+            <article class="mode-card mode-card-active">
+                <div class="mode-card-copy">
+                    <div class="mode-card-topline">
+                        <span class="mode-card-code">DYNAMIC INCIDENT</span>
+                        <span class="mode-card-status">
+                            <span aria-hidden="true"></span>
+                            Tryb aktywny
                         </span>
-
-                        <span class="scenario-difficulty">
-                            Poziom podstawowy
-                        </span>
-
                     </div>
 
-                    <h2>
-                        Dynamic Incident Lab
-                    </h2>
+                    <div class="mode-card-title">
+                        <span>Laboratorium reagowania na incydenty</span>
+                        <h2>Dynamic Incident Lab</h2>
+                    </div>
 
-                    <p>
-                        Rozpocznij incydent tworzony przy starcie sesji,
-                        diagnozuj środowisko w terminalu i obserwuj
-                        aktualizowany na żywo postęp misji.
+                    <p class="mode-card-description">
+                        Każda sesja tworzy nowy układ problemu. Pracuj w
+                        wielohostowym środowisku, korzystaj z terminala i
+                        diagnozuj zależności tak, jak podczas prawdziwego dyżuru.
                     </p>
 
-                    <div class="scenario-meta">
-                        <span>Rekomendowany tryb</span>
-                    </div>
-
-                    <div class="scenario-tags">
-                        <span>Dynamiczne środowisko</span>
-                        <span>Terminal</span>
-                        <span>Punktacja</span>
+                    <div class="mode-card-meta" aria-label="Informacje o trybie">
+                        <span>Poziom podstawowy</span>
+                        <span>Izolowana sesja</span>
                     </div>
 
                     <a
                         href="/admin-duty/dynamic/"
-                        class="duty-primary-button text-decoration-none"
+                        class="mode-card-cta"
                     >
                         Uruchom Dynamic Incident
+                        <span aria-hidden="true">→</span>
                     </a>
+                </div>
 
-                </article>
+                <div class="mode-card-capabilities" aria-label="Możliwości trybu">
+                    <div class="mode-card-visual" aria-hidden="true">
+                        <span class="mode-card-line"></span>
+                        <span class="mode-card-node mode-card-node-one"></span>
+                        <span class="mode-card-node mode-card-node-two"></span>
+                        <span class="mode-card-node mode-card-node-three"></span>
+                    </div>
 
-
-            </div>
+                    <div class="mode-feature-grid">
+                        <div class="mode-feature">
+                            <span>01</span>
+                            <strong>Wiele hostów</strong>
+                            <small>Połączona infrastruktura</small>
+                        </div>
+                        <div class="mode-feature">
+                            <span>02</span>
+                            <strong>Terminal</strong>
+                            <small>Praktyczna diagnostyka</small>
+                        </div>
+                        <div class="mode-feature">
+                            <span>03</span>
+                            <strong>Dynamiczne incydenty</strong>
+                            <small>Nowy układ każdej sesji</small>
+                        </div>
+                        <div class="mode-feature">
+                            <span>04</span>
+                            <strong>Punktacja działań</strong>
+                            <small>Liczy się samodzielność</small>
+                        </div>
+                    </div>
+                </div>
+            </article>
 
         </section>
 
