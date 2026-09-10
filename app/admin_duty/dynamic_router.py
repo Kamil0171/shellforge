@@ -39,6 +39,7 @@ from app.admin_duty.services import (
     DynamicSessionView,
     HintUnavailableError,
 )
+from app.admin_duty.services.incident_generation import configured_generation_service
 
 router = APIRouter(
     prefix="/admin-duty/dynamic",
@@ -78,8 +79,10 @@ class DynamicHintRequest(StrictRequestModel):
 
 _scenario_repository = InMemoryScenarioRepository()
 _session_repository = InMemorySessionRepository()
+_deterministic_generator = DeterministicIncidentGenerator()
 _dynamic_incident_service = DynamicIncidentService(
-    generator=DeterministicIncidentGenerator(),
+    generator=_deterministic_generator,
+    generation_service=configured_generation_service(_deterministic_generator),
     scenario_repository=_scenario_repository,
     session_repository=_session_repository,
 )
@@ -182,12 +185,12 @@ def _error_response(error: Exception) -> JSONResponse:
     response_model=DynamicSessionStartResult,
     response_model_exclude_none=True,
 )
-def start_dynamic_session(
+async def start_dynamic_session(
     payload: DynamicStartRequest,
     service: DynamicIncidentService = Depends(get_dynamic_incident_service),
 ):
     try:
-        return service.start_session(
+        return await service.start_session_async(
             payload.difficulty,
             seed=payload.seed,
             now=utc_now(),

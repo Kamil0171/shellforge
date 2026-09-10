@@ -368,6 +368,8 @@ class ScenarioPoolMetadata(FrozenDomainModel):
     validation_status: ValidationStatus
     quality_score: int | None = Field(default=None, ge=0, le=100)
     quality_version: Version
+    provider: Identifier | None = None
+    schema_version: Literal["1.0", "3.0"] = "3.0"
 
 
 class IncidentDefinition(FrozenDomainModel):

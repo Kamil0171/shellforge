@@ -7,7 +7,7 @@
 {% block styles %}
 <link
     rel="stylesheet"
-    href="{{ url_for('static', path='admin_duty/dynamic/dynamic.css') }}?v=lobby-refresh-1"
+    href="{{ url_for('static', path='admin_duty/dynamic/dynamic.css') }}?v=ai-loading-1"
 >
 {% endblock %}
 
@@ -276,23 +276,11 @@
                 </span>
             </div>
 
-            <h2>Budujemy środowisko operacyjne</h2>
-            <p>
-                Za chwilę otrzymasz własną, bezpieczną sesję diagnostyczną.
+            <h2>Przygotowywanie incydentu…</h2>
+            <p id="generation-status">
+                Trwa przygotowywanie i sprawdzanie incydentu. To może potrwać kilkadziesiąt sekund.
             </p>
-
-            <ol id="generation-steps" class="generation-steps">
-                <li class="is-active">Analiza środowiska...</li>
-                <li>Przygotowywanie infrastruktury...</li>
-                <li>Konfiguracja usług...</li>
-                <li>Generowanie symptomów...</li>
-                <li>Uruchamianie terminala...</li>
-                <li>Incydent gotowy.</li>
-            </ol>
-
-            <div class="generation-progress" aria-hidden="true">
-                <span id="generation-progress-bar"></span>
-            </div>
+            <div class="generation-spinner" aria-hidden="true"></div>
         </div>
     </div>
 </section>
@@ -300,6 +288,6 @@
 
 {% block scripts %}
 <script
-    src="{{ url_for('static', path='admin_duty/dynamic/index.js') }}?v=incident-v3"
+    src="{{ url_for('static', path='admin_duty/dynamic/index.js') }}?v=incident-ai-v1"
 ></script>
 {% endblock %}

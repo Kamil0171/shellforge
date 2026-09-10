@@ -10,76 +10,25 @@
     const errorPanel = document.getElementById("start-error");
     const errorMessage = document.getElementById("start-error-message");
     const overlay = document.getElementById("generation-overlay");
-    const steps = Array.from(
-        document.querySelectorAll("#generation-steps li"),
-    );
-    const progressBar = document.getElementById("generation-progress-bar");
-    const reducedMotion = window.matchMedia(
-        "(prefers-reduced-motion: reduce)",
-    ).matches;
-    let activeStep = 0;
-    let stepTimer = null;
+    const statusText = document.getElementById("generation-status");
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let requestInProgress = false;
     let selectedDifficulty = "easy";
-
-    function wait(duration) {
-        return new Promise((resolve) => {
-            window.setTimeout(resolve, duration);
-        });
-    }
-
-    function setActiveStep(index) {
-        activeStep = Math.min(index, steps.length - 1);
-
-        steps.forEach((step, stepIndex) => {
-            step.classList.toggle("is-complete", stepIndex < activeStep);
-            step.classList.toggle("is-active", stepIndex === activeStep);
-        });
-
-        progressBar.style.width = `${
-            ((activeStep + 1) / steps.length) * 100
-        }%`;
-    }
 
     function showPreparation() {
         errorPanel.hidden = true;
         overlay.hidden = false;
         overlay.setAttribute("aria-hidden", "false");
+        overlay.setAttribute("aria-busy", "true");
+        statusText.textContent = "Trwa przygotowywanie i sprawdzanie incydentu. To może potrwać kilkadziesiąt sekund.";
         document.body.classList.add("dynamic-generation-open");
-        setActiveStep(0);
-
-        stepTimer = window.setInterval(() => {
-            if (activeStep < steps.length - 2) {
-                setActiveStep(activeStep + 1);
-            }
-        }, reducedMotion ? 150 : 520);
     }
 
     function hidePreparation() {
-        if (stepTimer !== null) {
-            window.clearInterval(stepTimer);
-            stepTimer = null;
-        }
-
         overlay.hidden = true;
         overlay.setAttribute("aria-hidden", "true");
+        overlay.setAttribute("aria-busy", "false");
         document.body.classList.remove("dynamic-generation-open");
-    }
-
-    async function finishPreparation() {
-        if (stepTimer !== null) {
-            window.clearInterval(stepTimer);
-            stepTimer = null;
-        }
-
-        const stepDelay = reducedMotion ? 40 : 170;
-
-        while (activeStep < steps.length - 1) {
-            setActiveStep(activeStep + 1);
-            await wait(stepDelay);
-        }
-
-        await wait(reducedMotion ? 40 : 260);
     }
 
     async function readError(response) {
@@ -147,8 +96,8 @@
             }
 
             const data = await response.json();
-            await finishPreparation();
-            hidePreparation();
+            statusText.textContent = "Sesja gotowa. Otwieranie laboratorium…";
+            overlay.setAttribute("aria-busy", "false");
             window.location.replace(
                 `/admin-duty/dynamic/sessions/${data.session_id}`,
             );

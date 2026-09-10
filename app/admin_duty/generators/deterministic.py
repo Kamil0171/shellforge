@@ -374,6 +374,7 @@ class DeterministicIncidentGenerator:
         *,
         seed: int | None = None,
         now: datetime | None = None,
+        request: IncidentGenerationRequest | None = None,
     ) -> IncidentDefinition:
         if difficulty is DifficultyLevel.HARD:
             raise UnsupportedDifficultyError(
@@ -403,7 +404,16 @@ class DeterministicIncidentGenerator:
             environment
             for environment in ENVIRONMENT_TEMPLATES
             if difficulty in environment.compatible_difficulties
+            and (request is None or request.map_id is None or environment.map_component_id == request.map_id)
         ]
+        if not environments:
+            raise GenerationError("Żądanie nie zawiera obsługiwanej mapy.")
+        if request and request.environment_preferences:
+            preferred = [environment for environment in environments if (
+                environment.component_id in request.environment_preferences
+                or set(environment.tags) & set(request.environment_preferences)
+            )]
+            environments = preferred or environments
         last_error = None
 
         for _ in range(MAX_GENERATION_ATTEMPTS):
@@ -412,6 +422,7 @@ class DeterministicIncidentGenerator:
                 fault
                 for fault in FAULT_TEMPLATES
                 if _is_compatible(environment, fault, difficulty)
+                and (request is None or not request.allowed_fault_categories or fault.component_id in request.allowed_fault_categories)
             ]
             if not faults:
                 last_error = IncidentValidationError(
@@ -463,4 +474,4 @@ class DeterministicIncidentGenerator:
                 created_at=now or utc_now(),
             )
             return self._validator.validate(candidate)
-        return self.generate(request.difficulty, seed=request.seed, now=now)
+        return self.generate(request.difficulty, seed=request.seed, now=now, request=request)
