@@ -26,8 +26,11 @@ def test_dynamic_lobby_renders_difficulty_selection_and_assets():
         'href="http://testserver/static/admin_duty/dynamic/dynamic.css' in response.text
     )
     assert 'src="http://testserver/static/admin_duty/dynamic/index.js' in response.text
-    assert "dynamic.css?v=lobby-refresh-1" in response.text
-    assert "index.js?v=incident-v3" in response.text
+    assert "dynamic.css?v=ai-loading-1" in response.text
+    assert "index.js?v=incident-ai-v1" in response.text
+    assert "Przygotowywanie incydentu…" in response.text
+    assert 'id="generation-status"' in response.text
+    assert "generation-progress-bar" not in response.text
 
     source = client.get("/static/admin_duty/dynamic/index.js")
     assert source.status_code == 200

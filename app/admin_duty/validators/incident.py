@@ -20,6 +20,10 @@ class IncidentValidationError(ValueError):
     pass
 
 
+class IncidentReplayError(IncidentValidationError):
+    pass
+
+
 def _require_deterministic_order(items, *, name: str, key) -> None:
     if tuple(items) != tuple(sorted(items, key=key)):
         raise IncidentValidationError(f"Kolejność {name} nie jest deterministyczna.")
@@ -209,6 +213,47 @@ def _validate_post_incident(definition: IncidentDefinition) -> None:
         raise IncidentValidationError("Post-incident wskazuje nieznane capability.")
 
 
+def _validate_ai_public_data(definition):
+    from app.admin_duty.components import FAULT_TEMPLATES
+
+    if definition.generation.generation_source is not GenerationSource.AI:
+        return
+    terms = {
+        term.casefold()
+        for fault in FAULT_TEMPLATES
+        for term in fault.forbidden_public_terms
+    } | {
+        "python3-psycopg2", "restorecon", "httpd_sys_content_t", "5432/tcp",
+        "add-service=https", "nmcli con mod", "firewall-cmd --add", "chmod ",
+        "błędny kontekst", "brak pakietu", "blokuje port", "błędny dns",
+    }
+    if definition.post_incident:
+        terms.add(definition.post_incident.root_cause.casefold())
+    public_values = [
+        definition.presentation.model_dump_json(),
+        *(objective.label for objective in definition.objectives),
+        *(objective.objective_id for objective in definition.objectives),
+        *(item.interaction_id for item in definition.initial_world_state.map.interactions),
+    ]
+    for resource in definition.initial_world_state.resources:
+        public_values.extend((resource.resource_id, resource.state))
+        public_values.extend(
+            str(field.value) for field in resource.attributes
+            if field.key in {"hostname", "service_name", "role", "public_health"}
+        )
+    for value in public_values:
+        if any(term in value.casefold() for term in terms if term):
+            raise IncidentValidationError("Publiczne dane AI ujawniają przyczynę awarii.")
+    for resource in definition.initial_world_state.resources:
+        fields = _field_map(resource.attributes)
+        for key in ("hostname", "service_name"):
+            if key in fields:
+                import re
+
+                if not isinstance(fields[key], str) or not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9.-]{0,80}", fields[key]):
+                    raise IncidentValidationError("Publiczna nazwa zasobu musi być nazwą techniczną.")
+
+
 class IncidentValidator:
     def validate(self, definition: IncidentDefinition) -> IncidentDefinition:
         before = definition.model_dump_json()
@@ -271,6 +316,7 @@ class IncidentValidator:
 
         _validate_v3_references(definition)
         _validate_post_incident(definition)
+        _validate_ai_public_data(definition)
 
         _require_deterministic_order(
             definition.objectives,
@@ -407,15 +453,15 @@ class IncidentValidator:
                         "Krok reference solution zwrócił inny status niż oczekiwany."
                     )
                 final_progress = result.progress
-        except IncidentValidationError:
-            raise
+        except IncidentValidationError as error:
+            raise IncidentReplayError("Replay reference solution nie przeszedł walidacji.") from error
         except Exception as error:
-            raise IncidentValidationError(
+            raise IncidentReplayError(
                 "Replay reference solution zakończył się błędem."
             ) from error
 
         if not final_progress.mission_complete:
-            raise IncidentValidationError(
+            raise IncidentReplayError(
                 "Reference solution nie kończy wymaganych objectives."
             )
         if definition.model_dump_json() != before:

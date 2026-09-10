@@ -17,6 +17,7 @@ from app.admin_duty.domain.difficulty import (
     DifficultyLevel,
     get_difficulty_profile,
 )
+from app.admin_duty.domain.generation import IncidentGenerationRequest
 from app.admin_duty.domain.progress import SessionProgress, get_session_progress
 from app.admin_duty.domain.runtime import (
     InactiveSessionError,
@@ -334,8 +335,10 @@ class DynamicIncidentService:
         scenario_repository: ScenarioRepository,
         session_repository: SessionRepository,
         command_service: DynamicCommandService | None = None,
+        generation_service=None,
     ) -> None:
         self._generator = generator
+        self._generation_service = generation_service
         self._scenarios = scenario_repository
         self._sessions = session_repository
         self._commands = (
@@ -364,6 +367,20 @@ class DynamicIncidentService:
             seed=seed,
             now=current_time,
         )
+        return self._start_definition(definition, current_time)
+
+    async def start_session_async(self, difficulty, *, seed=None, now=None):
+        if self._generation_service is None:
+            return self.start_session(difficulty, seed=seed, now=now)
+        current_time = _resolve_now(now)
+        definition = await self._generation_service.generate(
+            IncidentGenerationRequest(difficulty=difficulty, seed=seed, generation_source="ai"),
+            now=current_time,
+        )
+        return self._start_definition(definition, _resolve_now(now))
+
+    def _start_definition(self, definition, current_time):
+        self._cleanup(current_time)
         self._scenarios.save(definition)
         state = create_session_runtime(definition, now=current_time)
 
