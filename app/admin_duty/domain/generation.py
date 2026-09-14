@@ -11,6 +11,7 @@ from app.admin_duty.domain.definition import (
     ComponentReference,
     ConfigurationRequirement,
     FaultInstance,
+    FaultRelation,
     FrozenDomainModel,
     GenerationMetadata,
     GenerationSource,
@@ -52,7 +53,7 @@ class IncidentGenerationRequest(FrozenDomainModel):
 
 class GeneratedIncidentDraft(FrozenDomainModel):
     draft_id: Identifier
-    schema_version: str = Field(pattern=r"^3\.0$")
+    schema_version: Literal["3.0", "4.0"]
     difficulty: DifficultyLevel
     generator_id: Identifier
     generator_version: Version
@@ -63,6 +64,7 @@ class GeneratedIncidentDraft(FrozenDomainModel):
     presentation: IncidentPresentation
     initial_world_state: InitialWorldState
     faults: tuple[FaultInstance, ...] = Field(min_length=1, max_length=2)
+    fault_relation: FaultRelation | None = None
     symptoms: tuple[Symptom, ...] = Field(min_length=1, max_length=128)
     objectives: tuple[Objective, ...] = Field(min_length=1, max_length=64)
     capabilities: CapabilitySet
@@ -138,12 +140,17 @@ def get_ai_capability_catalog() -> AICapabilityCatalog:
     from app.admin_duty.components import ENVIRONMENT_TEMPLATES, FAULT_TEMPLATES
     from app.admin_duty.components.maps import MAP_TEMPLATES
     from app.admin_duty.components.scenarios import (
+        HARD_COMBINATIONS,
         MEDIUM_SCENARIO_CATEGORIES,
+        build_hard_draft,
         build_medium_draft,
     )
     from app.admin_duty.rocky.registry import HANDLERS
 
-    examples = tuple(build_medium_draft(category, seed=1) for category in MEDIUM_SCENARIO_CATEGORIES)
+    examples = (
+        *(build_medium_draft(category, seed=1) for category in MEDIUM_SCENARIO_CATEGORIES),
+        *(build_hard_draft(item.combination_id, seed=1) for item in HARD_COMBINATIONS),
+    )
     return AICapabilityCatalog(
         supported_resource_attributes=tuple(sorted({
             field.key
@@ -174,6 +181,9 @@ def get_ai_capability_catalog() -> AICapabilityCatalog:
             "selinux-context-invalid",
             "networkmanager-dns-invalid",
             "external-firewall-mismatch",
+            "service-config-invalid",
+            "dependency-port-mismatch",
+            "networkmanager-connection-inactive",
         ),
         supported_dependency_types=("network", "service"),
         supported_packages=(
@@ -225,7 +235,7 @@ def get_ai_capability_catalog() -> AICapabilityCatalog:
                 max_faults=profile.max_faults,
                 hint_limit=profile.hint_limit,
             )
-            for level in (DifficultyLevel.EASY, DifficultyLevel.MEDIUM)
+            for level in DifficultyLevel
         ),
     )
 
@@ -238,7 +248,7 @@ def convert_draft_to_definition(
 ) -> IncidentDefinition:
     return IncidentDefinition(
         scenario_id=scenario_id or uuid4(),
-        schema_version="3.0",
+        schema_version=draft.schema_version,
         difficulty=draft.difficulty,
         created_at=created_at or datetime.now(UTC),
         generation=GenerationMetadata(
@@ -252,6 +262,7 @@ def convert_draft_to_definition(
         presentation=draft.presentation,
         initial_world_state=draft.initial_world_state,
         faults=draft.faults,
+        fault_relation=draft.fault_relation,
         symptoms=draft.symptoms,
         objectives=draft.objectives,
         capabilities=draft.capabilities,
@@ -397,8 +408,6 @@ async def generate_validated_incident(
 ) -> IncidentDefinition:
     from app.admin_duty.domain.public_generation import protect_public_narrative
 
-    if request.difficulty is DifficultyLevel.HARD:
-        raise DraftValidationError("Poziom HARD jest niedostępny.", category="request_mismatch")
     draft = parse_generated_draft(await provider.generate_incident(request))
     if draft.difficulty is not request.difficulty:
         raise DraftValidationError("Draft nie odpowiada żądanemu poziomowi trudności.")

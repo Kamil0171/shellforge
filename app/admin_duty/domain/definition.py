@@ -102,6 +102,10 @@ class FaultSeverity(StrEnum):
     CRITICAL = "critical"
 
 
+class FaultRelationType(StrEnum):
+    DEPENDENCY_CHAIN = "dependency_chain"
+
+
 class SymptomVisibility(StrEnum):
     BRIEFING = "briefing"
     MONITORING = "monitoring"
@@ -279,6 +283,13 @@ class InitialWorldState(FrozenDomainModel):
     )
 
 
+class CompletionCondition(FrozenDomainModel):
+    resource_id: Identifier
+    field: Identifier
+    operator: ConditionOperator
+    expected: JsonValue = None
+
+
 class FaultInstance(FrozenDomainModel):
     fault_id: Identifier
     fault_type: Identifier
@@ -286,6 +297,13 @@ class FaultInstance(FrozenDomainModel):
     target_resource_id: Identifier
     severity: FaultSeverity
     parameters: tuple[DataField, ...] = Field(default=(), max_length=64)
+    resolution_condition: CompletionCondition | None = None
+
+
+class FaultRelation(FrozenDomainModel):
+    relation_type: FaultRelationType
+    primary_fault_id: Identifier
+    secondary_fault_id: Identifier
 
 
 class Symptom(FrozenDomainModel):
@@ -295,13 +313,6 @@ class Symptom(FrozenDomainModel):
     visibility: SymptomVisibility
     misleading: bool = False
     data: tuple[DataField, ...] = Field(default=(), max_length=64)
-
-
-class CompletionCondition(FrozenDomainModel):
-    resource_id: Identifier
-    field: Identifier
-    operator: ConditionOperator
-    expected: JsonValue = None
 
 
 class Objective(FrozenDomainModel):
@@ -357,6 +368,15 @@ class PostIncidentDefinition(FrozenDomainModel):
     root_cause: str = Field(min_length=1, max_length=1000)
     affected_service_ids: tuple[Identifier, ...] = Field(min_length=1, max_length=64)
     repair_capability_ids: tuple[Identifier, ...] = Field(min_length=1, max_length=64)
+    root_cause_chain: tuple[str, ...] = Field(default=(), max_length=8)
+    primary_fault: str | None = Field(default=None, min_length=1, max_length=500)
+    secondary_fault: str | None = Field(default=None, min_length=1, max_length=500)
+    impact_path: tuple[str, ...] = Field(default=(), max_length=16)
+    repair_sequence: tuple[str, ...] = Field(default=(), max_length=16)
+    partial_recovery_explanation: str | None = Field(
+        default=None, min_length=1, max_length=1000
+    )
+    learning_summary: str | None = Field(default=None, min_length=1, max_length=1000)
 
 
 class ScenarioPoolMetadata(FrozenDomainModel):
@@ -369,18 +389,19 @@ class ScenarioPoolMetadata(FrozenDomainModel):
     quality_score: int | None = Field(default=None, ge=0, le=100)
     quality_version: Version
     provider: Identifier | None = None
-    schema_version: Literal["1.0", "3.0"] = "3.0"
+    schema_version: Literal["1.0", "3.0", "4.0"] = "3.0"
 
 
 class IncidentDefinition(FrozenDomainModel):
     scenario_id: UUID
-    schema_version: Literal["1.0", "3.0"]
+    schema_version: Literal["1.0", "3.0", "4.0"]
     difficulty: DifficultyLevel
     created_at: AwareDatetime
     generation: GenerationMetadata
     presentation: IncidentPresentation
     initial_world_state: InitialWorldState
     faults: tuple[FaultInstance, ...] = Field(min_length=1, max_length=2)
+    fault_relation: FaultRelation | None = None
     symptoms: tuple[Symptom, ...] = Field(min_length=1, max_length=128)
     objectives: tuple[Objective, ...] = Field(min_length=1, max_length=64)
     capabilities: CapabilitySet

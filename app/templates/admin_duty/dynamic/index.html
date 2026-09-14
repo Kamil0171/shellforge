@@ -208,13 +208,13 @@
                     </button>
                 </article>
 
-                <article class="difficulty-card difficulty-card-locked">
+                <article class="difficulty-card difficulty-card-active difficulty-card-hard">
                     <div class="difficulty-card-top">
                         <div class="difficulty-identity">
                             <span class="difficulty-sequence" aria-hidden="true">03</span>
                             <span class="difficulty-code">HARD</span>
                         </div>
-                        <span class="difficulty-coming-soon">Wkrótce</span>
+                        <span class="difficulty-availability">Dostępny</span>
                     </div>
 
                     <div class="difficulty-card-title">
@@ -229,18 +229,23 @@
                     <div class="difficulty-complexity" aria-label="Złożoność wysoka">
                         <span>Złożoność</span>
                         <div aria-hidden="true">
-                            <i></i><i></i><i></i>
+                            <i class="is-active"></i><i class="is-active"></i><i class="is-active"></i>
                         </div>
                     </div>
 
                     <ul>
-                        <li>Wiele hostów i zależności</li>
+                        <li>Powiązane problemy w jednej ścieżce</li>
                         <li>Ograniczony briefing</li>
                         <li>Rygorystyczny scoring</li>
                     </ul>
-                    <button type="button" disabled>
-                        <span>Poziom w przygotowaniu</span>
-                        <span aria-hidden="true">—</span>
+                    <button
+                        id="start-hard-button"
+                        class="dynamic-primary-button start-incident-button"
+                        type="button"
+                        data-difficulty="hard"
+                    >
+                        <span>Rozpocznij incydent HARD</span>
+                        <span class="dynamic-cta-arrow" aria-hidden="true">→</span>
                     </button>
                 </article>
             </div>

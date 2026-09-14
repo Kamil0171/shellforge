@@ -107,12 +107,11 @@ def test_validator_rejects_dependency_port_mismatch():
         )
 
 
-def test_medium_definition_accepts_two_related_faults():
+def test_medium_definition_rejects_two_related_faults():
     value = definition()
     second = value.faults[0].model_copy(update={"fault_id": "fault-related-secondary"})
 
-    result = IncidentValidator().validate(
-        value.model_copy(update={"faults": (*value.faults, second)})
-    )
-
-    assert len(result.faults) == 2
+    with pytest.raises(IncidentValidationError, match="Liczba faultów"):
+        IncidentValidator().validate(
+            value.model_copy(update={"faults": (*value.faults, second)})
+        )

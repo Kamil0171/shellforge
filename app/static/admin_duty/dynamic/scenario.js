@@ -274,10 +274,11 @@
             card.append(heading, status);
             container.appendChild(card);
         });
-        const critical = currentMonitoring.signals.filter((signal) => signal.severity === "critical").length;
         const health = document.getElementById("infrastructure-health");
-        health.textContent = critical ? `${critical} ALERT` : "NOMINAL";
-        health.classList.toggle("is-alert", critical > 0);
+        const labels = { critical: "ALERT", improving: "POPRAWA", nominal: "NOMINAL" };
+        health.textContent = labels[currentMonitoring.overall_status] || "ALERT";
+        health.classList.toggle("is-alert", currentMonitoring.overall_status === "critical");
+        health.classList.toggle("is-improving", currentMonitoring.overall_status === "improving");
     }
 
     function renderSupportCenter() {
@@ -394,6 +395,17 @@
                 item.textContent = action;
                 actions.appendChild(item);
             });
+            const chain = document.getElementById("post-incident-chain-details");
+            chain.hidden = !report.primary_fault;
+            if (report.primary_fault) {
+                document.getElementById("post-incident-primary-fault").textContent = report.primary_fault;
+                document.getElementById("post-incident-secondary-fault").textContent = report.secondary_fault;
+                document.getElementById("post-incident-root-chain").textContent = report.root_cause_chain.join(" → ");
+                document.getElementById("post-incident-impact-path").textContent = report.impact_path.join(" → ");
+                document.getElementById("post-incident-repair-sequence").textContent = report.repair_sequence.join(" → ");
+                document.getElementById("post-incident-partial-explanation").textContent = report.partial_recovery_explanation;
+                document.getElementById("post-incident-learning-summary").textContent = report.learning_summary;
+            }
         }
     }
 

@@ -157,7 +157,7 @@ def test_complete_dynamic_api_flow(api_context):
     assert rejected_after_end.status_code == 409
 
 
-def test_api_rejects_invalid_and_unsupported_difficulty(api_context):
+def test_api_rejects_invalid_and_supports_medium_and_hard(api_context):
     invalid = client.post(
         "/admin-duty/dynamic/api/start",
         json={"difficulty": "expert"},
@@ -171,12 +171,13 @@ def test_api_rejects_invalid_and_unsupported_difficulty(api_context):
     assert medium.status_code == 200
     assert medium.json()["difficulty"] == "medium"
 
-    for difficulty in ("hard",):
-        unsupported = client.post(
-            "/admin-duty/dynamic/api/start",
-            json={"difficulty": difficulty},
-        )
-        assert unsupported.status_code == 400
+    hard = client.post(
+        "/admin-duty/dynamic/api/start",
+        json={"difficulty": "hard", "seed": 1},
+    )
+    assert hard.status_code == 200
+    assert hard.json()["difficulty"] == "hard"
+    assert hard.json()["monitoring"]["overall_status"] == "critical"
 
 
 def test_api_maps_invalid_command_and_unknown_session(api_context):

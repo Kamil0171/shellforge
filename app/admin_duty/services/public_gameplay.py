@@ -11,6 +11,11 @@ from app.admin_duty.domain.definition import (
     MapSnapshot,
     ResourceType,
 )
+from app.admin_duty.domain.difficulty import DifficultyLevel
+from app.admin_duty.domain.recovery import (
+    IncidentRecoveryState,
+    get_incident_recovery_state,
+)
 from app.admin_duty.domain.runtime import SessionRuntimeState
 
 
@@ -68,6 +73,9 @@ def project_public_game_map(
 
 
 def _public_label(resource) -> str:
+    label = resource.attributes.get("label")
+    if isinstance(label, str):
+        return label
     hostname = resource.attributes.get("hostname")
     if resource.resource_type is ResourceType.HOST and isinstance(hostname, str):
         return hostname
@@ -109,16 +117,31 @@ def project_public_monitoring(
         if resource.resource_type
         in {ResourceType.HOST, ResourceType.SERVICE, ResourceType.ENDPOINT}
     )
+    signals = tuple(
+        PublicMonitoringSignal(
+            id=f"signal-{resource.resource_id}",
+            label=_public_label(resource),
+            status=_public_status(resource),
+            severity=_signal_severity(_public_status(resource)),
+            resource_id=resource.resource_id,
+        )
+        for resource in resources
+    )
+    if definition.difficulty is DifficultyLevel.HARD:
+        recovery = get_incident_recovery_state(definition, state)
+        overall_status = {
+            IncidentRecoveryState.BROKEN: "critical",
+            IncidentRecoveryState.PARTIALLY_RECOVERED: "improving",
+            IncidentRecoveryState.HEALTHY: "nominal",
+        }[recovery]
+    else:
+        overall_status = (
+            "critical"
+            if any(signal.severity == "critical" for signal in signals)
+            else "nominal"
+        )
     return PublicMonitoring(
         title=f"Monitoring · {definition.presentation.environment_label}",
-        signals=tuple(
-            PublicMonitoringSignal(
-                id=f"signal-{resource.resource_id}",
-                label=_public_label(resource),
-                status=_public_status(resource),
-                severity=_signal_severity(_public_status(resource)),
-                resource_id=resource.resource_id,
-            )
-            for resource in resources
-        ),
+        signals=signals,
+        overall_status=overall_status,
     )

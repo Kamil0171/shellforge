@@ -7,13 +7,11 @@ from app.admin_duty.domain.definition import (
     ScenarioPoolMetadata,
     ValidationStatus,
 )
-from app.admin_duty.domain.difficulty import DifficultyLevel
 from app.admin_duty.domain.generation import (
     DraftValidationError,
     IncidentAIProvider,
     generate_validated_incident,
 )
-from app.admin_duty.generators import UnsupportedDifficultyError
 from app.admin_duty.providers import GemmaProvider, IncidentProviderError
 from app.admin_duty.services.ai_materializer import MaterializingIncidentAIProvider
 from app.config import IncidentAISettings
@@ -43,8 +41,6 @@ class IncidentGenerationService:
         self._timeout = timeout_seconds
 
     async def generate(self, request, *, now=None):
-        if request.difficulty is DifficultyLevel.HARD:
-            raise UnsupportedDifficultyError("Poziom HARD jest niedostępny.")
         if self._provider is not None and request.generation_source is GenerationSource.AI:
             attempt_request = request
             for attempt in range(1, MAX_AI_ATTEMPTS + 1):

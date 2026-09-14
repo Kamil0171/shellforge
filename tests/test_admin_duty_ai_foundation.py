@@ -52,7 +52,7 @@ def test_generation_request_supports_lesson_linkage_and_strict_round_trip():
 
 def test_generated_draft_is_strict_data_only_and_rejects_invalid_schema():
     payload = ai_draft().model_dump(mode="json")
-    payload["schema_version"] = "4.0"
+    payload["schema_version"] = "5.0"
 
     with pytest.raises(ValidationError):
         GeneratedIncidentDraft.model_validate(payload)

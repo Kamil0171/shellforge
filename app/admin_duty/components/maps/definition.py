@@ -127,6 +127,7 @@ class PublicMonitoringSignal(FrozenDomainModel):
 class PublicMonitoring(FrozenDomainModel):
     title: str = Field(min_length=1, max_length=120)
     signals: tuple[PublicMonitoringSignal, ...]
+    overall_status: Literal["critical", "improving", "nominal"]
 
 
 MapDefinition = PublicGameMap

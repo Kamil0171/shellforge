@@ -8,7 +8,7 @@ import httpx
 import pytest
 from pydantic import SecretStr
 
-from app.admin_duty.components.scenarios import build_medium_draft
+from app.admin_duty.components.scenarios import build_hard_draft, build_medium_draft
 from app.admin_duty.domain.ai_plan import AIIncidentPlan
 from app.admin_duty.domain.definition import GenerationSource
 from app.admin_duty.domain.generation import (
@@ -18,10 +18,7 @@ from app.admin_duty.domain.generation import (
     generate_validated_incident,
     parse_generated_draft,
 )
-from app.admin_duty.generators import (
-    DeterministicIncidentGenerator,
-    UnsupportedDifficultyError,
-)
+from app.admin_duty.generators import DeterministicIncidentGenerator
 from app.admin_duty.providers import GemmaProvider, IncidentProviderError
 from app.admin_duty.repositories import (
     InMemoryScenarioRepository,
@@ -48,7 +45,12 @@ def settings(**kwargs):
 
 
 def draft(difficulty="medium", seed=51):
-    payload = build_medium_draft("dependency-firewall-blocked", seed=seed).model_dump(mode="json")
+    source = (
+        build_hard_draft("H-01", seed=seed)
+        if difficulty == "hard"
+        else build_medium_draft("dependency-firewall-blocked", seed=seed)
+    )
+    payload = source.model_dump(mode="json")
     payload.update(difficulty=difficulty, generation_source="ai", model="fake-model")
     return parse_generated_draft(payload)
 
@@ -59,11 +61,14 @@ def request(difficulty="medium", **kwargs):
 
 def plan(difficulty="medium", seed=51):
     easy = difficulty == "easy"
+    hard = difficulty == "hard"
     return AIIncidentPlan(
-        difficulty=difficulty, environment_archetype="web-application" if easy else "web-stack",
-        fault_category="systemd-service-failed" if easy else "dependency-firewall-blocked",
+        difficulty=difficulty, environment_archetype="hard-web-stack" if hard else "web-application" if easy else "web-stack",
+        fault_category=None if hard else "systemd-service-failed" if easy else "dependency-firewall-blocked",
+        primary_fault_category="dependency-firewall-blocked" if hard else None,
+        secondary_fault_category="selinux-context-invalid" if hard else None,
         affected_service_archetype="web-api", dependency_archetype="direct-service" if easy else "proxy-api-database",
-        symptom_archetype="service_unavailable" if easy else "public_service_degraded", seed=seed,
+        symptom_archetype="progressive_service_degradation" if hard else "service_unavailable" if easy else "public_service_degraded", seed=seed,
     )
 
 
@@ -106,6 +111,18 @@ def test_sdk_request_schema_timeout_and_success(caplog):
     assert "HARD" in body["systemInstruction"]["parts"][0]["text"]
     assert isinstance(result, AIIncidentPlan)
     assert TEST_SECRET not in caplog.text + repr(settings()) + repr(provider)
+
+
+def test_gemma_mock_accepts_strict_hard_plan():
+    expected = plan("hard")
+    provider = GemmaProvider(
+        settings(),
+        transport=httpx.MockTransport(
+            lambda _: response(expected.model_dump_json())
+        ),
+    )
+
+    assert asyncio.run(provider.generate_plan(request("hard"))) == expected
 
 
 def test_default_async_transport_forces_ipv4_without_live_request(monkeypatch):
@@ -294,7 +311,7 @@ def test_retry_feedback_is_controlled_and_second_draft_is_validated():
     assert provider.requests[1].validation_feedback == ("replay",)
 
 
-@pytest.mark.parametrize("difficulty", ["easy", "medium"])
+@pytest.mark.parametrize("difficulty", ["easy", "medium", "hard"])
 def test_two_failures_fall_back_with_original_seed(difficulty, caplog):
     provider = SequenceProvider(RuntimeError(TEST_SECRET), RuntimeError(TEST_SECRET))
     with caplog.at_level(logging.INFO):
@@ -331,11 +348,34 @@ def test_pipeline_timeout_and_cancellation():
     asyncio.run(cancel())
 
 
-def test_hard_never_calls_provider():
-    provider = SequenceProvider()
-    with pytest.raises(UnsupportedDifficultyError):
-        asyncio.run(pipeline(provider).generate(request("hard")))
-    assert provider.requests == []
+def test_hard_provider_failure_falls_back_to_deterministic_hard():
+    provider = SequenceProvider(RuntimeError("provider"), RuntimeError("provider"))
+    result = asyncio.run(pipeline(provider).generate(request("hard"), now=NOW))
+
+    assert len(provider.requests) == 2
+    assert result.difficulty.value == "hard"
+    assert result.generation.generation_source is GenerationSource.DETERMINISTIC
+    assert len(result.faults) == 2
+
+
+def test_hard_disabled_ai_rejection_and_timeout_use_deterministic_fallback():
+    disabled = IncidentGenerationService(fallback=DeterministicIncidentGenerator())
+    result = asyncio.run(disabled.generate(request("hard"), now=NOW))
+    assert result.generation.generation_source is GenerationSource.DETERMINISTIC
+
+    rejected = SequenceProvider(IncidentProviderError("rejected"))
+    result = asyncio.run(pipeline(rejected).generate(request("hard"), now=NOW))
+    assert len(rejected.requests) == 1
+    assert result.generation.generation_source is GenerationSource.DETERMINISTIC
+
+    class SlowProvider:
+        async def generate_incident(self, incoming):
+            await asyncio.sleep(10)
+
+    timeout_service = pipeline(SlowProvider())
+    timeout_service._timeout = 0.01
+    result = asyncio.run(timeout_service.generate(request("hard"), now=NOW))
+    assert result.generation.generation_source is GenerationSource.DETERMINISTIC
 
 
 @pytest.mark.parametrize("environment", [
