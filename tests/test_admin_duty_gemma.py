@@ -108,6 +108,20 @@ def test_sdk_request_schema_timeout_and_success(caplog):
     assert TEST_SECRET not in caplog.text + repr(settings()) + repr(provider)
 
 
+def test_default_async_transport_forces_ipv4_without_live_request(monkeypatch):
+    transport_options = []
+
+    def transport_factory(**kwargs):
+        transport_options.append(kwargs)
+        return httpx.MockTransport(lambda _: response())
+
+    monkeypatch.setattr(httpx, "AsyncHTTPTransport", transport_factory)
+    result = asyncio.run(GemmaProvider(settings()).generate_plan(request()))
+
+    assert result == plan()
+    assert transport_options == [{"local_address": "0.0.0.0", "trust_env": False}]
+
+
 @pytest.mark.parametrize("status,category", [(400, "rejected"), (401, "rejected"), (403, "rejected"), (429, "rate_limit"), (500, "api_error"), (503, "api_error")])
 def test_sdk_errors_do_not_retry_or_expose_response(status, category, caplog):
     calls = []

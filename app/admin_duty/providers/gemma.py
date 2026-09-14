@@ -64,8 +64,14 @@ class GemmaProvider:
         category = "unavailable"
         try:
             async with asyncio.timeout(self._settings.timeout_seconds):
+                transport = self._transport
+                if transport is None:
+                    transport = httpx.AsyncHTTPTransport(
+                        local_address="0.0.0.0",
+                        trust_env=False,
+                    )
                 async with httpx.AsyncClient(
-                    transport=self._transport,
+                    transport=transport,
                     trust_env=False,
                     follow_redirects=False,
                     timeout=self._settings.timeout_seconds,
