@@ -109,6 +109,40 @@ def reconcile_dependencies(
         or definition.symptom_propagation
     ):
         return
+    for resource in state.world_state.resources.values():
+        if resource.resource_type is not ResourceType.HOST:
+            continue
+        runtime = state.host_runtimes[resource.resource_id]
+        expected_dns = {
+            server
+            for servers in runtime.network.expected_dns_servers.values()
+            for server in servers
+        }
+        active_dns = {
+            server
+            for name, servers in runtime.network.connection_dns_servers.items()
+            if runtime.network.connections.get(name, False)
+            for server in servers
+        }
+        expected_services = set(resource.attributes.get("expected_firewall_services", ()))
+        expected_ports = set(resource.attributes.get("expected_firewall_ports", ()))
+        attributes = resource.attributes.copy()
+        attributes["network_health"] = (
+            "healthy" if _network_is_up(state, resource.resource_id) else "unhealthy"
+        )
+        attributes["dns_health"] = (
+            "healthy" if expected_dns <= active_dns else "unhealthy"
+        )
+        attributes["firewall_health"] = (
+            "healthy"
+            if (
+                not runtime.firewall.running
+                or expected_services <= runtime.firewall.runtime_services
+                and expected_ports <= runtime.firewall.runtime_ports
+            )
+            else "unhealthy"
+        )
+        resource.attributes = attributes
     services = {
         resource.resource_id: resource
         for resource in state.world_state.resources.values()
@@ -141,15 +175,24 @@ def reconcile_dependencies(
             )
             if unresolved:
                 continue
-            healthy = service.current_state == "running"
-            healthy = healthy and all(
+            package_healthy = all(
                 _package_is_available(state, requirement)
                 for requirement in package_requirements.get(service_id, [])
             )
-            healthy = healthy and all(
+            configuration_healthy = all(
                 _configuration_is_valid(definition, state, requirement)
                 for requirement in configuration_requirements.get(service_id, [])
             )
+            attributes = service.attributes.copy()
+            attributes["package_health"] = (
+                "healthy" if package_healthy else "unhealthy"
+            )
+            attributes["configuration_health"] = (
+                "healthy" if configuration_healthy else "unhealthy"
+            )
+            service.attributes = attributes
+            healthy = service.current_state == "running"
+            healthy = healthy and package_healthy and configuration_healthy
             healthy = healthy and all(
                 _dependency_is_healthy(definition, state, dependency, service_health)
                 for dependency in dependencies

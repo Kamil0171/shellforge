@@ -530,7 +530,12 @@ def _create_host_runtime(
     connection = VirtualNetworkInterface(
         name="ens192",
         address=address,
-        state="up" if host.state in {"running", "healthy"} else "down",
+        state=(
+            "up"
+            if host.state in {"running", "healthy"}
+            and bool(host_attributes.get("connection_active", True))
+            else "down"
+        ),
         connection=connection_name,
     )
     return VirtualRockyRuntime(
@@ -556,7 +561,11 @@ def _create_host_runtime(
                 f"10.24.8.0/24 dev ens192 proto kernel scope link src {plain_address} metric 100",
             ],
             dns_records=dns_records,
-            connections={connection.connection: True},
+            connections={
+                connection.connection: bool(
+                    host_attributes.get("connection_active", True)
+                )
+            },
             connection_dns_servers={connection.connection: dns_servers},
             expected_dns_servers={connection.connection: expected_dns_servers},
         ),

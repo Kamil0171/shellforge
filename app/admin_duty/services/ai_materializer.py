@@ -1,7 +1,11 @@
 from datetime import UTC, datetime
 
 from app.admin_duty.components import ENVIRONMENT_TEMPLATES, FAULT_TEMPLATES
-from app.admin_duty.components.scenarios import build_medium_draft
+from app.admin_duty.components.scenarios import (
+    build_hard_draft,
+    build_medium_draft,
+    get_hard_combination_for_pair,
+)
 from app.admin_duty.domain.ai_plan import get_plan_capability_catalog, parse_ai_plan
 from app.admin_duty.domain.definition import (
     DataField,
@@ -30,7 +34,13 @@ EASY_ROOT_CAUSES = {
 class AIIncidentMaterializer:
     def materialize(self, plan) -> GeneratedIncidentDraft:
         plan = parse_ai_plan(plan)
-        if plan.difficulty == "medium":
+        if plan.difficulty == "hard":
+            combination = get_hard_combination_for_pair(
+                plan.primary_fault_category,
+                plan.secondary_fault_category,
+            )
+            draft = build_hard_draft(combination.combination_id, seed=plan.seed)
+        elif plan.difficulty == "medium":
             draft = build_medium_draft(plan.fault_category, seed=plan.seed)
         else:
             environment = next(
@@ -124,7 +134,7 @@ class AIIncidentMaterializer:
             )
             draft = GeneratedIncidentDraft(**fields)
         world = draft.initial_world_state
-        hostnames = {
+        hostnames = {} if plan.difficulty == "hard" else {
             field.value: f"{field.value}-{plan.seed % 10000:04d}"
             for resource in world.resources
             if resource.resource_type is ResourceType.HOST
@@ -137,7 +147,7 @@ class AIIncidentMaterializer:
                 text = text.replace(original, renamed)
             return text
 
-        resources = tuple(
+        resources = world.resources if plan.difficulty == "hard" else tuple(
             resource.model_copy(
                 update={
                     "attributes": tuple(
@@ -190,15 +200,26 @@ class MaterializingIncidentAIProvider:
     async def generate_incident(self, request):
         plan = parse_ai_plan(await self.provider.generate_plan(request))
         catalog = get_plan_capability_catalog(request)
+        hard_plan = plan.difficulty == "hard"
+        fault_matches = hard_plan or plan.fault_category in catalog.get(
+            "faults_and_symptoms", {}
+        )
+        pair_matches = not hard_plan or any(
+            pair["primary"] == plan.primary_fault_category
+            and pair["secondary"] == plan.secondary_fault_category
+            and pair["service"] == plan.affected_service_archetype
+            for pair in catalog.get("hard_pairs", ())
+        )
         if (
             plan.difficulty != request.difficulty.value
             or request.seed is not None
             and plan.seed != request.seed
             or plan.lesson_id != request.lesson_id
             or plan.environment_archetype not in catalog["environments_and_services"]
-            or plan.fault_category not in catalog["faults_and_symptoms"]
+            or not fault_matches
+            or not pair_matches
             or request.map_id not in {None, "web-operations-room"}
-            and plan.difficulty == "medium"
+            and plan.difficulty in {"medium", "hard"}
         ):
             raise DraftValidationError(
                 "Plan nie odpowiada żądaniu.", category="request_mismatch"

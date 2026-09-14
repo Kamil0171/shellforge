@@ -7,6 +7,7 @@ from app.admin_duty.domain.definition import (
     Identifier,
     IncidentDefinition,
 )
+from app.admin_duty.domain.recovery import recovery_allows_completion
 from app.admin_duty.domain.runtime import SessionRuntimeState, SessionStatus
 
 
@@ -88,7 +89,10 @@ def get_session_progress(
         solution_viewed=state.solution_viewed,
         completed_objectives=len(completed_objective_ids),
         total_objectives=len(definition.objectives),
-        mission_complete=required_objective_ids <= completed_objective_ids,
+        mission_complete=(
+            required_objective_ids <= completed_objective_ids
+            and recovery_allows_completion(definition, state)
+        ),
         objectives=objectives,
         revision=state.revision,
     )

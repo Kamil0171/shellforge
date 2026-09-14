@@ -11,6 +11,7 @@ from app.admin_duty.domain.definition import (
 )
 from app.admin_duty.domain.objectives import evaluate_objectives
 from app.admin_duty.domain.progress import SessionProgress, get_session_progress
+from app.admin_duty.domain.recovery import recovery_allows_completion
 from app.admin_duty.domain.runtime import (
     RuntimeResource,
     SessionRuntimeState,
@@ -80,6 +81,7 @@ def _apply_action(
 
 def _mission_is_complete(
     definition: IncidentDefinition,
+    state: SessionRuntimeState,
     completed_objective_ids: frozenset[Identifier],
 ) -> bool:
     required_objective_ids = {
@@ -87,7 +89,10 @@ def _mission_is_complete(
         for objective in definition.objectives
         if objective.required
     }
-    return required_objective_ids <= completed_objective_ids
+    return (
+        required_objective_ids <= completed_objective_ids
+        and recovery_allows_completion(definition, state)
+    )
 
 
 def _validate_candidate(
@@ -231,7 +236,7 @@ class DynamicIncidentEngine:
         candidate.completed_objective_ids = set(completed_objective_ids)
         candidate.status = (
             SessionStatus.COMPLETED
-            if _mission_is_complete(definition, completed_objective_ids)
+            if _mission_is_complete(definition, candidate, completed_objective_ids)
             else SessionStatus.ACTIVE
         )
         candidate.last_activity = operation_time

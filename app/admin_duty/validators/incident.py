@@ -10,6 +10,11 @@ from app.admin_duty.domain.definition import (
 from app.admin_duty.domain.difficulty import get_difficulty_profile
 from app.admin_duty.domain.objectives import evaluate_objectives
 from app.admin_duty.domain.progress import get_session_progress
+from app.admin_duty.domain.recovery import (
+    IncidentRecoveryState,
+    get_incident_recovery_state,
+    resolved_fault_ids,
+)
 from app.admin_duty.domain.runtime import create_session_runtime
 from app.admin_duty.dynamic_command_parser import parse_dynamic_command
 from app.admin_duty.dynamic_command_service import DynamicCommandService
@@ -185,7 +190,7 @@ def _validate_v3_references(definition: IncidentDefinition) -> None:
     if len(addresses) != len(set(addresses)):
         raise IncidentValidationError("Adresy hostów nie są unikalne.")
 
-    if definition.schema_version == "3.0":
+    if definition.schema_version in {"3.0", "4.0"}:
         if not definition.service_dependencies:
             raise IncidentValidationError("IncidentDefinition V3 wymaga grafu zależności.")
         if definition.post_incident is None:
@@ -211,6 +216,126 @@ def _validate_post_incident(definition: IncidentDefinition) -> None:
         for capability in definition.post_incident.repair_capability_ids
     ):
         raise IncidentValidationError("Post-incident wskazuje nieznane capability.")
+
+
+def _fault_category(fault) -> str | None:
+    value = _field_map(fault.parameters).get("component_id")
+    return value if isinstance(value, str) else None
+
+
+def _validate_hard_contract(definition: IncidentDefinition) -> None:
+    from app.admin_duty.components.scenarios import get_hard_combination_for_pair
+
+    if definition.difficulty.value != "hard":
+        if definition.schema_version == "4.0" or definition.fault_relation is not None:
+            raise IncidentValidationError("Schemat V4 jest przeznaczony dla HARD.")
+        if any(fault.resolution_condition is not None for fault in definition.faults):
+            raise IncidentValidationError("Warunki fault recovery są przeznaczone dla HARD.")
+        return
+    if definition.schema_version != "4.0":
+        raise IncidentValidationError("HARD wymaga schematu V4.")
+    if len(definition.faults) != 2:
+        raise IncidentValidationError("HARD wymaga dokładnie dwóch faultów.")
+    relation = definition.fault_relation
+    if relation is None or relation.relation_type.value != "dependency_chain":
+        raise IncidentValidationError("HARD wymaga relacji dependency_chain.")
+    fault_by_id = {fault.fault_id: fault for fault in definition.faults}
+    if set(fault_by_id) != {relation.primary_fault_id, relation.secondary_fault_id}:
+        raise IncidentValidationError("Relacja HARD wskazuje niewłaściwe faulty.")
+    primary = fault_by_id[relation.primary_fault_id]
+    secondary = fault_by_id[relation.secondary_fault_id]
+    if primary.resolution_condition is None or secondary.resolution_condition is None:
+        raise IncidentValidationError("Każdy fault HARD wymaga warunku rozwiązania.")
+    try:
+        combination = get_hard_combination_for_pair(
+            _fault_category(primary),
+            _fault_category(secondary),
+        )
+    except ValueError as error:
+        raise IncidentValidationError("Para faultów HARD nie istnieje w katalogu.") from error
+    if (
+        definition.initial_world_state.environment_id
+        not in combination.compatible_environment_archetypes
+    ):
+        raise IncidentValidationError("Para HARD jest niezgodna ze środowiskiem.")
+    roles = {
+        _field_map(resource.attributes).get("role")
+        for resource in definition.initial_world_state.resources
+        if resource.resource_type is ResourceType.HOST
+    }
+    if not set(combination.required_host_roles) <= roles:
+        raise IncidentValidationError("Środowisko HARD nie zawiera wymaganych ról hostów.")
+    capabilities = set(definition.capabilities.command_capability_ids)
+    if not set(combination.required_capabilities) <= capabilities:
+        raise IncidentValidationError("HARD nie zawiera wymaganych capabilities.")
+    service_archetypes = {
+        _field_map(resource.attributes).get("service_kind")
+        for resource in definition.initial_world_state.resources
+        if resource.resource_type is ResourceType.SERVICE
+    }
+    if combination.affected_service_archetype not in service_archetypes:
+        raise IncidentValidationError("HARD nie zawiera wymaganego archetypu usługi.")
+    if any(
+        _field_map(fault.parameters).get("combination_id")
+        != combination.combination_id
+        for fault in definition.faults
+    ):
+        raise IncidentValidationError("Metadata kombinacji HARD jest niespójne.")
+    dependency_ids = {
+        dependency.dependency_id for dependency in definition.service_dependencies
+    }
+    if not {
+        "dep-external-proxy",
+        "dep-proxy-api",
+        "dep-api-database",
+    } <= dependency_ids:
+        raise IncidentValidationError("Topologia HARD nie zawiera pełnego łańcucha.")
+    condition_keys = {
+        (
+            fault.resolution_condition.resource_id,
+            fault.resolution_condition.field,
+        )
+        for fault in definition.faults
+    }
+    if len(condition_keys) != 2:
+        raise IncidentValidationError("Faulty HARD mają konfliktujące warunki naprawy.")
+    resource_ids = {
+        resource.resource_id for resource in definition.initial_world_state.resources
+    }
+    if any(
+        fault.resolution_condition.resource_id not in resource_ids
+        for fault in definition.faults
+    ):
+        raise IncidentValidationError("Warunek fault recovery wskazuje nieznany zasób.")
+    symptom_source_ids = {
+        symptom.source_resource_id
+        for symptom in definition.symptoms
+        if symptom.source_resource_id is not None
+    }
+    propagated_ids = {
+        rule.affected_resource_id for rule in definition.symptom_propagation
+    }
+    if not symptom_source_ids <= propagated_ids or len(propagated_ids) < 2:
+        raise IncidentValidationError("HARD nie zawiera pełnej progresji symptomów.")
+    post_incident = definition.post_incident
+    if post_incident is None or not all(
+        (
+            len(post_incident.root_cause_chain) == 2,
+            post_incident.primary_fault,
+            post_incident.secondary_fault,
+            post_incident.impact_path,
+            len(post_incident.repair_sequence) == 2,
+            post_incident.partial_recovery_explanation,
+            post_incident.learning_summary,
+        )
+    ):
+        raise IncidentValidationError("Raport HARD nie zawiera pełnego łańcucha przyczyn.")
+    if definition.generation.generation_source is GenerationSource.AI and (
+        definition.generation.generator_id
+        not in {"shellforge.gemma", "shellforge.materializer"}
+        or not definition.generation.model
+    ):
+        raise IncidentValidationError("Provenance AI dla HARD jest niespójne.")
 
 
 def _validate_ai_public_data(definition):
@@ -316,6 +441,7 @@ class IncidentValidator:
 
         _validate_v3_references(definition)
         _validate_post_incident(definition)
+        _validate_hard_contract(definition)
         _validate_ai_public_data(definition)
 
         _require_deterministic_order(
@@ -424,9 +550,28 @@ class IncidentValidator:
             )
         if get_session_progress(definition, state).mission_complete:
             raise IncidentValidationError("Misja jest ukończona w initial state.")
+        if definition.difficulty.value == "hard" and (
+            get_incident_recovery_state(definition, state)
+            is not IncidentRecoveryState.BROKEN
+        ):
+            raise IncidentValidationError("HARD nie rozpoczyna się z dwoma aktywnymi faultami.")
 
         service = DynamicCommandService()
         final_progress = get_session_progress(definition, state)
+        initial_symptoms = tuple(
+            (
+                symptom.source_resource_id,
+                state.world_state.resources[symptom.source_resource_id].current_state,
+                state.world_state.resources[symptom.source_resource_id].attributes.get(
+                    "public_health"
+                ),
+            )
+            for symptom in definition.symptoms
+            if symptom.source_resource_id is not None
+        )
+        partial_recovery_seen = False
+        resolved_order = []
+        previous_resolved = frozenset()
         try:
             for index, step in enumerate(definition.solution, start=1):
                 result = service.execute(
@@ -453,6 +598,33 @@ class IncidentValidator:
                         "Krok reference solution zwrócił inny status niż oczekiwany."
                     )
                 final_progress = result.progress
+                if definition.difficulty.value == "hard":
+                    current_resolved = resolved_fault_ids(definition, state)
+                    resolved_order.extend(sorted(current_resolved - previous_resolved))
+                    previous_resolved = current_resolved
+                    if len(current_resolved) == 1:
+                        partial_recovery_seen = True
+                        if final_progress.mission_complete:
+                            raise IncidentValidationError(
+                                "Pierwsza naprawa zakończyła incydent HARD."
+                            )
+                        current_symptoms = tuple(
+                            (
+                                symptom.source_resource_id,
+                                state.world_state.resources[
+                                    symptom.source_resource_id
+                                ].current_state,
+                                state.world_state.resources[
+                                    symptom.source_resource_id
+                                ].attributes.get("public_health"),
+                            )
+                            for symptom in definition.symptoms
+                            if symptom.source_resource_id is not None
+                        )
+                        if current_symptoms == initial_symptoms:
+                            raise IncidentValidationError(
+                                "Partial recovery nie zmienia symptomów ani health."
+                            )
         except IncidentValidationError as error:
             raise IncidentReplayError("Replay reference solution nie przeszedł walidacji.") from error
         except Exception as error:
@@ -464,6 +636,24 @@ class IncidentValidator:
             raise IncidentReplayError(
                 "Reference solution nie kończy wymaganych objectives."
             )
+        if definition.difficulty.value == "hard":
+            relation = definition.fault_relation
+            if not partial_recovery_seen:
+                raise IncidentReplayError(
+                    "Reference solution HARD nie przechodzi przez partial recovery."
+                )
+            if tuple(resolved_order) != (
+                relation.primary_fault_id,
+                relation.secondary_fault_id,
+            ):
+                raise IncidentReplayError(
+                    "Reference solution HARD nie zachowuje kolejności napraw."
+                )
+            if (
+                get_incident_recovery_state(definition, state)
+                is not IncidentRecoveryState.HEALTHY
+            ):
+                raise IncidentReplayError("Reference solution HARD nie przywraca zdrowia.")
         if definition.model_dump_json() != before:
             raise IncidentValidationError("Validator zmodyfikował IncidentDefinition.")
         return definition

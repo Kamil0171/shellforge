@@ -112,6 +112,15 @@ class PublicPostIncidentReport(FrozenDomainModel):
     commands_used: tuple[str, ...] = Field(default=(), max_length=512)
     hints_used: int = Field(ge=0)
     score: int = Field(ge=0, le=1_000_000)
+    root_cause_chain: tuple[str, ...] = Field(default=(), max_length=8)
+    primary_fault: str | None = Field(default=None, min_length=1, max_length=500)
+    secondary_fault: str | None = Field(default=None, min_length=1, max_length=500)
+    impact_path: tuple[str, ...] = Field(default=(), max_length=16)
+    repair_sequence: tuple[str, ...] = Field(default=(), max_length=16)
+    partial_recovery_explanation: str | None = Field(
+        default=None, min_length=1, max_length=1000
+    )
+    learning_summary: str | None = Field(default=None, min_length=1, max_length=1000)
 
 
 class DynamicSessionStartResult(FrozenDomainModel):
@@ -295,6 +304,13 @@ def _get_post_incident_report(
         commands_used=tuple(record.command for record in state.command_history),
         hints_used=state.hints_used,
         score=state.score,
+        root_cause_chain=post_incident.root_cause_chain,
+        primary_fault=post_incident.primary_fault,
+        secondary_fault=post_incident.secondary_fault,
+        impact_path=post_incident.impact_path,
+        repair_sequence=post_incident.repair_sequence,
+        partial_recovery_explanation=post_incident.partial_recovery_explanation,
+        learning_summary=post_incident.learning_summary,
     )
 
 

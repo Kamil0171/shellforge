@@ -7,7 +7,6 @@ from app.admin_duty.domain.difficulty import DifficultyLevel
 from app.admin_duty.generators import (
     DeterministicIncidentGenerator,
     GenerationError,
-    UnsupportedDifficultyError,
 )
 from app.admin_duty.validators import IncidentValidationError
 
@@ -119,7 +118,12 @@ def test_generator_retries_validation_at_most_ten_times():
     assert validator.calls == 10
 
 
-@pytest.mark.parametrize("difficulty", [DifficultyLevel.HARD])
-def test_generator_rejects_unimplemented_difficulties(difficulty):
-    with pytest.raises(UnsupportedDifficultyError):
-        DeterministicIncidentGenerator().generate(difficulty, now=FIXED_NOW)
+def test_generator_supports_hard_with_two_faults():
+    definition = DeterministicIncidentGenerator().generate(
+        DifficultyLevel.HARD,
+        seed=1,
+        now=FIXED_NOW,
+    )
+
+    assert definition.schema_version == "4.0"
+    assert len(definition.faults) == 2

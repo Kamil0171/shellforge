@@ -3,6 +3,7 @@ from itertools import product
 
 import pytest
 
+from app.admin_duty.components.scenarios import HARD_COMBINATIONS
 from app.admin_duty.domain.ai_plan import (
     EASY_ENVIRONMENTS,
     EASY_FAULTS,
@@ -57,6 +58,21 @@ def make_plan(
 def incoming(plan):
     return IncidentGenerationRequest(
         difficulty=plan.difficulty, generation_source="ai", seed=plan.seed
+    )
+
+
+def make_hard_plan(combination, *, seed=51):
+    return AIIncidentPlan(
+        difficulty="hard",
+        environment_archetype="hard-web-stack",
+        fault_category=None,
+        primary_fault_category=combination.primary_fault_category,
+        secondary_fault_category=combination.secondary_fault_category,
+        affected_service_archetype=combination.affected_service_archetype,
+        dependency_archetype=combination.dependency_archetype,
+        symptom_archetype="progressive_service_degradation",
+        skill_tags=combination.skill_tags[:3],
+        seed=seed,
     )
 
 
@@ -121,6 +137,84 @@ def test_all_medium_materializations_reuse_fixtures_and_replay(fault):
     )
     assert len(definition.faults) == 1
     assert draft == materializer.materialize(plan)
+
+
+@pytest.mark.parametrize("combination", HARD_COMBINATIONS)
+def test_all_hard_plans_materialize_two_faults_and_replay(combination):
+    plan = make_hard_plan(combination)
+    materializer = AIIncidentMaterializer()
+    draft = materializer.materialize(plan)
+    definition = validate_and_convert_draft(protect_public_narrative(draft))
+
+    assert definition.schema_version == "4.0"
+    assert len(definition.faults) == 2
+    assert definition.fault_relation.primary_fault_id == "fault-primary"
+    assert draft == materializer.materialize(plan)
+
+
+@pytest.mark.parametrize("level", ["easy", "medium"])
+def test_easy_and_medium_reject_secondary_fault(level):
+    plan = make_plan(level, "systemd-service-failed" if level == "easy" else "dependency-firewall-blocked", "web-application" if level == "easy" else "web-stack")
+    payload = plan.model_dump(mode="json")
+    payload["secondary_fault_category"] = "selinux-context-invalid"
+
+    with pytest.raises(DraftValidationError, match="Plan AI"):
+        parse_ai_plan(payload)
+
+
+def test_hard_requires_secondary_and_rejects_unsupported_pair():
+    payload = make_hard_plan(HARD_COMBINATIONS[0]).model_dump(mode="json")
+    payload["secondary_fault_category"] = None
+    with pytest.raises(DraftValidationError, match="Plan AI"):
+        parse_ai_plan(payload)
+
+    payload["secondary_fault_category"] = "dependency-package-missing"
+    with pytest.raises(DraftValidationError, match="Plan AI"):
+        parse_ai_plan(payload)
+
+
+def test_hard_catalog_is_small_and_contains_only_approved_pairs():
+    request = IncidentGenerationRequest(
+        difficulty="hard",
+        generation_source="ai",
+        seed=51,
+    )
+    catalog = get_plan_capability_catalog(request)
+
+    assert len(catalog["hard_pairs"]) == 5
+    assert catalog["fault_count"] == 2
+    assert catalog["hosts"] == [5, 5]
+    assert len((INSTRUCTION + build_generation_prompt(request)).encode()) < 6144
+
+
+def test_mocked_hard_plan_is_materialized_as_ai():
+    plan = make_hard_plan(HARD_COMBINATIONS[0])
+    provider = Plans(plan)
+    service = IncidentGenerationService(
+        fallback=DeterministicIncidentGenerator(),
+        provider=MaterializingIncidentAIProvider(provider, model="fake-model"),
+    )
+
+    definition = asyncio.run(service.generate(incoming(plan)))
+
+    assert definition.difficulty.value == "hard"
+    assert definition.generation.generation_source is GenerationSource.AI
+    assert definition.generation.generator_id == "shellforge.gemma"
+
+
+def test_invalid_hard_plan_falls_back_to_deterministic_hard():
+    plan = make_hard_plan(HARD_COMBINATIONS[0])
+    provider = Plans({}, {})
+    service = IncidentGenerationService(
+        fallback=DeterministicIncidentGenerator(),
+        provider=MaterializingIncidentAIProvider(provider, model="fake-model"),
+    )
+
+    definition = asyncio.run(service.generate(incoming(plan)))
+
+    assert len(provider.requests) == 2
+    assert definition.difficulty.value == "hard"
+    assert definition.generation.generation_source is GenerationSource.DETERMINISTIC
 
 
 @pytest.mark.parametrize(

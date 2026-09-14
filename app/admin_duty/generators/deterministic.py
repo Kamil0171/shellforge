@@ -13,7 +13,10 @@ from app.admin_duty.components import (
 )
 from app.admin_duty.components.models import AttributeMutationTemplate
 from app.admin_duty.components.scenarios import (
+    HARD_COMBINATIONS,
+    HARD_ENVIRONMENT_ARCHETYPE,
     MEDIUM_SCENARIO_CATEGORIES,
+    build_hard_draft,
     build_medium_draft,
 )
 from app.admin_duty.domain.definition import (
@@ -376,14 +379,38 @@ class DeterministicIncidentGenerator:
         now: datetime | None = None,
         request: IncidentGenerationRequest | None = None,
     ) -> IncidentDefinition:
-        if difficulty is DifficultyLevel.HARD:
-            raise UnsupportedDifficultyError(
-                f"Poziom trudności {difficulty!s} nie jest jeszcze obsługiwany."
-            )
-
         effective_seed = seed if seed is not None else secrets.randbelow(2**63)
         rng = random.Random(effective_seed)
         created_at = now if now is not None else utc_now()
+        if difficulty is DifficultyLevel.HARD:
+            if request is not None and request.map_id not in {
+                None,
+                "web-operations-room",
+            }:
+                raise GenerationError("HARD obsługuje mapę Modern NOC.")
+            if request is not None and request.environment_preferences and (
+                HARD_ENVIRONMENT_ARCHETYPE not in request.environment_preferences
+            ):
+                raise GenerationError("Żądanie nie zawiera środowiska HARD.")
+            combinations = tuple(
+                item
+                for item in HARD_COMBINATIONS
+                if request is None
+                or not request.allowed_fault_categories
+                or {
+                    item.primary_fault_category,
+                    item.secondary_fault_category,
+                }
+                <= set(request.allowed_fault_categories)
+            )
+            if not combinations:
+                raise GenerationError("Żądanie nie zawiera obsługiwanej pary HARD.")
+            combination = rng.choice(combinations)
+            candidate = convert_draft_to_definition(
+                build_hard_draft(combination.combination_id, seed=effective_seed),
+                created_at=created_at,
+            )
+            return self._validator.validate(candidate)
         if difficulty is DifficultyLevel.MEDIUM:
             last_error = None
             for _ in range(MAX_GENERATION_ATTEMPTS):
@@ -455,10 +482,11 @@ class DeterministicIncidentGenerator:
     ) -> IncidentDefinition:
         if request.generation_source is not GenerationSource.DETERMINISTIC:
             raise GenerationError("Generator deterministyczny nie obsługuje źródła AI.")
-        if request.map_id not in {None, "web-operations-room"} and (
-            request.difficulty is DifficultyLevel.MEDIUM
-        ):
-            raise GenerationError("MEDIUM obsługuje obecnie mapę Modern NOC.")
+        if request.map_id not in {None, "web-operations-room"} and request.difficulty in {
+            DifficultyLevel.MEDIUM,
+            DifficultyLevel.HARD,
+        }:
+            raise GenerationError("MEDIUM i HARD obsługują obecnie mapę Modern NOC.")
         if request.allowed_fault_categories and request.difficulty is DifficultyLevel.MEDIUM:
             allowed = tuple(
                 category

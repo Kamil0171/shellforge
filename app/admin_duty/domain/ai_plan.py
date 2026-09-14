@@ -3,6 +3,13 @@ from typing import Literal
 
 from pydantic import Field, model_validator
 
+from app.admin_duty.components.scenarios.hard import (
+    HARD_COMBINATIONS,
+    HARD_DEPENDENCY_ARCHETYPE,
+    HARD_ENVIRONMENT_ARCHETYPE,
+    HARD_SYMPTOM_ARCHETYPE,
+    get_hard_combination_for_pair,
+)
 from app.admin_duty.domain.definition import FrozenDomainModel
 from app.admin_duty.domain.generation import DraftValidationError
 
@@ -33,14 +40,26 @@ SYMPTOMS = {
 }
 SKILLS = ("systemd", "filesystem", "network", "firewall", "packages", "selinux", "dns")
 
+HARD_FAULTS = tuple(
+    dict.fromkeys(
+        category
+        for combination in HARD_COMBINATIONS
+        for category in (
+            combination.primary_fault_category,
+            combination.secondary_fault_category,
+        )
+    )
+)
+
 
 class AIIncidentPlan(FrozenDomainModel):
-    difficulty: Literal["easy", "medium"]
+    difficulty: Literal["easy", "medium", "hard"]
     environment_archetype: Literal[
         "web-application",
         "internal-business-service",
         "reverse-proxy-stack",
         "web-stack",
+        "hard-web-stack",
     ]
     fault_category: Literal[
         "systemd-service-failed",
@@ -52,7 +71,29 @@ class AIIncidentPlan(FrozenDomainModel):
         "selinux-context-invalid",
         "networkmanager-dns-invalid",
         "external-firewall-mismatch",
-    ]
+    ] | None = None
+    primary_fault_category: Literal[
+        "dependency-firewall-blocked",
+        "selinux-context-invalid",
+        "networkmanager-dns-invalid",
+        "external-firewall-mismatch",
+        "dependency-package-missing",
+        "systemd-wrong-exec-start",
+        "service-config-invalid",
+        "dependency-port-mismatch",
+        "networkmanager-connection-inactive",
+    ] | None = None
+    secondary_fault_category: Literal[
+        "dependency-firewall-blocked",
+        "selinux-context-invalid",
+        "networkmanager-dns-invalid",
+        "external-firewall-mismatch",
+        "dependency-package-missing",
+        "systemd-wrong-exec-start",
+        "service-config-invalid",
+        "dependency-port-mismatch",
+        "networkmanager-connection-inactive",
+    ] | None = None
     affected_service_archetype: Literal["web-api", "worker", "reverse-proxy"]
     dependency_archetype: Literal["direct-service", "proxy-api-database"]
     symptom_archetype: Literal[
@@ -61,6 +102,7 @@ class AIIncidentPlan(FrozenDomainModel):
         "configuration_failure",
         "execution_failure",
         "public_service_degraded",
+        "progressive_service_degradation",
     ]
     lesson_id: int | None = Field(default=None, ge=1)
     skill_tags: tuple[
@@ -81,6 +123,37 @@ class AIIncidentPlan(FrozenDomainModel):
     def supported_combination(self):
         if len(self.skill_tags) != len(set(self.skill_tags)):
             raise ValueError("Powtórzony skill tag.")
+        if self.difficulty == "hard":
+            if self.fault_category is not None:
+                raise ValueError("HARD nie używa pola fault_category.")
+            if (
+                self.primary_fault_category is None
+                or self.secondary_fault_category is None
+            ):
+                raise ValueError("HARD wymaga primary i secondary fault.")
+            try:
+                combination = get_hard_combination_for_pair(
+                    self.primary_fault_category,
+                    self.secondary_fault_category,
+                )
+            except ValueError as error:
+                raise ValueError("Nieobsługiwana para faultów HARD.") from error
+            valid = (
+                self.environment_archetype
+                in combination.compatible_environment_archetypes
+                and self.affected_service_archetype
+                == combination.affected_service_archetype
+                and self.dependency_archetype == combination.dependency_archetype
+                and self.symptom_archetype == HARD_SYMPTOM_ARCHETYPE
+                and set(self.skill_tags) <= set(combination.skill_tags)
+            )
+            if not valid:
+                raise ValueError("Nieobsługiwana kombinacja archetypów HARD.")
+            return self
+        if self.primary_fault_category is not None or self.secondary_fault_category is not None:
+            raise ValueError("EASY i MEDIUM nie obsługują secondary fault.")
+        if self.fault_category is None:
+            raise ValueError("EASY i MEDIUM wymagają fault_category.")
         if self.difficulty == "easy":
             environment = EASY_ENVIRONMENTS.get(self.environment_archetype)
             valid = (
@@ -133,6 +206,47 @@ def parse_ai_plan(payload) -> AIIncidentPlan:
 
 def get_plan_capability_catalog(request):
     easy = request.difficulty.value == "easy"
+    hard = request.difficulty.value == "hard"
+    if hard:
+        combinations = tuple(
+            item
+            for item in HARD_COMBINATIONS
+            if (
+                not request.environment_preferences
+                or HARD_ENVIRONMENT_ARCHETYPE in request.environment_preferences
+            )
+            and (
+                not request.allowed_fault_categories
+                or {
+                    item.primary_fault_category,
+                    item.secondary_fault_category,
+                }
+                <= set(request.allowed_fault_categories)
+            )
+        )
+        return {
+            "environments_and_services": {
+                HARD_ENVIRONMENT_ARCHETYPE: tuple(
+                    dict.fromkeys(
+                        item.affected_service_archetype for item in combinations
+                    )
+                )
+            },
+            "hard_pairs": tuple(
+                {
+                    "primary": item.primary_fault_category,
+                    "secondary": item.secondary_fault_category,
+                    "service": item.affected_service_archetype,
+                    "skills": item.skill_tags,
+                }
+                for item in combinations
+            ),
+            "dependency": HARD_DEPENDENCY_ARCHETYPE,
+            "symptom": HARD_SYMPTOM_ARCHETYPE,
+            "skills": SKILLS,
+            "hosts": [5, 5],
+            "fault_count": 2,
+        }
     environments = (
         {
             key: value[0]

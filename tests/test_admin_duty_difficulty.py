@@ -29,17 +29,17 @@ def test_get_difficulty_profile_returns_matching_profile(level):
 
 
 @pytest.mark.parametrize(
-    ("level", "expected_max_faults"),
+    ("level", "expected_min_faults", "expected_max_faults"),
     [
-        (DifficultyLevel.EASY, 1),
-        (DifficultyLevel.MEDIUM, 2),
-        (DifficultyLevel.HARD, 2),
+        (DifficultyLevel.EASY, 1, 1),
+        (DifficultyLevel.MEDIUM, 1, 1),
+        (DifficultyLevel.HARD, 2, 2),
     ],
 )
-def test_fault_limits(level, expected_max_faults):
+def test_fault_limits(level, expected_min_faults, expected_max_faults):
     profile = get_difficulty_profile(level)
 
-    assert profile.min_faults == 1
+    assert profile.min_faults == expected_min_faults
     assert profile.max_faults == expected_max_faults
 
 

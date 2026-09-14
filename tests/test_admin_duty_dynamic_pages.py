@@ -17,10 +17,12 @@ def test_dynamic_lobby_renders_difficulty_selection_and_assets():
     assert "Łatwy" in response.text
     assert "Średni" in response.text
     assert "Trudny" in response.text
-    assert response.text.count("Poziom w przygotowaniu") == 1
+    assert "Poziom w przygotowaniu" not in response.text
     assert 'id="start-medium-button"' in response.text
     assert 'data-difficulty="medium"' in response.text
-    assert response.text.count('type="button" disabled') == 1
+    assert 'id="start-hard-button"' in response.text
+    assert 'data-difficulty="hard"' in response.text
+    assert response.text.count('type="button" disabled') == 0
     assert 'id="generation-overlay"' in response.text
     assert (
         'href="http://testserver/static/admin_duty/dynamic/dynamic.css' in response.text
@@ -64,6 +66,8 @@ def test_dynamic_workspace_bootstraps_only_session_id_and_frontend_containers():
     assert 'class="game-controls"' not in response.text
     assert 'id="terminal-overlay"' in response.text
     assert 'id="monitoring-overlay"' in response.text
+    assert 'id="post-incident-root-chain"' in response.text
+    assert 'id="post-incident-partial-explanation"' in response.text
     assert 'id="rack-overlay"' in response.text
     assert 'id="request-hint-button"' in response.text
     assert 'id="exit-session-button"' in response.text

@@ -559,6 +559,7 @@ body.dynamic-generation-open {
 
 .difficulty-card-easy { --difficulty-accent: 34, 211, 238; }
 .difficulty-card-medium { --difficulty-accent: 129, 140, 248; }
+.difficulty-card-hard { --difficulty-accent: 251, 191, 36; }
 
 .difficulty-card-active {
     border-color: rgba(var(--difficulty-accent), 0.3);
@@ -2631,6 +2632,10 @@ body.dynamic-generation-open {
 
 .gameplay-hud .hud-health strong.is-alert {
     color: #fb7185;
+}
+
+.gameplay-hud .hud-health strong.is-improving {
+    color: #fbbf24;
 }
 
 .gameplay-completion-banner {

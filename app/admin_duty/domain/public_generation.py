@@ -21,7 +21,9 @@ def protect_public_narrative(draft):
         ),
         main_objective="Przywróć dostępność aplikacji i potwierdź wynik diagnostyką.",
         tags=("diagnostyka", "network"),
-        estimated_time_minutes=15 if draft.difficulty.value == "easy" else 25,
+        estimated_time_minutes={"easy": 15, "medium": 25, "hard": 45}[
+            draft.difficulty.value
+        ],
     )
     return draft.model_copy(update={
         "presentation": presentation,
@@ -34,7 +36,8 @@ def protect_public_narrative(draft):
                 resource.model_copy(update={
                     "attributes": tuple(
                         field.model_copy(update={"value": "Serwer Linux"})
-                        if field.key == "role" else field
+                        if field.key == "role" and draft.difficulty.value != "hard"
+                        else field
                         for field in resource.attributes
                     ),
                 })
