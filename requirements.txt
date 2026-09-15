@@ -6,5 +6,5 @@ sqlmodel
 pydantic
 pytest
 httpx
-google-genai==2.22.0
+google-genai==2.23.0
 ruff
