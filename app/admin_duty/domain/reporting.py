@@ -50,7 +50,9 @@ class FaultReportProfile(FrozenDomainModel):
     root_cause: str | None = Field(default=None, min_length=1, max_length=1000)
     diagnostic_capability_ids: tuple[Identifier, ...] = Field(default=(), max_length=32)
     repair_capability_ids: tuple[Identifier, ...] = Field(default=(), max_length=32)
-    verification_capability_ids: tuple[Identifier, ...] = Field(default=(), max_length=32)
+    verification_capability_ids: tuple[Identifier, ...] = Field(
+        default=(), max_length=32
+    )
     key_signals: tuple[str, ...] = Field(min_length=2, max_length=6)
     learning_points: tuple[str, ...] = Field(min_length=2, max_length=5)
     real_world_takeaways: tuple[str, ...] = Field(min_length=2, max_length=4)
@@ -263,7 +265,12 @@ FAULT_REPORT_PROFILES = (
     ),
     _profile(
         "selinux-context-invalid",
-        diagnostic=("selinux.getenforce", "selinux.sestatus", "selinux.semanage", *_SYSTEMD_DIAGNOSTIC),
+        diagnostic=(
+            "selinux.getenforce",
+            "selinux.sestatus",
+            "selinux.semanage",
+            *_SYSTEMD_DIAGNOSTIC,
+        ),
         repair=("selinux.restorecon", "systemd.restart"),
         verification=("systemd.status", "network.curl", "selinux.getenforce"),
         signals=(
@@ -282,9 +289,19 @@ FAULT_REPORT_PROFILES = (
     ),
     _profile(
         "networkmanager-dns-invalid",
-        diagnostic=(*_NETWORK_DIAGNOSTIC, "networkmanager.command", "network.addr", "network.route"),
+        diagnostic=(
+            *_NETWORK_DIAGNOSTIC,
+            "networkmanager.command",
+            "network.addr",
+            "network.route",
+        ),
         repair=("networkmanager.command",),
-        verification=("network.dig", "network.getent", "network.curl", "networkmanager.command"),
+        verification=(
+            "network.dig",
+            "network.getent",
+            "network.curl",
+            "networkmanager.command",
+        ),
         signals=(
             "Host miał łączność IP, ale nie potrafił rozwiązać nazwy zależności.",
             "Aktywny profil NetworkManager nie zawierał oczekiwanego serwera DNS.",
@@ -301,7 +318,12 @@ FAULT_REPORT_PROFILES = (
     ),
     _profile(
         "external-firewall-mismatch",
-        diagnostic=("network.curl", "network.listeners", "firewalld.command", "systemd.status"),
+        diagnostic=(
+            "network.curl",
+            "network.listeners",
+            "firewalld.command",
+            "systemd.status",
+        ),
         repair=("firewalld.command",),
         verification=("network.curl", "firewalld.command"),
         signals=(
@@ -320,7 +342,12 @@ FAULT_REPORT_PROFILES = (
     ),
     _profile(
         "service-config-invalid",
-        diagnostic=(*_SYSTEMD_DIAGNOSTIC, "filesystem.read", "filesystem.grep", "network.curl"),
+        diagnostic=(
+            *_SYSTEMD_DIAGNOSTIC,
+            "filesystem.read",
+            "filesystem.grep",
+            "network.curl",
+        ),
         repair=("filesystem.edit", "systemd.restart"),
         verification=("systemd.status", "network.curl"),
         signals=(
@@ -339,7 +366,13 @@ FAULT_REPORT_PROFILES = (
     ),
     _profile(
         "dependency-port-mismatch",
-        diagnostic=("network.curl", "network.listeners", "filesystem.read", "filesystem.grep", "systemd.status"),
+        diagnostic=(
+            "network.curl",
+            "network.listeners",
+            "filesystem.read",
+            "filesystem.grep",
+            "systemd.status",
+        ),
         repair=("filesystem.edit", "systemd.restart"),
         verification=("network.curl", "network.listeners", "systemd.status"),
         signals=(
@@ -358,9 +391,21 @@ FAULT_REPORT_PROFILES = (
     ),
     _profile(
         "networkmanager-connection-inactive",
-        diagnostic=("networkmanager.command", "network.addr", "network.link", "network.route", "network.curl", "network.ping"),
+        diagnostic=(
+            "networkmanager.command",
+            "network.addr",
+            "network.link",
+            "network.route",
+            "network.curl",
+            "network.ping",
+        ),
         repair=("networkmanager.command",),
-        verification=("networkmanager.command", "network.addr", "network.ping", "network.curl"),
+        verification=(
+            "networkmanager.command",
+            "network.addr",
+            "network.ping",
+            "network.curl",
+        ),
         signals=(
             "Interfejs hosta nie miał aktywnego połączenia NetworkManager.",
             "Brak aktywnego profilu odcinał kolejne zależności sieciowe.",
@@ -373,6 +418,92 @@ FAULT_REPORT_PROFILES = (
         real_world=(
             "Sprawdź nmcli device status, adresy i trasę przed analizą wyższych warstw.",
             "Po aktywacji profilu powtórz testy DNS, portu i aplikacji.",
+        ),
+    ),
+    _profile(
+        "service-config-permission-denied",
+        diagnostic=(
+            "systemd.status",
+            "journal.read",
+            "filesystem.path-stat",
+            "filesystem.read",
+        ),
+        repair=("filesystem.chmod", "filesystem.chown", "systemd.restart"),
+        verification=("filesystem.path-stat", "systemd.status", "network.curl"),
+        signals=(
+            "Proces działał, ale nie miał dostępu do wymaganego pliku konfiguracji.",
+            "Tryb i właściciel pliku nie odpowiadały użytkownikowi usługi.",
+            "Po przywróceniu dostępu zależność aplikacyjna odzyskała zdrowie.",
+        ),
+        learning=(
+            "Poprawna treść pliku nie wystarcza, jeśli proces nie może go odczytać.",
+            "Tryb, właściciel i użytkownik jednostki trzeba analizować razem.",
+        ),
+        real_world=(
+            "Porównaj systemctl status i journalctl -u z wynikiem stat dla wskazanego pliku.",
+            "Przywróć najmniejszy wymagany dostęp i ponownie wykonaj test funkcjonalny.",
+        ),
+    ),
+    _profile(
+        "systemd-stale-unit-config",
+        diagnostic=(*_SYSTEMD_DIAGNOSTIC, "filesystem.read"),
+        repair=("filesystem.edit", "systemd.daemon-reload", "systemd.restart"),
+        verification=_SYSTEMD_VERIFICATION,
+        signals=(
+            "Jednostka wskazywała nieaktualny cel uruchomieniowy.",
+            "Zmiana pliku na dysku wymagała przeładowania cache systemd.",
+            "Po daemon-reload i restarcie proces uruchomił właściwy plik.",
+        ),
+        learning=(
+            "systemd używa załadowanej definicji jednostki, a nie każdej niezapisanej zmiany operatora.",
+            "Edycja unit file, daemon-reload i restart pełnią trzy różne role.",
+        ),
+        real_world=(
+            "Porównaj status, journal oraz systemctl cat przed zmianą jednostki.",
+            "Po zapisie wykonaj daemon-reload, restart i niezależny test usługi.",
+        ),
+    ),
+    _profile(
+        "dependency-dns-name-mismatch",
+        diagnostic=(*_NETWORK_DIAGNOSTIC, "filesystem.read", "systemd.status"),
+        repair=("filesystem.edit", "systemd.restart"),
+        verification=("network.dig", "network.ping", "network.curl", "systemd.status"),
+        signals=(
+            "Host zależności odpowiadał po adresie IP.",
+            "Nazwa zapisana w konfiguracji nie miała rekordu DNS.",
+            "Po wskazaniu prawidłowej nazwy aplikacja odzyskała połączenie.",
+        ),
+        learning=(
+            "Osiągalność IP i rozwiązywanie nazwy są osobnymi etapami diagnostyki.",
+            "Błędna nazwa usługi może wyglądać jak awaria sieci lub procesu downstream.",
+        ),
+        real_world=(
+            "Porównaj ping lub curl po IP z dig i getent dla nazwy używanej przez aplikację.",
+            "Po zmianie konfiguracji powtórz test DNS oraz test end-to-end.",
+        ),
+    ),
+    _profile(
+        "selinux-proxy-context-invalid",
+        diagnostic=(
+            "systemd.status",
+            "journal.read",
+            "selinux.getenforce",
+            "selinux.semanage",
+        ),
+        repair=("selinux.restorecon", "systemd.restart"),
+        verification=("systemd.status", "journal.read", "network.curl"),
+        signals=(
+            "Reverse proxy kończył start mimo poprawnych tradycyjnych uprawnień.",
+            "Dziennik wskazywał odmowę wykonania przez SELinux.",
+            "Przywrócenie oczekiwanego kontekstu umożliwiło uruchomienie proxy.",
+        ),
+        learning=(
+            "Kontekst SELinux jest niezależny od właściciela i bitów trybu pliku.",
+            "restorecon przywraca etykietę wynikającą z polityki bez wyłączania ochrony.",
+        ),
+        real_world=(
+            "Sprawdź journal i tryb SELinux przed zmianą tradycyjnych uprawnień.",
+            "Po restorecon uruchom usługę ponownie i sprawdź publiczny endpoint.",
         ),
     ),
 )
@@ -447,7 +578,8 @@ def _base_classification(record: CommandRecord) -> CommandClassification:
     if capability == "packages.command":
         return (
             CommandClassification.REPAIR
-            if record.arguments and record.arguments[0] in {"install", "remove", "update", "clean"}
+            if record.arguments
+            and record.arguments[0] in {"install", "remove", "update", "clean"}
             else CommandClassification.DIAGNOSTIC
         )
     if capability.startswith("selinux."):
@@ -477,7 +609,9 @@ def _base_classification(record: CommandRecord) -> CommandClassification:
     return CommandClassification.DIAGNOSTIC
 
 
-def _relevant_host_ids(definition: IncidentDefinition, post_incident: PostIncidentDefinition) -> set[str]:
+def _relevant_host_ids(
+    definition: IncidentDefinition, post_incident: PostIncidentDefinition
+) -> set[str]:
     resource_by_id = {
         resource.resource_id: resource
         for resource in definition.initial_world_state.resources
@@ -620,9 +754,10 @@ def _target_is_relevant(
     }:
         return _network_target(record.resource_id) in aliases
     if capability.startswith(("systemd.", "journal.")):
-        return record.resource_id == "." or record.resource_id.removesuffix(
-            ".service"
-        ) in aliases
+        return (
+            record.resource_id == "."
+            or record.resource_id.removesuffix(".service") in aliases
+        )
     if capability.startswith("filesystem."):
         return record.resource_id == "." or any(
             record.resource_id == alias
@@ -641,7 +776,9 @@ def _command_explanation(
     if classification is CommandClassification.NAVIGATION:
         return "Polecenie zmieniało lub potwierdzało kontekst pracy w wirtualnym środowisku."
     if classification is CommandClassification.UNNECESSARY:
-        return "Polecenie nie dostarczało sygnału ani zmiany istotnej dla tego incydentu."
+        return (
+            "Polecenie nie dostarczało sygnału ani zmiany istotnej dla tego incydentu."
+        )
     subsystem = record.capability_id.split(".", 1)[0]
     labels = {
         "filesystem": "plików i konfiguracji",
@@ -657,7 +794,9 @@ def _command_explanation(
     if classification is CommandClassification.DIAGNOSTIC:
         text = f"Polecenie dostarczało danych diagnostycznych dotyczących {subject}."
     elif classification is CommandClassification.VERIFICATION:
-        text = f"Polecenie weryfikowało efekt wcześniejszej naprawy w obszarze {subject}."
+        text = (
+            f"Polecenie weryfikowało efekt wcześniejszej naprawy w obszarze {subject}."
+        )
     else:
         text = f"Polecenie wykonywało zmianę naprawczą w obszarze {subject}."
     if relevance is CommandRelevance.SUPPORTING:
@@ -770,9 +909,7 @@ def _efficiency(
     review: tuple[PostIncidentCommandReview, ...],
 ) -> PostIncidentEfficiency:
     counts = {
-        classification: sum(
-            item.classification is classification for item in review
-        )
+        classification: sum(item.classification is classification for item in review)
         for classification in CommandClassification
     }
     total = len(review)
@@ -785,7 +922,11 @@ def _efficiency(
     if state.command_history:
         duration = max(
             0,
-            int((state.command_history[-1].occurred_at - state.created_at).total_seconds()),
+            int(
+                (
+                    state.command_history[-1].occurred_at - state.created_at
+                ).total_seconds()
+            ),
         )
     return PostIncidentEfficiency(
         commands_total=total,
@@ -808,6 +949,8 @@ def _repair_description(record: CommandRecord, host: str) -> str:
         return f"Zapisano poprawioną konfigurację na hoście {host}."
     if capability == "filesystem.chmod":
         return f"Przywrócono wymagane uprawnienia pliku na hoście {host}."
+    if capability == "filesystem.chown":
+        return f"Przywrócono właściwego właściciela pliku na hoście {host}."
     if capability == "systemd.daemon-reload":
         return f"Przeładowano konfigurację systemd na hoście {host}."
     if capability in {"systemd.restart", "systemd.start"}:
@@ -816,7 +959,11 @@ def _repair_description(record: CommandRecord, host: str) -> str:
         return f"Przywrócono oczekiwany kontekst SELinux na hoście {host}."
     if capability == "packages.command":
         action = arguments[0] if arguments else "zmianę"
-        labels = {"install": "Zainstalowano", "remove": "Usunięto", "update": "Zaktualizowano"}
+        labels = {
+            "install": "Zainstalowano",
+            "remove": "Usunięto",
+            "update": "Zaktualizowano",
+        }
         return f"{labels.get(action, 'Wykonano zmianę pakietową dla')} wymaganą zależność na hoście {host}."
     if capability == "networkmanager.command":
         if arguments[:2] == ("connection", "modify"):
@@ -831,7 +978,9 @@ def _repair_description(record: CommandRecord, host: str) -> str:
 
 
 def _verification_description(item: PostIncidentCommandReview) -> str:
-    return f"Potwierdzono efekt naprawy poleceniem „{item.command}” na hoście {item.host}."
+    return (
+        f"Potwierdzono efekt naprawy poleceniem „{item.command}” na hoście {item.host}."
+    )
 
 
 def _repair_sequence(
@@ -935,7 +1084,9 @@ def _impact_path(
         )
     )
     resource_ids = dependency_resources or post_incident.affected_service_ids
-    return _unique(_resource_label(definition, resource_id) for resource_id in resource_ids)
+    return _unique(
+        _resource_label(definition, resource_id) for resource_id in resource_ids
+    )
 
 
 def _key_signals(
@@ -1037,7 +1188,11 @@ def build_post_incident_analysis(
     )
     learning = _unique(
         (
-            *((post_incident.learning_summary,) if post_incident.learning_summary else ()),
+            *(
+                (post_incident.learning_summary,)
+                if post_incident.learning_summary
+                else ()
+            ),
             *(point for profile in profiles for point in profile.learning_points),
         )
     )[:5]

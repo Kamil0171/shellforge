@@ -269,6 +269,8 @@ class ConfigurationRequirement(FrozenDomainModel):
     service_id: Identifier
     host_id: Identifier
     file_resource_id: Identifier
+    expected_mode: str | None = Field(default=None, pattern=r"^[0-7]{3,4}$")
+    expected_owner: Identifier | None = None
 
 
 class SymptomPropagationRule(FrozenDomainModel):

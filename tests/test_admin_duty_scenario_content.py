@@ -32,7 +32,9 @@ def _serialized(value) -> str:
 def _assert_no_placeholders(label: str, *values) -> None:
     content = "\n".join(_serialized(value) for value in values)
     for placeholder in PLACEHOLDERS:
-        assert placeholder not in content, f"{label} zawiera placeholder {placeholder!r}"
+        assert placeholder not in content, (
+            f"{label} zawiera placeholder {placeholder!r}"
+        )
 
 
 def _scenario_service() -> DynamicIncidentService:
@@ -96,6 +98,16 @@ def test_generated_scenario_runtime_and_public_data_have_no_placeholder_names():
             runtime = create_session_runtime(definition, now=NOW)
             started = _scenario_service()._start_definition(definition, NOW)
             _assert_no_placeholders(difficulty, definition, runtime, started)
+            public_payload = _serialized(started)
+            for hidden in (
+                "root_cause",
+                "resolution_condition",
+                "expected_content",
+                "forbidden_public_terms",
+                "generator_id",
+                "post_incident",
+            ):
+                assert hidden not in public_payload
 
 
 def test_ai_materializer_uses_clean_catalog_names_without_live_provider_calls():
@@ -135,20 +147,32 @@ def test_ai_materializer_uses_clean_catalog_names_without_live_provider_calls():
         _assert_no_placeholders(plan.difficulty, materializer.materialize(plan))
 
 
-def test_completed_public_reports_use_clean_runtime_service_names():
-    generator = DeterministicIncidentGenerator()
+def test_all_medium_and_hard_reports_have_complete_v2_content():
     definitions = (
-        generator.generate(DifficultyLevel.EASY, seed=3, now=NOW),
-        validate_and_convert_draft(
-            build_medium_draft("dependency-firewall-blocked", seed=401),
-            created_at=NOW,
+        *(
+            validate_and_convert_draft(
+                build_medium_draft(category, seed=400 + index),
+                created_at=NOW,
+            )
+            for index, category in enumerate(MEDIUM_SCENARIO_CATEGORIES)
         ),
-        validate_and_convert_draft(
-            build_hard_draft("H-01", seed=402),
-            created_at=NOW,
+        *(
+            validate_and_convert_draft(
+                build_hard_draft(combination.combination_id, seed=500 + index),
+                created_at=NOW,
+            )
+            for index, combination in enumerate(HARD_COMBINATIONS)
         ),
     )
 
     for definition in definitions:
         report = _complete_with_reference_solution(definition)
         _assert_no_placeholders(definition.difficulty.value, report)
+        assert report.version == "2.0"
+        assert report.root_cause
+        assert report.key_signals
+        assert report.learning_points
+        assert report.real_world_takeaways
+        if definition.difficulty is DifficultyLevel.HARD:
+            assert len(report.root_cause_chain) == 2
+            assert report.partial_recovery_explanation

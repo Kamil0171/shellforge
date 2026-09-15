@@ -1,5 +1,6 @@
+import re
 from datetime import timedelta
-from ipaddress import ip_interface
+from ipaddress import ip_address, ip_interface
 
 from app.admin_duty.domain.definition import (
     ComponentType,
@@ -88,6 +89,29 @@ def _validate_v3_references(definition: IncidentDefinition) -> None:
         for resource in resources
         if resource.resource_type is ResourceType.HOST
     }
+    domains: dict[str, str] = {}
+    for resource in resources:
+        if resource.resource_type is not ResourceType.DOMAIN:
+            continue
+        attributes = _field_map(resource.attributes)
+        name = attributes.get("name")
+        address = attributes.get("address")
+        if (
+            not isinstance(name, str)
+            or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9.-]{0,126}[A-Za-z0-9]", name)
+            or ".." in name
+            or not isinstance(address, str)
+        ):
+            raise IncidentValidationError("Zasób DNS zawiera nieprawidłowy rekord.")
+        try:
+            normalized_address = str(ip_address(address))
+        except ValueError as error:
+            raise IncidentValidationError(
+                "Zasób DNS zawiera nieprawidłowy adres."
+            ) from error
+        if name in domains:
+            raise IncidentValidationError("Nazwy rekordów DNS nie są unikalne.")
+        domains[name] = normalized_address
 
     _require_unique(
         (item.dependency_id for item in definition.service_dependencies),
@@ -109,22 +133,64 @@ def _validate_v3_references(definition: IncidentDefinition) -> None:
     for resource in resources:
         if resource.parent_id is not None and resource.parent_id not in resource_by_id:
             raise IncidentValidationError("Zasób wskazuje nieznanego rodzica.")
-        if any(dependency not in resource_by_id for dependency in resource.dependencies):
+        if any(
+            dependency not in resource_by_id for dependency in resource.dependencies
+        ):
             raise IncidentValidationError("Zasób zawiera dangling dependency.")
-        if resource.resource_type is ResourceType.SERVICE and resource.parent_id not in hosts:
+        if (
+            resource.resource_type is ResourceType.SERVICE
+            and resource.parent_id not in hosts
+        ):
             raise IncidentValidationError("Usługa musi należeć do znanego hosta.")
 
     bindings: set[tuple[str, int]] = set()
     for service in services.values():
-        port = _field_map(service.attributes).get("port")
+        attributes = _field_map(service.attributes)
+        port = attributes.get("port")
         if port is None:
             continue
-        if isinstance(port, bool) or not isinstance(port, int) or not 1 <= port <= 65535:
+        if (
+            isinstance(port, bool)
+            or not isinstance(port, int)
+            or not 1 <= port <= 65535
+        ):
             raise IncidentValidationError("Usługa zawiera nieprawidłowy port.")
         binding = (service.parent_id, port)
         if binding in bindings:
             raise IncidentValidationError("Host zawiera niemożliwe powiązanie portów.")
         bindings.add(binding)
+        required_dns_name = attributes.get("required_dns_name")
+        if isinstance(required_dns_name, str) and required_dns_name not in domains:
+            raise IncidentValidationError("Usługa wskazuje nieznaną nazwę DNS.")
+        executable_id = attributes.get("executable_resource_id")
+        if isinstance(executable_id, str):
+            executable = resource_by_id.get(executable_id)
+            if (
+                executable is None
+                or executable.resource_type is not ResourceType.FILE
+                or executable.parent_id != service.parent_id
+            ):
+                raise IncidentValidationError(
+                    "Usługa wskazuje nieprawidłowy plik wykonywalny."
+                )
+
+    file_paths: set[tuple[str | None, str]] = set()
+    for resource in resources:
+        if resource.resource_type is not ResourceType.FILE:
+            continue
+        path = _field_map(resource.attributes).get("path")
+        if path is None:
+            continue
+        if (
+            not isinstance(path, str)
+            or not path.startswith("/")
+            or "/../" in f"{path}/"
+        ):
+            raise IncidentValidationError("Zasób pliku zawiera nieprawidłową ścieżkę.")
+        binding = (resource.parent_id, path)
+        if binding in file_paths:
+            raise IncidentValidationError("Host zawiera zduplikowaną ścieżkę pliku.")
+        file_paths.add(binding)
 
     for dependency in definition.service_dependencies:
         source = services.get(dependency.source_service_id)
@@ -142,16 +208,49 @@ def _validate_v3_references(definition: IncidentDefinition) -> None:
                 "Dependency wskazuje niewłaściwy host usługi źródłowej."
             )
         if target.parent_id != dependency.target_host_id:
-            raise IncidentValidationError("Dependency wskazuje niewłaściwy host usługi.")
+            raise IncidentValidationError(
+                "Dependency wskazuje niewłaściwy host usługi."
+            )
         if _field_map(target.attributes).get("port") != dependency.port:
-            raise IncidentValidationError("Port dependency nie odpowiada usłudze docelowej.")
+            raise IncidentValidationError(
+                "Port dependency nie odpowiada usłudze docelowej."
+            )
+
+    host_addresses: dict[str, str] = {}
+    for host_id, host in hosts.items():
+        address = _field_map(host.attributes).get("address")
+        if not isinstance(address, str):
+            continue
+        try:
+            host_addresses[host_id] = str(ip_interface(address).ip)
+        except ValueError as error:
+            raise IncidentValidationError(
+                "Host zawiera nieprawidłowy adres IP."
+            ) from error
+    for service in services.values():
+        required_dns_name = _field_map(service.attributes).get("required_dns_name")
+        if not isinstance(required_dns_name, str):
+            continue
+        target_addresses = {
+            host_addresses.get(dependency.target_host_id)
+            for dependency in definition.service_dependencies
+            if dependency.source_service_id == service.resource_id
+        }
+        if domains[required_dns_name] not in target_addresses:
+            raise IncidentValidationError(
+                "Rekord DNS usługi jest niespójny z grafem zależności."
+            )
 
     for requirement in definition.package_requirements:
         service = services.get(requirement.service_id)
         if service is None or requirement.host_id not in hosts:
-            raise IncidentValidationError("Package requirement wskazuje nieznany zasób.")
+            raise IncidentValidationError(
+                "Package requirement wskazuje nieznany zasób."
+            )
         if service.parent_id != requirement.host_id:
-            raise IncidentValidationError("Package requirement wskazuje niewłaściwy host.")
+            raise IncidentValidationError(
+                "Package requirement wskazuje niewłaściwy host."
+            )
 
     for requirement in definition.configuration_requirements:
         service = services.get(requirement.service_id)
@@ -162,9 +261,25 @@ def _validate_v3_references(definition: IncidentDefinition) -> None:
             )
         if resource.resource_type is not ResourceType.FILE:
             raise IncidentValidationError("Configuration requirement wymaga pliku.")
-        if service.parent_id != requirement.host_id or resource.parent_id != requirement.host_id:
+        if (
+            service.parent_id != requirement.host_id
+            or resource.parent_id != requirement.host_id
+        ):
             raise IncidentValidationError(
                 "Configuration requirement wskazuje niewłaściwy host."
+            )
+        attributes = _field_map(resource.attributes)
+        if requirement.expected_mode is not None and not isinstance(
+            attributes.get("current_mode"), str
+        ):
+            raise IncidentValidationError(
+                "Configuration requirement trybu wymaga bieżącego trybu pliku."
+            )
+        if requirement.expected_owner is not None and not isinstance(
+            attributes.get("owner"), str
+        ):
+            raise IncidentValidationError(
+                "Configuration requirement właściciela wymaga właściciela pliku."
             )
 
     dependency_ids = {
@@ -178,23 +293,19 @@ def _validate_v3_references(definition: IncidentDefinition) -> None:
 
     _validate_dependency_cycles(definition)
 
-    addresses = []
-    for host in hosts.values():
-        address = _field_map(host.attributes).get("address")
-        if not isinstance(address, str):
-            continue
-        try:
-            addresses.append(str(ip_interface(address).ip))
-        except ValueError as error:
-            raise IncidentValidationError("Host zawiera nieprawidłowy adres IP.") from error
+    addresses = tuple(host_addresses.values())
     if len(addresses) != len(set(addresses)):
         raise IncidentValidationError("Adresy hostów nie są unikalne.")
 
     if definition.schema_version in {"3.0", "4.0"}:
         if not definition.service_dependencies:
-            raise IncidentValidationError("IncidentDefinition V3 wymaga grafu zależności.")
+            raise IncidentValidationError(
+                "IncidentDefinition V3 wymaga grafu zależności."
+            )
         if definition.post_incident is None:
-            raise IncidentValidationError("IncidentDefinition V3 wymaga danych post-incident.")
+            raise IncidentValidationError(
+                "IncidentDefinition V3 wymaga danych post-incident."
+            )
 
 
 def _validate_post_incident(definition: IncidentDefinition) -> None:
@@ -215,9 +326,7 @@ def _validate_post_incident(definition: IncidentDefinition) -> None:
         capability not in capabilities
         for capability in definition.post_incident.repair_capability_ids
     ):
-        raise IncidentValidationError(
-            "Post-incident używa niedostępnego capability."
-        )
+        raise IncidentValidationError("Post-incident używa niedostępnego capability.")
 
 
 def _fault_category(fault) -> str | None:
@@ -232,7 +341,9 @@ def _validate_hard_contract(definition: IncidentDefinition) -> None:
         if definition.schema_version == "4.0" or definition.fault_relation is not None:
             raise IncidentValidationError("Schemat V4 jest przeznaczony dla HARD.")
         if any(fault.resolution_condition is not None for fault in definition.faults):
-            raise IncidentValidationError("Warunki fault recovery są przeznaczone dla HARD.")
+            raise IncidentValidationError(
+                "Warunki fault recovery są przeznaczone dla HARD."
+            )
         return
     if definition.schema_version != "4.0":
         raise IncidentValidationError("HARD wymaga schematu V4.")
@@ -254,7 +365,9 @@ def _validate_hard_contract(definition: IncidentDefinition) -> None:
             _fault_category(secondary),
         )
     except ValueError as error:
-        raise IncidentValidationError("Para faultów HARD nie istnieje w katalogu.") from error
+        raise IncidentValidationError(
+            "Para faultów HARD nie istnieje w katalogu."
+        ) from error
     if (
         definition.initial_world_state.environment_id
         not in combination.compatible_environment_archetypes
@@ -266,7 +379,9 @@ def _validate_hard_contract(definition: IncidentDefinition) -> None:
         if resource.resource_type is ResourceType.HOST
     }
     if not set(combination.required_host_roles) <= roles:
-        raise IncidentValidationError("Środowisko HARD nie zawiera wymaganych ról hostów.")
+        raise IncidentValidationError(
+            "Środowisko HARD nie zawiera wymaganych ról hostów."
+        )
     capabilities = set(definition.capabilities.command_capability_ids)
     if not set(combination.required_capabilities) <= capabilities:
         raise IncidentValidationError("HARD nie zawiera wymaganych capabilities.")
@@ -278,19 +393,21 @@ def _validate_hard_contract(definition: IncidentDefinition) -> None:
     if combination.affected_service_archetype not in service_archetypes:
         raise IncidentValidationError("HARD nie zawiera wymaganego archetypu usługi.")
     if any(
-        _field_map(fault.parameters).get("combination_id")
-        != combination.combination_id
+        _field_map(fault.parameters).get("combination_id") != combination.combination_id
         for fault in definition.faults
     ):
         raise IncidentValidationError("Metadata kombinacji HARD jest niespójne.")
     dependency_ids = {
         dependency.dependency_id for dependency in definition.service_dependencies
     }
-    if not {
-        "dep-external-proxy",
-        "dep-proxy-api",
-        "dep-api-database",
-    } <= dependency_ids:
+    if (
+        not {
+            "dep-external-proxy",
+            "dep-proxy-api",
+            "dep-api-database",
+        }
+        <= dependency_ids
+    ):
         raise IncidentValidationError("Topologia HARD nie zawiera pełnego łańcucha.")
     condition_keys = {
         (
@@ -331,7 +448,9 @@ def _validate_hard_contract(definition: IncidentDefinition) -> None:
             post_incident.learning_summary,
         )
     ):
-        raise IncidentValidationError("Raport HARD nie zawiera pełnego łańcucha przyczyn.")
+        raise IncidentValidationError(
+            "Raport HARD nie zawiera pełnego łańcucha przyczyn."
+        )
     if definition.generation.generation_source is GenerationSource.AI and (
         definition.generation.generator_id
         not in {"shellforge.gemma", "shellforge.materializer"}
@@ -350,9 +469,18 @@ def _validate_ai_public_data(definition):
         for fault in FAULT_TEMPLATES
         for term in fault.forbidden_public_terms
     } | {
-        "python3-psycopg2", "restorecon", "httpd_sys_content_t", "5432/tcp",
-        "add-service=https", "nmcli con mod", "firewall-cmd --add", "chmod ",
-        "błędny kontekst", "brak pakietu", "blokuje port", "błędny dns",
+        "python3-psycopg2",
+        "restorecon",
+        "httpd_sys_content_t",
+        "5432/tcp",
+        "add-service=https",
+        "nmcli con mod",
+        "firewall-cmd --add",
+        "chmod ",
+        "błędny kontekst",
+        "brak pakietu",
+        "blokuje port",
+        "błędny dns",
     }
     if definition.post_incident:
         terms.add(definition.post_incident.root_cause.casefold())
@@ -360,25 +488,35 @@ def _validate_ai_public_data(definition):
         definition.presentation.model_dump_json(),
         *(objective.label for objective in definition.objectives),
         *(objective.objective_id for objective in definition.objectives),
-        *(item.interaction_id for item in definition.initial_world_state.map.interactions),
+        *(
+            item.interaction_id
+            for item in definition.initial_world_state.map.interactions
+        ),
     ]
     for resource in definition.initial_world_state.resources:
         public_values.extend((resource.resource_id, resource.state))
         public_values.extend(
-            str(field.value) for field in resource.attributes
+            str(field.value)
+            for field in resource.attributes
             if field.key in {"hostname", "service_name", "role", "public_health"}
         )
     for value in public_values:
         if any(term in value.casefold() for term in terms if term):
-            raise IncidentValidationError("Publiczne dane AI ujawniają przyczynę awarii.")
+            raise IncidentValidationError(
+                "Publiczne dane AI ujawniają przyczynę awarii."
+            )
     for resource in definition.initial_world_state.resources:
         fields = _field_map(resource.attributes)
         for key in ("hostname", "service_name"):
             if key in fields:
                 import re
 
-                if not isinstance(fields[key], str) or not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9.-]{0,80}", fields[key]):
-                    raise IncidentValidationError("Publiczna nazwa zasobu musi być nazwą techniczną.")
+                if not isinstance(fields[key], str) or not re.fullmatch(
+                    r"[a-zA-Z0-9][a-zA-Z0-9.-]{0,80}", fields[key]
+                ):
+                    raise IncidentValidationError(
+                        "Publiczna nazwa zasobu musi być nazwą techniczną."
+                    )
 
 
 class IncidentValidator:
@@ -428,8 +566,7 @@ class IncidentValidator:
         if len(definition.hints) > profile.hint_limit:
             raise IncidentValidationError("Liczba podpowiedzi przekracza profil.")
         if any(
-            objective.completion_condition is None
-            and not objective.completion_fact_ids
+            objective.completion_condition is None and not objective.completion_fact_ids
             for objective in definition.objectives
         ):
             raise IncidentValidationError(
@@ -539,7 +676,9 @@ class IncidentValidator:
                     requirement.host_id
                 ].packages.available_packages
             ):
-                raise IncidentValidationError("Package requirement używa nieznanego pakietu.")
+                raise IncidentValidationError(
+                    "Package requirement używa nieznanego pakietu."
+                )
         initially_completed = evaluate_objectives(definition, state)
         required_ids = {
             objective.objective_id
@@ -556,7 +695,9 @@ class IncidentValidator:
             get_incident_recovery_state(definition, state)
             is not IncidentRecoveryState.BROKEN
         ):
-            raise IncidentValidationError("HARD nie rozpoczyna się z dwoma aktywnymi faultami.")
+            raise IncidentValidationError(
+                "HARD nie rozpoczyna się z dwoma aktywnymi faultami."
+            )
 
         service = DynamicCommandService()
         final_progress = get_session_progress(definition, state)
@@ -628,7 +769,9 @@ class IncidentValidator:
                                 "Partial recovery nie zmienia symptomów ani health."
                             )
         except IncidentValidationError as error:
-            raise IncidentReplayError("Replay reference solution nie przeszedł walidacji.") from error
+            raise IncidentReplayError(
+                "Replay reference solution nie przeszedł walidacji."
+            ) from error
         except Exception as error:
             raise IncidentReplayError(
                 "Replay reference solution zakończył się błędem."
@@ -655,7 +798,9 @@ class IncidentValidator:
                 get_incident_recovery_state(definition, state)
                 is not IncidentRecoveryState.HEALTHY
             ):
-                raise IncidentReplayError("Reference solution HARD nie przywraca zdrowia.")
+                raise IncidentReplayError(
+                    "Reference solution HARD nie przywraca zdrowia."
+                )
         if definition.model_dump_json() != before:
             raise IncidentValidationError("Validator zmodyfikował IncidentDefinition.")
         return definition

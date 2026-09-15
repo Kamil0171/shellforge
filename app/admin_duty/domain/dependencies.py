@@ -9,17 +9,19 @@ from app.admin_duty.domain.definition import (
 from app.admin_duty.domain.runtime import RuntimeResource, SessionRuntimeState
 
 
-def _firewall_allows(state: SessionRuntimeState, host_id: str, port: int, protocol: str) -> bool:
+def _firewall_allows(
+    state: SessionRuntimeState, host_id: str, port: int, protocol: str
+) -> bool:
     runtime = state.host_runtimes[host_id]
     firewall = runtime.firewall
     if not firewall.running:
         return True
     if f"{port}/{protocol}" in firewall.runtime_ports:
         return True
-    return (port == 80 and "http" in firewall.runtime_services) or (
-        port == 443 and "https" in firewall.runtime_services
-    ) or (
-        port == 53 and "dns" in firewall.runtime_services
+    return (
+        (port == 80 and "http" in firewall.runtime_services)
+        or (port == 443 and "https" in firewall.runtime_services)
+        or (port == 53 and "dns" in firewall.runtime_services)
     )
 
 
@@ -56,7 +58,14 @@ def _configuration_is_valid(
     if entry is None or entry.kind != "file":
         return False
     expected = attributes.get("expected_content")
-    return not isinstance(expected, str) or entry.content == expected
+    content_valid = not isinstance(expected, str) or entry.content == expected
+    mode_valid = (
+        requirement.expected_mode is None or entry.mode == requirement.expected_mode
+    )
+    owner_valid = (
+        requirement.expected_owner is None or entry.owner == requirement.expected_owner
+    )
+    return content_valid and mode_valid and owner_valid
 
 
 def _dependency_is_healthy(
@@ -87,9 +96,7 @@ def _dependency_is_healthy(
         )
         if not dns_ready or required_dns_name not in source_runtime.network.dns_records:
             return False
-    protocol = (
-        "udp" if dependency.protocol is NetworkProtocol.UDP else "tcp"
-    )
+    protocol = "udp" if dependency.protocol is NetworkProtocol.UDP else "tcp"
     return _firewall_allows(
         state,
         dependency.target_host_id,
@@ -124,7 +131,9 @@ def reconcile_dependencies(
             if runtime.network.connections.get(name, False)
             for server in servers
         }
-        expected_services = set(resource.attributes.get("expected_firewall_services", ()))
+        expected_services = set(
+            resource.attributes.get("expected_firewall_services", ())
+        )
         expected_ports = set(resource.attributes.get("expected_firewall_ports", ()))
         attributes = resource.attributes.copy()
         attributes["network_health"] = (
@@ -184,9 +193,7 @@ def reconcile_dependencies(
                 for requirement in configuration_requirements.get(service_id, [])
             )
             attributes = service.attributes.copy()
-            attributes["package_health"] = (
-                "healthy" if package_healthy else "unhealthy"
-            )
+            attributes["package_health"] = "healthy" if package_healthy else "unhealthy"
             attributes["configuration_health"] = (
                 "healthy" if configuration_healthy else "unhealthy"
             )

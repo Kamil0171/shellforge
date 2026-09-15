@@ -33,12 +33,27 @@ from app.admin_duty.domain.difficulty import DifficultyLevel
 from app.admin_duty.domain.generation import GeneratedIncidentDraft
 from app.admin_duty.rocky.registry import HANDLERS
 
-MEDIUM_SCENARIO_CATEGORIES = (
+LEGACY_MEDIUM_SCENARIO_CATEGORIES = (
     "dependency-firewall-blocked",
     "dependency-package-missing",
     "selinux-context-invalid",
     "networkmanager-dns-invalid",
     "external-firewall-mismatch",
+)
+
+EXPANDED_MEDIUM_SCENARIO_CATEGORIES = (
+    "service-config-permission-denied",
+    "systemd-stale-unit-config",
+    "service-config-invalid",
+    "dependency-dns-name-mismatch",
+    "dependency-port-mismatch",
+    "selinux-proxy-context-invalid",
+    "networkmanager-connection-inactive",
+)
+
+MEDIUM_SCENARIO_CATEGORIES = (
+    *LEGACY_MEDIUM_SCENARIO_CATEGORIES,
+    *EXPANDED_MEDIUM_SCENARIO_CATEGORIES,
 )
 
 
@@ -181,7 +196,7 @@ def _map_snapshot(initial_host_id, secondary_host_id):
     return template.snapshot.model_copy(update={"interactions": interactions})
 
 
-def _components(category):
+def _components(category, *, version="3.0"):
     return (
         ComponentReference(
             component_type=ComponentType.MAP,
@@ -191,17 +206,17 @@ def _components(category):
         ComponentReference(
             component_type=ComponentType.ENVIRONMENT,
             component_id=f"medium-{category}",
-            version="3.0",
+            version=version,
         ),
         ComponentReference(
             component_type=ComponentType.FAULT,
             component_id=category,
-            version="3.0",
+            version=version,
         ),
         ComponentReference(
             component_type=ComponentType.SYMPTOM,
             component_id=f"symptom-{category}",
-            version="3.0",
+            version=version,
         ),
         ComponentReference(
             component_type=ComponentType.OBJECTIVE,
@@ -224,6 +239,8 @@ def _components(category):
 def build_medium_draft(category: str, *, seed: int) -> GeneratedIncidentDraft:
     if category not in MEDIUM_SCENARIO_CATEGORIES:
         raise ValueError(f"Nieznana kategoria MEDIUM: {category}.")
+    if category in EXPANDED_MEDIUM_SCENARIO_CATEGORIES:
+        return _build_expanded_medium_draft(category, seed=seed)
 
     api_state = "running"
     api_context = None
@@ -242,31 +259,23 @@ def build_medium_draft(category: str, *, seed: int) -> GeneratedIncidentDraft:
     if category == "dependency-firewall-blocked":
         database_ports = ()
         fault_target = "host-data-01"
-        root_cause = (
-            "Firewalld na hoście data-01 blokował wymagane połączenie TCP do portu 5432."
-        )
+        root_cause = "Firewalld na hoście data-01 blokował wymagane połączenie TCP do portu 5432."
         repair_capabilities = ("firewalld.command",)
     elif category == "dependency-package-missing":
         api_state = "failed"
         app_packages = ()
-        root_cause = (
-            "Po wdrożeniu na app-01 brakowało pakietu python3-psycopg2 wymaganego przez API."
-        )
+        root_cause = "Po wdrożeniu na app-01 brakowało pakietu python3-psycopg2 wymaganego przez API."
         repair_capabilities = ("packages.command", "systemd.restart")
     elif category == "selinux-context-invalid":
         api_state = "failed"
         api_context = "unconfined_u:object_r:default_t:s0"
-        root_cause = (
-            "Pliki API miały nieprawidłowy kontekst SELinux, który blokował uruchomienie procesu."
-        )
+        root_cause = "Pliki API miały nieprawidłowy kontekst SELinux, który blokował uruchomienie procesu."
         repair_capabilities = ("selinux.restorecon", "systemd.restart")
     elif category == "networkmanager-dns-invalid":
         app_dns = ()
         api_dns_name = "database.internal"
         fault_target = "host-app-01"
-        root_cause = (
-            "Aktywne połączenie NetworkManager na app-01 nie miało skonfigurowanego serwera DNS."
-        )
+        root_cause = "Aktywne połączenie NetworkManager na app-01 nie miało skonfigurowanego serwera DNS."
         repair_capabilities = ("networkmanager.command",)
     else:
         edge_services = ("ssh",)
@@ -274,9 +283,7 @@ def build_medium_draft(category: str, *, seed: int) -> GeneratedIncidentDraft:
         initial_host_id = "host-client-01"
         fault_target = "host-edge-01"
         symptom_state = "unreachable"
-        root_cause = (
-            "Publiczny ruch HTTPS blokowała rozbieżność między portem reverse proxy a usługami firewalld."
-        )
+        root_cause = "Publiczny ruch HTTPS blokowała rozbieżność między portem reverse proxy a usługami firewalld."
         repair_capabilities = ("firewalld.command",)
 
     hosts = [
@@ -554,9 +561,7 @@ def build_medium_draft(category: str, *, seed: int) -> GeneratedIncidentDraft:
             required=False,
             order=2,
             objective_type=ObjectiveType.INSPECT_SERVICE,
-            completion_fact_ids=(
-                "service-status-inspected:service-proxy",
-            ),
+            completion_fact_ids=("service-status-inspected:service-proxy",),
         ),
         Objective(
             objective_id="restore-service-chain",
@@ -701,4 +706,608 @@ def build_medium_draft(category: str, *, seed: int) -> GeneratedIncidentDraft:
             affected_service_ids=("service-proxy", "service-api"),
             repair_capability_ids=repair_capabilities,
         ),
+    )
+
+
+def _resource_with(
+    resource: WorldResource, *, state=None, **attributes
+) -> WorldResource:
+    values = {field.key: field.value for field in resource.attributes}
+    values.update(attributes)
+    updates = {"attributes": _fields(**values)}
+    if state is not None:
+        updates["state"] = state
+    return resource.model_copy(update=updates)
+
+
+def _medium_editor_step(
+    order: int, command: str, content: str, purpose: str
+) -> SolutionStep:
+    return SolutionStep(
+        order=order,
+        capability_id="filesystem.edit",
+        input=command,
+        purpose=purpose,
+        parameters=(DataField(key="content", value=content),),
+    )
+
+
+def _healthy_api_unit() -> str:
+    return (
+        "[Unit]\nDescription=Usługa aplikacyjna orders-api\n"
+        "After=network-online.target\n\n[Service]\nType=simple\n"
+        "ExecStart=/opt/orders-api/orders-api\nUser=app\nRestart=on-failure\n\n"
+        "[Install]\nWantedBy=multi-user.target\n"
+    )
+
+
+def _build_expanded_medium_draft(category: str, *, seed: int) -> GeneratedIncidentDraft:
+    base = build_medium_draft("dependency-firewall-blocked", seed=seed)
+    resources = []
+    for resource in base.initial_world_state.resources:
+        if resource.resource_id == "host-data-01":
+            resource = _resource_with(
+                resource,
+                firewall_runtime_ports=("5432/tcp",),
+                firewall_permanent_ports=("5432/tcp",),
+            )
+        resources.append(resource)
+
+    resource_by_id = {resource.resource_id: resource for resource in resources}
+
+    def replace(resource_id: str, resource: WorldResource) -> None:
+        resource_by_id[resource_id] = resource
+
+    proxy_config = WorldResource(
+        resource_id="file-proxy-config",
+        resource_type=ResourceType.FILE,
+        state="present",
+        parent_id="host-edge-01",
+        attributes=_fields(
+            path="/opt/edge-proxy/upstream.conf",
+            content="UPSTREAM_PORT=8080\n",
+            expected_content="UPSTREAM_PORT=8080\n",
+            current_mode="0640",
+            owner="app",
+        ),
+    )
+    configuration_requirements = base.configuration_requirements
+    root_cause = "Warstwa aplikacyjna miała niespójną konfigurację operacyjną."
+    repair_capabilities: tuple[str, ...] = ("filesystem.edit", "systemd.restart")
+    organization = "Horyzont Danych"
+    environment_label = "Platforma obsługi zamówień"
+    title = "Degradacja ścieżki aplikacyjnej"
+    briefing = (
+        "Monitoring wykrył degradację publicznej usługi. Procesy i zależności działają "
+        "na oddzielnych hostach, dlatego potrzebna jest diagnostyka całej ścieżki."
+    )
+    fault_target = "service-api"
+    forbidden_terms: tuple[str, ...] = ()
+
+    if category == "service-config-permission-denied":
+        config = _resource_with(
+            resource_by_id["file-api-config"], current_mode="0600", owner="root"
+        )
+        replace("file-api-config", config)
+        replace(
+            "service-api",
+            _resource_with(
+                resource_by_id["service-api"],
+                journal_clue="Nie można odczytać pliku /opt/orders-api/app.conf.",
+            ),
+        )
+        configuration_requirements = (
+            base.configuration_requirements[0].model_copy(
+                update={"expected_mode": "0640", "expected_owner": "app"}
+            ),
+        )
+        solution = (
+            _step(
+                1,
+                "network.curl",
+                "curl http://portal.internal",
+                "Potwierdź degradację.",
+            ),
+            _step(2, "remote.ssh", "ssh app-01", "Przejdź na host aplikacji."),
+            _step(
+                3,
+                "systemd.status",
+                "systemctl status orders-api",
+                "Sprawdź proces API.",
+            ),
+            _step(
+                4,
+                "journal.read",
+                "journalctl -u orders-api",
+                "Odczytaj komunikat o konfiguracji.",
+            ),
+            _step(
+                5,
+                "filesystem.path-stat",
+                "stat /opt/orders-api/app.conf",
+                "Sprawdź właściciela i tryb pliku.",
+            ),
+            _step(
+                6,
+                "filesystem.chmod",
+                "chmod 640 /opt/orders-api/app.conf",
+                "Przywróć bezpieczny tryb pliku.",
+            ),
+            _step(
+                7,
+                "filesystem.chown",
+                "chown app:app /opt/orders-api/app.conf",
+                "Przywróć właściciela konfiguracji.",
+            ),
+            _step(
+                8,
+                "systemd.restart",
+                "systemctl restart orders-api",
+                "Uruchom ponownie API.",
+            ),
+            _step(9, "remote.ssh", "ssh edge-01", "Wróć na host brzegowy."),
+            _step(
+                10,
+                "network.curl",
+                "curl http://portal.internal",
+                "Zweryfikuj pełną ścieżkę.",
+            ),
+        )
+        root_cause = (
+            "Plik konfiguracji API miał właściciela root i tryb 0600, więc proces działający "
+            "jako app nie mógł go odczytać."
+        )
+        repair_capabilities = (
+            "filesystem.chmod",
+            "filesystem.chown",
+            "systemd.restart",
+        )
+        organization = "Srebrny Szlak"
+        environment_label = "System rozliczeń przesyłek"
+        title = "API bez dostępu do konfiguracji"
+        fault_target = "file-api-config"
+        forbidden_terms = ("0600", "chown app:app", "chmod 640")
+    elif category == "systemd-stale-unit-config":
+        api = _resource_with(
+            resource_by_id["service-api"],
+            state="failed",
+            configured_exec_start="orders-api-old",
+            journal_clue="Jednostka wskazuje nieaktualny plik wykonywalny po zmianie wydania.",
+        )
+        replace("service-api", api)
+        solution = (
+            _step(
+                1,
+                "network.curl",
+                "curl http://portal.internal",
+                "Potwierdź degradację.",
+            ),
+            _step(2, "remote.ssh", "ssh app-01", "Przejdź na host aplikacji."),
+            _step(
+                3,
+                "systemd.status",
+                "systemctl status orders-api",
+                "Sprawdź stan jednostki.",
+            ),
+            _step(
+                4, "journal.read", "journalctl -u orders-api", "Odczytaj błąd startu."
+            ),
+            _step(
+                5,
+                "systemd.cat",
+                "systemctl cat orders-api",
+                "Porównaj ścieżkę uruchomieniową.",
+            ),
+            _medium_editor_step(
+                6,
+                "nano /etc/systemd/system/orders-api.service",
+                _healthy_api_unit(),
+                "Popraw plik jednostki.",
+            ),
+            _step(
+                7,
+                "systemd.daemon-reload",
+                "systemctl daemon-reload",
+                "Przeładuj cache jednostek.",
+            ),
+            _step(
+                8,
+                "systemd.restart",
+                "systemctl restart orders-api",
+                "Uruchom poprawioną jednostkę.",
+            ),
+            _step(9, "remote.ssh", "ssh edge-01", "Wróć na host brzegowy."),
+            _step(
+                10,
+                "network.curl",
+                "curl http://portal.internal",
+                "Zweryfikuj pełną ścieżkę.",
+            ),
+        )
+        root_cause = (
+            "Jednostka systemd wskazywała nieaktualny plik wykonywalny, a poprawiona definicja "
+            "wymagała przeładowania cache przez daemon-reload."
+        )
+        repair_capabilities = (
+            "filesystem.edit",
+            "systemd.daemon-reload",
+            "systemd.restart",
+        )
+        organization = "Bursztynowa Chmura"
+        environment_label = "Zaplecze obsługi katalogu"
+        title = "Nieaktualna definicja jednostki"
+        forbidden_terms = ("orders-api-old", "daemon-reload", "execstart")
+    elif category in {"service-config-invalid", "dependency-dns-name-mismatch"}:
+        wrong_host = (
+            "database-archive.internal"
+            if category == "service-config-invalid"
+            else "database.service.internal"
+        )
+        config = _resource_with(
+            resource_by_id["file-api-config"],
+            content=f"DATABASE_HOST={wrong_host}\n",
+        )
+        replace("file-api-config", config)
+        replace(
+            "service-api",
+            _resource_with(
+                resource_by_id["service-api"],
+                journal_clue="Połączenie z usługą danych nie może zostać zestawione.",
+            ),
+        )
+        common_steps = [
+            _step(
+                1,
+                "network.curl",
+                "curl http://portal.internal",
+                "Potwierdź degradację.",
+            ),
+            _step(2, "remote.ssh", "ssh app-01", "Przejdź na host aplikacji."),
+            _step(
+                3,
+                "systemd.status",
+                "systemctl status orders-api",
+                "Potwierdź działanie procesu.",
+            ),
+        ]
+        if category == "dependency-dns-name-mismatch":
+            replace(
+                "service-api",
+                _resource_with(
+                    resource_by_id["service-api"],
+                    required_dns_name="database.internal",
+                ),
+            )
+            common_steps.extend(
+                (
+                    _step(
+                        4,
+                        "network.ping",
+                        "ping 10.24.8.30",
+                        "Potwierdź osiągalność hosta po IP.",
+                    ),
+                    _step(
+                        5,
+                        "network.dig",
+                        f"dig {wrong_host}",
+                        "Sprawdź nazwę używaną przez usługę.",
+                        expected_success=False,
+                    ),
+                    _step(
+                        6,
+                        "network.dig",
+                        "dig database.internal",
+                        "Zweryfikuj właściwy rekord DNS.",
+                    ),
+                    _step(
+                        7,
+                        "filesystem.read",
+                        "cat /opt/orders-api/app.conf",
+                        "Porównaj konfigurację z DNS.",
+                    ),
+                    _medium_editor_step(
+                        8,
+                        "nano /opt/orders-api/app.conf",
+                        "DATABASE_HOST=database.internal\n",
+                        "Popraw nazwę zależności.",
+                    ),
+                    _step(
+                        9,
+                        "systemd.restart",
+                        "systemctl restart orders-api",
+                        "Przeładuj konfigurację API.",
+                    ),
+                    _step(10, "remote.ssh", "ssh edge-01", "Wróć na host brzegowy."),
+                    _step(
+                        11,
+                        "network.curl",
+                        "curl http://portal.internal",
+                        "Zweryfikuj pełną ścieżkę.",
+                    ),
+                )
+            )
+            root_cause = (
+                "Konfiguracja API używała nieistniejącej nazwy DNS zależności, mimo że host "
+                "bazy danych pozostawał osiągalny po adresie IP."
+            )
+            organization = "Nadwiślańskie Systemy"
+            environment_label = "Platforma synchronizacji danych"
+            title = "Błędna nazwa zależności"
+            forbidden_terms = (wrong_host, "DATABASE_HOST")
+        else:
+            common_steps.extend(
+                (
+                    _step(
+                        4,
+                        "journal.read",
+                        "journalctl -u orders-api",
+                        "Sprawdź komunikaty aplikacji.",
+                    ),
+                    _step(
+                        5,
+                        "filesystem.read",
+                        "cat /opt/orders-api/app.conf",
+                        "Sprawdź konfigurację zależności.",
+                    ),
+                    _medium_editor_step(
+                        6,
+                        "nano /opt/orders-api/app.conf",
+                        "DATABASE_HOST=database.internal\n",
+                        "Przywróć właściwą konfigurację.",
+                    ),
+                    _step(
+                        7,
+                        "systemd.restart",
+                        "systemctl restart orders-api",
+                        "Przeładuj konfigurację API.",
+                    ),
+                    _step(8, "remote.ssh", "ssh edge-01", "Wróć na host brzegowy."),
+                    _step(
+                        9,
+                        "network.curl",
+                        "curl http://portal.internal",
+                        "Zweryfikuj pełną ścieżkę.",
+                    ),
+                )
+            )
+            root_cause = "API wskazywało nieprawidłowy adres logiczny usługi danych w pliku konfiguracji."
+            organization = "Zielony Port"
+            environment_label = "System obsługi rezerwacji"
+            title = "Niespójna konfiguracja API"
+            forbidden_terms = (wrong_host, "DATABASE_HOST")
+        solution = tuple(common_steps)
+        fault_target = "file-api-config"
+    elif category == "dependency-port-mismatch":
+        proxy_config = _resource_with(proxy_config, content="UPSTREAM_PORT=8081\n")
+        resource_by_id[proxy_config.resource_id] = proxy_config
+        replace(
+            "service-proxy",
+            _resource_with(
+                resource_by_id["service-proxy"],
+                journal_clue="Upstream odrzuca połączenie na skonfigurowanym porcie.",
+            ),
+        )
+        configuration_requirements = (
+            *base.configuration_requirements,
+            ConfigurationRequirement(
+                requirement_id="config-proxy-upstream",
+                service_id="service-proxy",
+                host_id="host-edge-01",
+                file_resource_id="file-proxy-config",
+            ),
+        )
+        solution = (
+            _step(
+                1,
+                "network.curl",
+                "curl http://portal.internal",
+                "Potwierdź degradację.",
+            ),
+            _step(
+                2,
+                "systemd.status",
+                "systemctl status edge-proxy",
+                "Potwierdź działanie proxy.",
+            ),
+            _step(3, "network.listeners", "ss -lntp", "Sprawdź lokalne listenery."),
+            _step(4, "remote.ssh", "ssh app-01", "Przejdź na host API."),
+            _step(5, "network.listeners", "ss -lntp", "Sprawdź port API."),
+            _step(6, "remote.ssh", "ssh edge-01", "Wróć na host proxy."),
+            _step(
+                7,
+                "filesystem.read",
+                "cat /opt/edge-proxy/upstream.conf",
+                "Porównaj port upstream.",
+            ),
+            _medium_editor_step(
+                8,
+                "nano /opt/edge-proxy/upstream.conf",
+                "UPSTREAM_PORT=8080\n",
+                "Ujednolić port zależności.",
+            ),
+            _step(
+                9,
+                "systemd.restart",
+                "systemctl restart edge-proxy",
+                "Przeładuj konfigurację proxy.",
+            ),
+            _step(
+                10,
+                "network.curl",
+                "curl http://portal.internal",
+                "Zweryfikuj pełną ścieżkę.",
+            ),
+        )
+        root_cause = "Reverse proxy kierował żądania na port 8081, podczas gdy API nasłuchiwało na porcie 8080."
+        organization = "Latarnia Operacyjna"
+        environment_label = "Bramka usług wewnętrznych"
+        title = "Działające procesy, zerwana ścieżka"
+        fault_target = "file-proxy-config"
+        forbidden_terms = ("UPSTREAM_PORT=8081", "8081")
+    elif category == "selinux-proxy-context-invalid":
+        proxy = _resource_with(
+            resource_by_id["service-proxy"],
+            state="failed",
+            current_selinux_context="unconfined_u:object_r:default_t:s0",
+            expected_selinux_context="system_u:object_r:bin_t:s0",
+        )
+        replace("service-proxy", proxy)
+        solution = (
+            _step(
+                1,
+                "network.curl",
+                "curl http://portal.internal",
+                "Potwierdź niedostępność.",
+                expected_success=False,
+            ),
+            _step(
+                2,
+                "systemd.status",
+                "systemctl status edge-proxy",
+                "Sprawdź stan proxy.",
+            ),
+            _step(
+                3,
+                "journal.read",
+                "journalctl -u edge-proxy",
+                "Odczytaj przyczynę odmowy.",
+            ),
+            _step(4, "selinux.getenforce", "getenforce", "Sprawdź tryb SELinux."),
+            _step(
+                5,
+                "selinux.semanage",
+                "semanage fcontext -l",
+                "Sprawdź oczekiwane konteksty.",
+            ),
+            _step(
+                6,
+                "selinux.restorecon",
+                "restorecon -R /opt/edge-proxy",
+                "Przywróć kontekst plików proxy.",
+            ),
+            _step(
+                7,
+                "systemd.restart",
+                "systemctl restart edge-proxy",
+                "Uruchom ponownie proxy.",
+            ),
+            _step(
+                8,
+                "network.curl",
+                "curl http://portal.internal",
+                "Zweryfikuj pełną ścieżkę.",
+            ),
+        )
+        root_cause = "Pliki reverse proxy miały kontekst SELinux niezgodny z oczekiwaną etykietą wykonywalną."
+        repair_capabilities = ("selinux.restorecon", "systemd.restart")
+        organization = "Pracownia Północ"
+        environment_label = "Warstwa publikacji usług"
+        title = "Proxy blokowane przez politykę systemu"
+        fault_target = "service-proxy"
+        forbidden_terms = ("restorecon", "default_t", "bin_t")
+    else:
+        app_host = _resource_with(
+            resource_by_id["host-app-01"], connection_active=False
+        )
+        replace("host-app-01", app_host)
+        solution = (
+            _step(
+                1,
+                "network.curl",
+                "curl http://portal.internal",
+                "Potwierdź degradację.",
+            ),
+            _step(2, "remote.ssh", "ssh app-01", "Przejdź do konsoli hosta aplikacji."),
+            _step(
+                3,
+                "networkmanager.command",
+                "nmcli device status",
+                "Sprawdź stan interfejsu.",
+            ),
+            _step(4, "network.route", "ip route", "Sprawdź widoczne trasy."),
+            _step(
+                5,
+                "networkmanager.command",
+                "nmcli connection show",
+                "Ustal nazwę profilu połączenia.",
+            ),
+            _step(
+                6,
+                "networkmanager.command",
+                "nmcli connection up System-ens192",
+                "Aktywuj istniejący profil.",
+            ),
+            _step(
+                7,
+                "network.ping",
+                "ping 10.24.8.30",
+                "Zweryfikuj łączność do usługi danych.",
+            ),
+            _step(8, "remote.ssh", "ssh edge-01", "Wróć na host brzegowy."),
+            _step(
+                9,
+                "network.curl",
+                "curl http://portal.internal",
+                "Zweryfikuj pełną ścieżkę.",
+            ),
+        )
+        root_cause = "Profil NetworkManager na hoście aplikacji był nieaktywny, odcinając API od zależności."
+        repair_capabilities = ("networkmanager.command",)
+        organization = "Węzeł Zachodni"
+        environment_label = "Klaster integracji operacyjnej"
+        title = "Odłączony host aplikacyjny"
+        fault_target = "host-app-01"
+        forbidden_terms = ("connection up", "System-ens192")
+
+    fault = FaultInstance(
+        fault_id=f"fault-{category}",
+        fault_type=category.replace("-", "_"),
+        version="5.0",
+        target_resource_id=fault_target,
+        severity=FaultSeverity.MEDIUM,
+        parameters=_fields(
+            component_id=category,
+            forbidden_public_terms=forbidden_terms,
+        ),
+    )
+    symptom = base.symptoms[0].model_copy(
+        update={
+            "symptom_id": f"symptom-{category}",
+            "data": _fields(observed_state="http-502"),
+        }
+    )
+    presentation = base.presentation.model_copy(
+        update={
+            "title": title,
+            "organization": organization,
+            "environment_label": environment_label,
+            "briefing": briefing,
+            "ticket_reference": f"MED-{seed % 100000:05d}",
+            "tags": ("medium", "dependencies", "diagnostyka"),
+        }
+    )
+    world = base.initial_world_state.model_copy(
+        update={
+            "environment_id": f"medium-{category}",
+            "environment_version": "5.0",
+            "resources": tuple(resource_by_id.values()),
+        }
+    )
+    return base.model_copy(
+        update={
+            "draft_id": f"medium-{category}-{seed}",
+            "generator_version": "5.0",
+            "components": _components(category, version="5.0"),
+            "presentation": presentation,
+            "initial_world_state": world,
+            "faults": (fault,),
+            "symptoms": (symptom,),
+            "solution": solution,
+            "configuration_requirements": configuration_requirements,
+            "post_incident": PostIncidentDefinition(
+                root_cause=root_cause,
+                affected_service_ids=("service-proxy", "service-api"),
+                repair_capability_ids=repair_capabilities,
+            ),
+        }
     )

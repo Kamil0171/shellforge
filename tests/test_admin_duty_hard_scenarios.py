@@ -1,3 +1,4 @@
+from collections import Counter
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -70,9 +71,18 @@ def test_every_approved_hard_pair_materializes_and_replays(combination):
 
 
 def test_difficulty_profiles_enforce_v4_fault_counts():
-    assert (get_difficulty_profile(DifficultyLevel.EASY).min_faults, get_difficulty_profile(DifficultyLevel.EASY).max_faults) == (1, 1)
-    assert (get_difficulty_profile(DifficultyLevel.MEDIUM).min_faults, get_difficulty_profile(DifficultyLevel.MEDIUM).max_faults) == (1, 1)
-    assert (get_difficulty_profile(DifficultyLevel.HARD).min_faults, get_difficulty_profile(DifficultyLevel.HARD).max_faults) == (2, 2)
+    assert (
+        get_difficulty_profile(DifficultyLevel.EASY).min_faults,
+        get_difficulty_profile(DifficultyLevel.EASY).max_faults,
+    ) == (1, 1)
+    assert (
+        get_difficulty_profile(DifficultyLevel.MEDIUM).min_faults,
+        get_difficulty_profile(DifficultyLevel.MEDIUM).max_faults,
+    ) == (1, 1)
+    assert (
+        get_difficulty_profile(DifficultyLevel.HARD).min_faults,
+        get_difficulty_profile(DifficultyLevel.HARD).max_faults,
+    ) == (2, 2)
 
 
 @pytest.mark.parametrize("fault_count", [1, 3])
@@ -117,7 +127,7 @@ def test_hard_catalog_rejects_unsupported_pair_environment_and_topology():
     )
     with pytest.raises(
         IncidentValidationError,
-        match="topologia|Topologia|Propagacja",
+        match="topologia|Topologia|Propagacja|grafem zależności",
     ):
         IncidentValidator().validate(
             definition.model_copy(update={"service_dependencies": topology})
@@ -138,7 +148,9 @@ def test_first_repair_changes_symptoms_but_does_not_complete(combination):
         for symptom in definition.symptoms
     }
 
-    assert get_incident_recovery_state(definition, state) is IncidentRecoveryState.BROKEN
+    assert (
+        get_incident_recovery_state(definition, state) is IncidentRecoveryState.BROKEN
+    )
     assert project_public_monitoring(definition, state).overall_status == "critical"
 
     for index, step in enumerate(definition.solution, 1):
@@ -155,14 +167,19 @@ def test_first_repair_changes_symptoms_but_does_not_complete(combination):
         for symptom in definition.symptoms
     }
     assert current_states != initial_states
-    assert get_incident_recovery_state(definition, state) is IncidentRecoveryState.PARTIALLY_RECOVERED
+    assert (
+        get_incident_recovery_state(definition, state)
+        is IncidentRecoveryState.PARTIALLY_RECOVERED
+    )
     assert project_public_monitoring(definition, state).overall_status == "improving"
     assert result.progress.mission_complete is False
     assert state.status.value == "active"
 
 
 def test_reversed_repair_order_stays_partial_then_completes():
-    definition = convert_draft_to_definition(build_hard_draft("H-01", seed=37), created_at=NOW)
+    definition = convert_draft_to_definition(
+        build_hard_draft("H-01", seed=37), created_at=NOW
+    )
     state = create_session_runtime(definition, now=NOW)
     service = DynamicCommandService()
     commands = (
@@ -209,7 +226,7 @@ def test_reference_replay_rejects_solution_ending_after_first_repair():
 
 def test_hard_seed_is_stable_and_selects_full_catalog():
     generator = DeterministicIncidentGenerator()
-    pairs = set()
+    pairs = Counter()
 
     for seed in range(100):
         first = generator.generate(DifficultyLevel.HARD, seed=seed, now=NOW)
@@ -217,22 +234,24 @@ def test_hard_seed_is_stable_and_selects_full_catalog():
         assert first.model_dump(exclude={"scenario_id"}) == second.model_dump(
             exclude={"scenario_id"}
         )
-        pairs.add(
+        pairs[
             tuple(
                 field.value
                 for fault in first.faults
                 for field in fault.parameters
                 if field.key == "component_id"
             )
-        )
+        ] += 1
 
-    assert pairs == {
+    assert len(HARD_COMBINATIONS) == 10
+    assert set(pairs) == {
         (
             combination.primary_fault_category,
             combination.secondary_fault_category,
         )
         for combination in HARD_COMBINATIONS
     }
+    assert max(pairs.values()) <= 2 * min(pairs.values())
 
 
 def test_hard_builder_seed_changes_cosmetics_without_breaking_references():
@@ -255,7 +274,9 @@ def test_active_hard_dto_hides_fault_chain_and_completed_report_reveals_it():
         scenario_repository=scenarios,
         session_repository=sessions,
     )
-    definition = validate_and_convert_draft(build_hard_draft("H-04", seed=43), created_at=NOW)
+    definition = validate_and_convert_draft(
+        build_hard_draft("H-04", seed=43), created_at=NOW
+    )
     started = service._start_definition(definition, NOW)
     active = started.model_dump(mode="json", exclude_none=True)
     serialized = str(active).casefold()

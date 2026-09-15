@@ -1,3 +1,4 @@
+from collections import Counter
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
@@ -34,6 +35,9 @@ def test_each_medium_scenario_validates_and_reference_replay_completes(category)
     state = create_session_runtime(definition, now=NOW)
     service = DynamicCommandService()
 
+    assert get_session_progress(definition, state).mission_complete is False
+    assert state.status.value == "active"
+
     for index, step in enumerate(definition.solution, 1):
         result = service.execute(
             definition,
@@ -41,6 +45,15 @@ def test_each_medium_scenario_validates_and_reference_replay_completes(category)
             step.input,
             now=NOW + timedelta(seconds=index),
         )
+        if step.capability_id == "filesystem.edit":
+            parameters = {field.key: field.value for field in step.parameters}
+            result = service.save_file(
+                definition,
+                state,
+                path=result.editor.path,
+                content=parameters["content"],
+                now=NOW + timedelta(seconds=index, milliseconds=500),
+            )
         assert result.success is step.expected_success
 
     assert get_session_progress(definition, state).mission_complete
@@ -49,7 +62,7 @@ def test_each_medium_scenario_validates_and_reference_replay_completes(category)
 
 def test_medium_generation_is_deterministic_and_covers_full_curated_catalog():
     generator = DeterministicIncidentGenerator()
-    categories = set()
+    categories = Counter()
 
     for seed in range(100):
         first = generator.generate(DifficultyLevel.MEDIUM, seed=seed, now=NOW)
@@ -57,9 +70,53 @@ def test_medium_generation_is_deterministic_and_covers_full_curated_catalog():
         assert first.model_dump(exclude={"scenario_id"}) == second.model_dump(
             exclude={"scenario_id"}
         )
-        categories.add(first.faults[0].parameters[0].value)
+        categories[first.faults[0].parameters[0].value] += 1
 
-    assert categories == set(MEDIUM_SCENARIO_CATEGORIES)
+    assert len(MEDIUM_SCENARIO_CATEGORIES) == 12
+    assert set(categories) == set(MEDIUM_SCENARIO_CATEGORIES)
+    assert max(categories.values()) <= 3 * min(categories.values())
+
+
+def test_stale_systemd_unit_stays_broken_until_daemon_reload():
+    definition = convert_draft_to_definition(
+        build_medium_draft("systemd-stale-unit-config", seed=29),
+        created_at=NOW,
+    )
+    state = create_session_runtime(definition, now=NOW)
+    service = DynamicCommandService()
+    edit_step = next(
+        step for step in definition.solution if step.capability_id == "filesystem.edit"
+    )
+    editor = service.execute(
+        definition,
+        state,
+        "ssh app-01",
+        now=NOW + timedelta(seconds=1),
+    )
+    assert editor.success
+    editor = service.execute(
+        definition,
+        state,
+        edit_step.input,
+        now=NOW + timedelta(seconds=2),
+    )
+    content = {field.key: field.value for field in edit_step.parameters}["content"]
+    service.save_file(
+        definition,
+        state,
+        path=editor.editor.path,
+        content=content,
+        now=NOW + timedelta(seconds=3),
+    )
+    service.execute(
+        definition,
+        state,
+        "systemctl restart orders-api",
+        now=NOW + timedelta(seconds=4),
+    )
+
+    assert state.world_state.resources["service-api"].current_state == "failed"
+    assert get_session_progress(definition, state).mission_complete is False
 
 
 def test_running_service_can_have_degraded_dependency_health_and_502_symptom():
@@ -127,8 +184,7 @@ def test_medium_public_projection_contains_allowlisted_dependency_data_only():
 
     assert len(payload["infrastructure"]["nodes"]) >= 6
     assert any(
-        link.get("label") == "zależy od"
-        for link in payload["infrastructure"]["links"]
+        link.get("label") == "zależy od" for link in payload["infrastructure"]["links"]
     )
     serialized = str(payload).casefold()
     for hidden in (
