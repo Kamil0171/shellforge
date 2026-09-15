@@ -44,11 +44,26 @@ class IncidentGenerationRequest(FrozenDomainModel):
     skill_tags: tuple[Identifier, ...] = Field(default=(), max_length=32)
     seed: int | None = Field(default=None, ge=0, le=2**63 - 1)
     generation_source: GenerationSource = GenerationSource.DETERMINISTIC
-    validation_feedback: tuple[Literal[
-        "schema", "plan", "materialization", "capability", "semantic", "replay", "request_mismatch",
-        "timeout", "transport", "api_error", "rate_limit", "unavailable",
-        "rejected", "invalid_response", "invalid_json",
-    ], ...] = Field(default=(), max_length=1)
+    validation_feedback: tuple[
+        Literal[
+            "schema",
+            "plan",
+            "materialization",
+            "capability",
+            "semantic",
+            "replay",
+            "request_mismatch",
+            "timeout",
+            "transport",
+            "api_error",
+            "rate_limit",
+            "unavailable",
+            "rejected",
+            "invalid_response",
+            "invalid_json",
+        ],
+        ...,
+    ] = Field(default=(), max_length=1)
 
 
 class GeneratedIncidentDraft(FrozenDomainModel):
@@ -148,21 +163,38 @@ def get_ai_capability_catalog() -> AICapabilityCatalog:
     from app.admin_duty.rocky.registry import HANDLERS
 
     examples = (
-        *(build_medium_draft(category, seed=1) for category in MEDIUM_SCENARIO_CATEGORIES),
+        *(
+            build_medium_draft(category, seed=1)
+            for category in MEDIUM_SCENARIO_CATEGORIES
+        ),
         *(build_hard_draft(item.combination_id, seed=1) for item in HARD_COMBINATIONS),
     )
     return AICapabilityCatalog(
-        supported_resource_attributes=tuple(sorted({
-            field.key
-            for resources in (
-                *(environment.resources for environment in ENVIRONMENT_TEMPLATES),
-                *(example.initial_world_state.resources for example in examples),
+        supported_resource_attributes=tuple(
+            sorted(
+                {
+                    field.key
+                    for resources in (
+                        *(
+                            environment.resources
+                            for environment in ENVIRONMENT_TEMPLATES
+                        ),
+                        *(
+                            example.initial_world_state.resources
+                            for example in examples
+                        ),
+                    )
+                    for resource in resources
+                    for field in resource.attributes
+                }
             )
-            for resource in resources for field in resource.attributes
-        })),
-        supported_fault_types=tuple(sorted({fault.fault_type for fault in FAULT_TEMPLATES} | {
-            fault.fault_type for example in examples for fault in example.faults
-        })),
+        ),
+        supported_fault_types=tuple(
+            sorted(
+                {fault.fault_type for fault in FAULT_TEMPLATES}
+                | {fault.fault_type for example in examples for fault in example.faults}
+            )
+        ),
         supported_services=(
             "systemd-service",
             "reverse-proxy",
@@ -171,19 +203,21 @@ def get_ai_capability_catalog() -> AICapabilityCatalog:
             "worker",
         ),
         supported_commands=tuple(sorted(HANDLERS)),
-        supported_fault_categories=(
-            "systemd-service-failed",
-            "systemd-wrong-exec-start",
-            "systemd-missing-environment-variable",
-            "systemd-permission-denied",
-            "dependency-firewall-blocked",
-            "dependency-package-missing",
-            "selinux-context-invalid",
-            "networkmanager-dns-invalid",
-            "external-firewall-mismatch",
-            "service-config-invalid",
-            "dependency-port-mismatch",
-            "networkmanager-connection-inactive",
+        supported_fault_categories=tuple(
+            dict.fromkeys(
+                (
+                    *(fault.component_id for fault in FAULT_TEMPLATES),
+                    *MEDIUM_SCENARIO_CATEGORIES,
+                    *(
+                        category
+                        for combination in HARD_COMBINATIONS
+                        for category in (
+                            combination.primary_fault_category,
+                            combination.secondary_fault_category,
+                        )
+                    ),
+                )
+            )
         ),
         supported_dependency_types=("network", "service"),
         supported_packages=(
@@ -221,11 +255,18 @@ def get_ai_capability_catalog() -> AICapabilityCatalog:
             "permanent-port",
             "reload",
         ),
-        supported_maps=tuple(sorted(template.component_id for template in MAP_TEMPLATES)),
-        supported_map_interactions=tuple(sorted({
-            interaction.capability_id
-            for template in MAP_TEMPLATES for interaction in template.snapshot.interactions
-        })),
+        supported_maps=tuple(
+            sorted(template.component_id for template in MAP_TEMPLATES)
+        ),
+        supported_map_interactions=tuple(
+            sorted(
+                {
+                    interaction.capability_id
+                    for template in MAP_TEMPLATES
+                    for interaction in template.snapshot.interactions
+                }
+            )
+        ),
         difficulty_constraints=tuple(
             DifficultyCapability(
                 difficulty=level,
@@ -297,7 +338,10 @@ def parse_generated_draft(payload) -> GeneratedIncidentDraft:
             for child in value.values():
                 check_fields(child)
         elif isinstance(value, list):
-            if value and all(isinstance(item, dict) and set(item) == {"key", "value"} for item in value):
+            if value and all(
+                isinstance(item, dict) and set(item) == {"key", "value"}
+                for item in value
+            ):
                 keys = [item["key"] for item in value]
                 if len(keys) != len(set(keys)):
                     raise ValueError("Powtórzone pole danych.")
@@ -313,11 +357,14 @@ def parse_generated_draft(payload) -> GeneratedIncidentDraft:
             payload = json.loads(payload, object_pairs_hook=unique_object)
         check_fields(payload)
         return GeneratedIncidentDraft.model_validate_json(
-            json.dumps(payload, allow_nan=False), strict=True,
+            json.dumps(payload, allow_nan=False),
+            strict=True,
         )
     except (ValueError, TypeError, RecursionError):
         pass
-    raise DraftValidationError("Draft nie przeszedł walidacji schematu.", category="schema")
+    raise DraftValidationError(
+        "Draft nie przeszedł walidacji schematu.", category="schema"
+    )
 
 
 def validate_and_convert_draft(
@@ -350,8 +397,7 @@ def validate_and_convert_draft(
     if not declared_fault_categories <= fault_categories:
         raise DraftValidationError("Draft zawiera nieznaną kategorię faultu.")
     if not {
-        dependency.dependency_type.value
-        for dependency in draft.service_dependencies
+        dependency.dependency_type.value for dependency in draft.service_dependencies
     } <= set(catalog.supported_dependency_types):
         raise DraftValidationError("Draft zawiera nieznany typ dependency.")
     if not {
@@ -361,20 +407,28 @@ def validate_and_convert_draft(
     if draft.initial_world_state.map.map_id not in set(catalog.supported_maps):
         raise DraftValidationError("Draft zawiera nieznaną mapę.")
     if not {
-        interaction.capability_id for interaction in draft.initial_world_state.map.interactions
+        interaction.capability_id
+        for interaction in draft.initial_world_state.map.interactions
     } <= set(catalog.supported_map_interactions):
         raise DraftValidationError("Draft zawiera nieznaną interakcję mapy.")
     supported_services = set(catalog.supported_services)
-    if any(fault.fault_type not in catalog.supported_fault_types for fault in draft.faults):
+    if any(
+        fault.fault_type not in catalog.supported_fault_types for fault in draft.faults
+    ):
         raise DraftValidationError("Draft zawiera nieznany typ faultu.")
     for resource in draft.initial_world_state.resources:
         attributes = {field.key: field.value for field in resource.attributes}
         if not set(attributes) <= set(catalog.supported_resource_attributes):
             raise DraftValidationError("Draft zawiera nieznaną właściwość zasobu.")
         packages = attributes.get("installed_packages", ())
-        if not isinstance(packages, tuple) or not set(packages) <= set(catalog.supported_packages):
+        if not isinstance(packages, tuple) or not set(packages) <= set(
+            catalog.supported_packages
+        ):
             raise DraftValidationError("Draft zawiera nieznany pakiet hosta.")
-        if attributes.get("required_package") not in {None, *catalog.supported_packages}:
+        if attributes.get("required_package") not in {
+            None,
+            *catalog.supported_packages,
+        }:
             raise DraftValidationError("Draft wymaga nieznanego pakietu usługi.")
         if resource.resource_type is not ResourceType.SERVICE:
             continue
@@ -393,7 +447,8 @@ def validate_and_convert_draft(
     except (IncidentValidationError, ValueError):
         category = "semantic"
     raise DraftValidationError(
-        "Draft nie przeszedł walidacji semantycznej." if category == "semantic"
+        "Draft nie przeszedł walidacji semantycznej."
+        if category == "semantic"
         else "Draft nie przeszedł replay reference solution.",
         category=category,
     )
@@ -415,7 +470,10 @@ async def generate_validated_incident(
         raise DraftValidationError("Draft ma niezgodne źródło generowania.")
     if request.seed is not None and draft.seed != request.seed:
         raise DraftValidationError("Draft nie odpowiada żądanemu ziarnu losowania.")
-    if request.map_id is not None and draft.initial_world_state.map.map_id != request.map_id:
+    if (
+        request.map_id is not None
+        and draft.initial_world_state.map.map_id != request.map_id
+    ):
         raise DraftValidationError("Draft nie odpowiada żądanej mapie.")
     if request.allowed_fault_categories:
         allowed_categories = set(request.allowed_fault_categories)

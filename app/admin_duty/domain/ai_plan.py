@@ -25,6 +25,13 @@ MEDIUM_FAULTS = (
     "selinux-context-invalid",
     "networkmanager-dns-invalid",
     "external-firewall-mismatch",
+    "service-config-permission-denied",
+    "systemd-stale-unit-config",
+    "service-config-invalid",
+    "dependency-dns-name-mismatch",
+    "dependency-port-mismatch",
+    "selinux-proxy-context-invalid",
+    "networkmanager-connection-inactive",
 )
 EASY_ENVIRONMENTS = {
     "web-application": ("web-api", "web-operations-room"),
@@ -39,6 +46,11 @@ SYMPTOMS = {
     **dict.fromkeys(MEDIUM_FAULTS, "public_service_degraded"),
 }
 SKILLS = ("systemd", "filesystem", "network", "firewall", "packages", "selinux", "dns")
+MEDIUM_REVERSE_PROXY_FAULTS = {
+    "external-firewall-mismatch",
+    "dependency-port-mismatch",
+    "selinux-proxy-context-invalid",
+}
 
 HARD_FAULTS = tuple(
     dict.fromkeys(
@@ -61,39 +73,61 @@ class AIIncidentPlan(FrozenDomainModel):
         "web-stack",
         "hard-web-stack",
     ]
-    fault_category: Literal[
-        "systemd-service-failed",
-        "systemd-wrong-exec-start",
-        "systemd-missing-environment-variable",
-        "systemd-permission-denied",
-        "dependency-firewall-blocked",
-        "dependency-package-missing",
-        "selinux-context-invalid",
-        "networkmanager-dns-invalid",
-        "external-firewall-mismatch",
-    ] | None = None
-    primary_fault_category: Literal[
-        "dependency-firewall-blocked",
-        "selinux-context-invalid",
-        "networkmanager-dns-invalid",
-        "external-firewall-mismatch",
-        "dependency-package-missing",
-        "systemd-wrong-exec-start",
-        "service-config-invalid",
-        "dependency-port-mismatch",
-        "networkmanager-connection-inactive",
-    ] | None = None
-    secondary_fault_category: Literal[
-        "dependency-firewall-blocked",
-        "selinux-context-invalid",
-        "networkmanager-dns-invalid",
-        "external-firewall-mismatch",
-        "dependency-package-missing",
-        "systemd-wrong-exec-start",
-        "service-config-invalid",
-        "dependency-port-mismatch",
-        "networkmanager-connection-inactive",
-    ] | None = None
+    fault_category: (
+        Literal[
+            "systemd-service-failed",
+            "systemd-wrong-exec-start",
+            "systemd-missing-environment-variable",
+            "systemd-permission-denied",
+            "dependency-firewall-blocked",
+            "dependency-package-missing",
+            "selinux-context-invalid",
+            "networkmanager-dns-invalid",
+            "external-firewall-mismatch",
+            "service-config-permission-denied",
+            "systemd-stale-unit-config",
+            "service-config-invalid",
+            "dependency-dns-name-mismatch",
+            "dependency-port-mismatch",
+            "selinux-proxy-context-invalid",
+            "networkmanager-connection-inactive",
+        ]
+        | None
+    ) = None
+    primary_fault_category: (
+        Literal[
+            "dependency-firewall-blocked",
+            "selinux-context-invalid",
+            "networkmanager-dns-invalid",
+            "external-firewall-mismatch",
+            "dependency-package-missing",
+            "systemd-wrong-exec-start",
+            "service-config-invalid",
+            "dependency-port-mismatch",
+            "networkmanager-connection-inactive",
+            "service-config-permission-denied",
+            "systemd-stale-unit-config",
+            "dependency-dns-name-mismatch",
+        ]
+        | None
+    ) = None
+    secondary_fault_category: (
+        Literal[
+            "dependency-firewall-blocked",
+            "selinux-context-invalid",
+            "networkmanager-dns-invalid",
+            "external-firewall-mismatch",
+            "dependency-package-missing",
+            "systemd-wrong-exec-start",
+            "service-config-invalid",
+            "dependency-port-mismatch",
+            "networkmanager-connection-inactive",
+            "service-config-permission-denied",
+            "systemd-stale-unit-config",
+            "dependency-dns-name-mismatch",
+        ]
+        | None
+    ) = None
     affected_service_archetype: Literal["web-api", "worker", "reverse-proxy"]
     dependency_archetype: Literal["direct-service", "proxy-api-database"]
     symptom_archetype: Literal[
@@ -150,7 +184,10 @@ class AIIncidentPlan(FrozenDomainModel):
             if not valid:
                 raise ValueError("Nieobsługiwana kombinacja archetypów HARD.")
             return self
-        if self.primary_fault_category is not None or self.secondary_fault_category is not None:
+        if (
+            self.primary_fault_category is not None
+            or self.secondary_fault_category is not None
+        ):
             raise ValueError("EASY i MEDIUM nie obsługują secondary fault.")
         if self.fault_category is None:
             raise ValueError("EASY i MEDIUM wymagają fault_category.")
@@ -165,7 +202,7 @@ class AIIncidentPlan(FrozenDomainModel):
         else:
             service = (
                 "reverse-proxy"
-                if self.fault_category == "external-firewall-mismatch"
+                if self.fault_category in MEDIUM_REVERSE_PROXY_FAULTS
                 else "web-api"
             )
             valid = (
@@ -275,6 +312,11 @@ def get_plan_capability_catalog(request):
         "faults_and_symptoms": {fault: SYMPTOMS[fault] for fault in faults},
         "dependency": "direct-service" if easy else "proxy-api-database",
         "external_firewall_service": "reverse-proxy" if not easy else None,
+        "reverse_proxy_faults": tuple(
+            fault for fault in faults if fault in MEDIUM_REVERSE_PROXY_FAULTS
+        )
+        if not easy
+        else (),
         "skills": SKILLS,
         "hosts": [2, 2] if easy else [3, 4],
         "fault_count": 1,

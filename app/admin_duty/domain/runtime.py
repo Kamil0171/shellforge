@@ -719,6 +719,12 @@ def create_session_runtime(
                     )
                 )
             )
+            journal_clue = resource.attributes.get("journal_clue")
+            if isinstance(journal_clue, str):
+                state.virtual_rocky.journal_entries.append(
+                    f"{current_time.isoformat()} {state.virtual_rocky.hostname} "
+                    f"{name}: {journal_clue}"
+                )
             if resource.current_state == "running":
                 pid = 1421 + len(state.virtual_rocky.processes)
                 state.virtual_rocky.processes[pid] = VirtualProcess(

@@ -66,7 +66,9 @@ class HardFaultCombination(FrozenDomainModel):
     affected_service_archetype: Identifier
     dependency_archetype: Identifier
     relation_type: FaultRelationType
-    symptom_progression: tuple[HardSymptomStage, ...] = Field(min_length=3, max_length=3)
+    symptom_progression: tuple[HardSymptomStage, ...] = Field(
+        min_length=3, max_length=3
+    )
     reference_repair_order: tuple[Identifier, Identifier]
     required_capabilities: tuple[Identifier, ...] = Field(min_length=1)
     skill_tags: tuple[Identifier, ...] = Field(min_length=1, max_length=5)
@@ -110,7 +112,13 @@ HARD_COMBINATIONS: Final = (
         primary_fault_category="dependency-firewall-blocked",
         secondary_fault_category="selinux-context-invalid",
         compatible_environment_archetypes=(HARD_ENVIRONMENT_ARCHETYPE,),
-        required_host_roles=("warstwa brzegowa", "aplikacja", "baza danych", "DNS", "sonda zewnętrzna"),
+        required_host_roles=(
+            "warstwa brzegowa",
+            "aplikacja",
+            "baza danych",
+            "DNS",
+            "sonda zewnętrzna",
+        ),
         affected_service_archetype="web-api",
         dependency_archetype=HARD_DEPENDENCY_ARCHETYPE,
         relation_type=FaultRelationType.DEPENDENCY_CHAIN,
@@ -133,7 +141,13 @@ HARD_COMBINATIONS: Final = (
         primary_fault_category="networkmanager-dns-invalid",
         secondary_fault_category="external-firewall-mismatch",
         compatible_environment_archetypes=(HARD_ENVIRONMENT_ARCHETYPE,),
-        required_host_roles=("warstwa brzegowa", "aplikacja", "baza danych", "DNS", "sonda zewnętrzna"),
+        required_host_roles=(
+            "warstwa brzegowa",
+            "aplikacja",
+            "baza danych",
+            "DNS",
+            "sonda zewnętrzna",
+        ),
         affected_service_archetype="reverse-proxy",
         dependency_archetype=HARD_DEPENDENCY_ARCHETYPE,
         relation_type=FaultRelationType.DEPENDENCY_CHAIN,
@@ -152,7 +166,13 @@ HARD_COMBINATIONS: Final = (
         primary_fault_category="dependency-package-missing",
         secondary_fault_category="systemd-wrong-exec-start",
         compatible_environment_archetypes=(HARD_ENVIRONMENT_ARCHETYPE,),
-        required_host_roles=("warstwa brzegowa", "aplikacja", "baza danych", "DNS", "sonda zewnętrzna"),
+        required_host_roles=(
+            "warstwa brzegowa",
+            "aplikacja",
+            "baza danych",
+            "DNS",
+            "sonda zewnętrzna",
+        ),
         affected_service_archetype="web-api",
         dependency_archetype=HARD_DEPENDENCY_ARCHETYPE,
         relation_type=FaultRelationType.DEPENDENCY_CHAIN,
@@ -176,7 +196,13 @@ HARD_COMBINATIONS: Final = (
         primary_fault_category="service-config-invalid",
         secondary_fault_category="dependency-port-mismatch",
         compatible_environment_archetypes=(HARD_ENVIRONMENT_ARCHETYPE,),
-        required_host_roles=("warstwa brzegowa", "aplikacja", "baza danych", "DNS", "sonda zewnętrzna"),
+        required_host_roles=(
+            "warstwa brzegowa",
+            "aplikacja",
+            "baza danych",
+            "DNS",
+            "sonda zewnętrzna",
+        ),
         affected_service_archetype="web-api",
         dependency_archetype=HARD_DEPENDENCY_ARCHETYPE,
         relation_type=FaultRelationType.DEPENDENCY_CHAIN,
@@ -196,7 +222,13 @@ HARD_COMBINATIONS: Final = (
         primary_fault_category="networkmanager-connection-inactive",
         secondary_fault_category="dependency-firewall-blocked",
         compatible_environment_archetypes=(HARD_ENVIRONMENT_ARCHETYPE,),
-        required_host_roles=("warstwa brzegowa", "aplikacja", "baza danych", "DNS", "sonda zewnętrzna"),
+        required_host_roles=(
+            "warstwa brzegowa",
+            "aplikacja",
+            "baza danych",
+            "DNS",
+            "sonda zewnętrzna",
+        ),
         affected_service_archetype="web-api",
         dependency_archetype=HARD_DEPENDENCY_ARCHETYPE,
         relation_type=FaultRelationType.DEPENDENCY_CHAIN,
@@ -209,6 +241,154 @@ HARD_COMBINATIONS: Final = (
         ),
         required_capabilities=("networkmanager.command", "firewalld.command"),
         skill_tags=("network", "firewall"),
+    ),
+    HardFaultCombination(
+        combination_id="H-06",
+        primary_fault_category="systemd-stale-unit-config",
+        secondary_fault_category="service-config-permission-denied",
+        compatible_environment_archetypes=(HARD_ENVIRONMENT_ARCHETYPE,),
+        required_host_roles=(
+            "warstwa brzegowa",
+            "aplikacja",
+            "baza danych",
+            "DNS",
+            "sonda zewnętrzna",
+        ),
+        affected_service_archetype="web-api",
+        dependency_archetype=HARD_DEPENDENCY_ARCHETYPE,
+        relation_type=FaultRelationType.DEPENDENCY_CHAIN,
+        symptom_progression=_progression(
+            "API uruchamia się z poprawnej jednostki, ale proxy nadal nie może użyć swojej konfiguracji."
+        ),
+        reference_repair_order=(
+            "systemd-stale-unit-config",
+            "service-config-permission-denied",
+        ),
+        required_capabilities=(
+            "filesystem.edit",
+            "systemd.daemon-reload",
+            "systemd.restart",
+            "filesystem.chmod",
+            "filesystem.chown",
+        ),
+        skill_tags=("systemd", "filesystem"),
+        constraints=("Faulty dotyczą różnych usług i różnych zasobów konfiguracji.",),
+    ),
+    HardFaultCombination(
+        combination_id="H-07",
+        primary_fault_category="dependency-package-missing",
+        secondary_fault_category="service-config-invalid",
+        compatible_environment_archetypes=(HARD_ENVIRONMENT_ARCHETYPE,),
+        required_host_roles=(
+            "warstwa brzegowa",
+            "aplikacja",
+            "baza danych",
+            "DNS",
+            "sonda zewnętrzna",
+        ),
+        affected_service_archetype="web-api",
+        dependency_archetype=HARD_DEPENDENCY_ARCHETYPE,
+        relation_type=FaultRelationType.DEPENDENCY_CHAIN,
+        symptom_progression=_progression(
+            "API działa po instalacji pakietu, lecz proxy nadal używa błędnej konfiguracji upstream."
+        ),
+        reference_repair_order=(
+            "dependency-package-missing",
+            "service-config-invalid",
+        ),
+        required_capabilities=(
+            "packages.command",
+            "systemd.restart",
+            "filesystem.edit",
+        ),
+        skill_tags=("packages", "systemd", "filesystem"),
+        constraints=("Brak pakietu dotyczy API, a konfiguracja dotyczy proxy.",),
+    ),
+    HardFaultCombination(
+        combination_id="H-08",
+        primary_fault_category="dependency-dns-name-mismatch",
+        secondary_fault_category="dependency-port-mismatch",
+        compatible_environment_archetypes=(HARD_ENVIRONMENT_ARCHETYPE,),
+        required_host_roles=(
+            "warstwa brzegowa",
+            "aplikacja",
+            "baza danych",
+            "DNS",
+            "sonda zewnętrzna",
+        ),
+        affected_service_archetype="web-api",
+        dependency_archetype=HARD_DEPENDENCY_ARCHETYPE,
+        relation_type=FaultRelationType.DEPENDENCY_CHAIN,
+        symptom_progression=_progression(
+            "API ponownie rozpoznaje usługę danych, lecz proxy nadal kieruje ruch na niewłaściwy port."
+        ),
+        reference_repair_order=(
+            "dependency-dns-name-mismatch",
+            "dependency-port-mismatch",
+        ),
+        required_capabilities=(
+            "filesystem.edit",
+            "systemd.restart",
+            "network.dig",
+            "network.listeners",
+        ),
+        skill_tags=("dns", "network", "filesystem", "systemd"),
+        constraints=("Każdy fault jest zapisany w osobnym pliku konfiguracji.",),
+    ),
+    HardFaultCombination(
+        combination_id="H-09",
+        primary_fault_category="networkmanager-connection-inactive",
+        secondary_fault_category="external-firewall-mismatch",
+        compatible_environment_archetypes=(HARD_ENVIRONMENT_ARCHETYPE,),
+        required_host_roles=(
+            "warstwa brzegowa",
+            "aplikacja",
+            "baza danych",
+            "DNS",
+            "sonda zewnętrzna",
+        ),
+        affected_service_archetype="reverse-proxy",
+        dependency_archetype=HARD_DEPENDENCY_ARCHETYPE,
+        relation_type=FaultRelationType.DEPENDENCY_CHAIN,
+        symptom_progression=_progression(
+            "Wewnętrzna komunikacja aplikacji wróciła, ale publiczny port proxy pozostaje zablokowany."
+        ),
+        reference_repair_order=(
+            "networkmanager-connection-inactive",
+            "external-firewall-mismatch",
+        ),
+        required_capabilities=("networkmanager.command", "firewalld.command"),
+        skill_tags=("network", "firewall"),
+    ),
+    HardFaultCombination(
+        combination_id="H-10",
+        primary_fault_category="selinux-context-invalid",
+        secondary_fault_category="service-config-invalid",
+        compatible_environment_archetypes=(HARD_ENVIRONMENT_ARCHETYPE,),
+        required_host_roles=(
+            "warstwa brzegowa",
+            "aplikacja",
+            "baza danych",
+            "DNS",
+            "sonda zewnętrzna",
+        ),
+        affected_service_archetype="web-api",
+        dependency_archetype=HARD_DEPENDENCY_ARCHETYPE,
+        relation_type=FaultRelationType.DEPENDENCY_CHAIN,
+        symptom_progression=_progression(
+            "API uruchamia się po przywróceniu kontekstu, ale proxy nadal korzysta z błędnego upstream."
+        ),
+        reference_repair_order=(
+            "selinux-context-invalid",
+            "service-config-invalid",
+        ),
+        required_capabilities=(
+            "selinux.restorecon",
+            "systemd.restart",
+            "filesystem.edit",
+        ),
+        skill_tags=("selinux", "systemd", "filesystem"),
+        constraints=("SELinux dotyczy API, a konfiguracja dotyczy proxy.",),
     ),
 )
 
@@ -270,7 +450,9 @@ def _editor_step(order: int, command: str, content: str, purpose: str) -> Soluti
 
 
 def _renumber(steps) -> tuple[SolutionStep, ...]:
-    return tuple(step.model_copy(update={"order": index}) for index, step in enumerate(steps, 1))
+    return tuple(
+        step.model_copy(update={"order": index}) for index, step in enumerate(steps, 1)
+    )
 
 
 def _components(combination: HardFaultCombination) -> tuple[ComponentReference, ...]:
@@ -321,6 +503,8 @@ def _components(combination: HardFaultCombination) -> tuple[ComponentReference, 
 
 def build_hard_draft(combination_id: str, *, seed: int) -> GeneratedIncidentDraft:
     combination = get_hard_combination(combination_id)
+    if combination_id in {"H-06", "H-07", "H-08", "H-09", "H-10"}:
+        return _build_expanded_hard_draft(combination, seed=seed)
     suffix = seed % 10000
     names = {
         "edge": f"edge-{suffix:04d}",
@@ -442,9 +626,7 @@ def build_hard_draft(combination_id: str, *, seed: int) -> GeneratedIncidentDraf
         required_dns_name="database.internal",
         current_selinux_context=api_context,
     )
-    database = _service(
-        "service-database", "host-data-01", "database.service", 5432
-    )
+    database = _service("service-database", "host-data-01", "database.service", 5432)
     dns = _service("service-dns", "host-dns-01", "named.service", 53)
     external = _service(
         "service-external-check",
@@ -644,9 +826,7 @@ def build_hard_draft(combination_id: str, *, seed: int) -> GeneratedIncidentDraf
             fault_id=f"fault-{position}",
             fault_type=category.replace("-", "_"),
             version="4.0",
-            target_resource_id=(
-                resolution_conditions[index].resource_id
-            ),
+            target_resource_id=(resolution_conditions[index].resource_id),
             severity=FaultSeverity.HIGH,
             parameters=_fields(
                 component_id=category,
@@ -677,75 +857,218 @@ def build_hard_draft(combination_id: str, *, seed: int) -> GeneratedIncidentDraf
     client = names["client"]
     if combination_id == "H-01":
         steps = (
-            _step(1, "network.curl", "curl http://portal.internal", "Potwierdź awarię."),
+            _step(
+                1, "network.curl", "curl http://portal.internal", "Potwierdź awarię."
+            ),
             _step(2, "remote.ssh", f"ssh {data}", "Przejdź na host danych."),
             _step(3, "firewalld.command", "firewall-cmd --list-all", "Sprawdź reguły."),
-            _step(4, "firewalld.command", "firewall-cmd --permanent --add-port=5432/tcp", "Przywróć port zależności."),
+            _step(
+                4,
+                "firewalld.command",
+                "firewall-cmd --permanent --add-port=5432/tcp",
+                "Przywróć port zależności.",
+            ),
             _step(5, "firewalld.command", "firewall-cmd --reload", "Aktywuj regułę."),
-            _step(6, "network.curl", "curl http://database.internal:5432", "Zweryfikuj częściową poprawę."),
+            _step(
+                6,
+                "network.curl",
+                "curl http://database.internal:5432",
+                "Zweryfikuj częściową poprawę.",
+            ),
             _step(7, "remote.ssh", f"ssh {app}", "Przejdź na host aplikacji."),
             _step(8, "selinux.getenforce", "getenforce", "Sprawdź tryb SELinux."),
-            _step(9, "selinux.restorecon", "restorecon -R /opt/orders-api", "Przywróć kontekst."),
-            _step(10, "systemd.restart", "systemctl restart orders-api", "Uruchom API."),
+            _step(
+                9,
+                "selinux.restorecon",
+                "restorecon -R /opt/orders-api",
+                "Przywróć kontekst.",
+            ),
+            _step(
+                10, "systemd.restart", "systemctl restart orders-api", "Uruchom API."
+            ),
             _step(11, "remote.ssh", f"ssh {client}", "Wróć do sondy."),
-            _step(12, "network.curl", "curl http://portal.internal", "Zweryfikuj pełną ścieżkę."),
+            _step(
+                12,
+                "network.curl",
+                "curl http://portal.internal",
+                "Zweryfikuj pełną ścieżkę.",
+            ),
         )
     elif combination_id == "H-02":
         steps = (
-            _step(1, "network.curl", "curl http://portal.internal", "Potwierdź awarię.", expected_success=False),
+            _step(
+                1,
+                "network.curl",
+                "curl http://portal.internal",
+                "Potwierdź awarię.",
+                expected_success=False,
+            ),
             _step(2, "remote.ssh", f"ssh {app}", "Przejdź na host aplikacji."),
-            _step(3, "network.dig", "dig database.internal", "Sprawdź DNS.", expected_success=False),
-            _step(4, "networkmanager.command", "nmcli connection modify System-ens192 ipv4.dns 10.24.8.53", "Przywróć DNS."),
-            _step(5, "network.dig", "dig database.internal", "Zweryfikuj częściową poprawę."),
+            _step(
+                3,
+                "network.dig",
+                "dig database.internal",
+                "Sprawdź DNS.",
+                expected_success=False,
+            ),
+            _step(
+                4,
+                "networkmanager.command",
+                "nmcli connection modify System-ens192 ipv4.dns 10.24.8.53",
+                "Przywróć DNS.",
+            ),
+            _step(
+                5,
+                "network.dig",
+                "dig database.internal",
+                "Zweryfikuj częściową poprawę.",
+            ),
             _step(6, "remote.ssh", f"ssh {edge}", "Przejdź na host brzegowy."),
-            _step(7, "firewalld.command", "firewall-cmd --list-all", "Sprawdź dostęp publiczny."),
-            _step(8, "firewalld.command", "firewall-cmd --permanent --add-service=http", "Dodaj usługę HTTP."),
+            _step(
+                7,
+                "firewalld.command",
+                "firewall-cmd --list-all",
+                "Sprawdź dostęp publiczny.",
+            ),
+            _step(
+                8,
+                "firewalld.command",
+                "firewall-cmd --permanent --add-service=http",
+                "Dodaj usługę HTTP.",
+            ),
             _step(9, "firewalld.command", "firewall-cmd --reload", "Aktywuj regułę."),
             _step(10, "remote.ssh", f"ssh {client}", "Wróć do sondy."),
-            _step(11, "network.curl", "curl http://portal.internal", "Zweryfikuj pełną ścieżkę."),
+            _step(
+                11,
+                "network.curl",
+                "curl http://portal.internal",
+                "Zweryfikuj pełną ścieżkę.",
+            ),
         )
     elif combination_id == "H-03":
         steps = (
-            _step(1, "network.curl", "curl http://portal.internal", "Potwierdź awarię.", expected_success=False),
+            _step(
+                1,
+                "network.curl",
+                "curl http://portal.internal",
+                "Potwierdź awarię.",
+                expected_success=False,
+            ),
             _step(2, "remote.ssh", f"ssh {app}", "Przejdź na host aplikacji."),
-            _step(3, "packages.rpm", "rpm -q python3-psycopg2", "Sprawdź pakiet.", expected_success=False),
-            _step(4, "packages.command", "dnf install -y python3-psycopg2", "Zainstaluj zależność."),
+            _step(
+                3,
+                "packages.rpm",
+                "rpm -q python3-psycopg2",
+                "Sprawdź pakiet.",
+                expected_success=False,
+            ),
+            _step(
+                4,
+                "packages.command",
+                "dnf install -y python3-psycopg2",
+                "Zainstaluj zależność.",
+            ),
             _step(5, "systemd.restart", "systemctl restart orders-api", "Uruchom API."),
             _step(6, "remote.ssh", f"ssh {edge}", "Zweryfikuj częściową poprawę."),
             _step(7, "network.curl", "curl http://api.internal:8080", "Sprawdź API."),
             _step(8, "systemd.status", "systemctl status edge-proxy", "Sprawdź proxy."),
-            _editor_step(9, "nano /etc/systemd/system/edge-proxy.service", _healthy_unit("edge-proxy.service"), "Popraw jednostkę proxy."),
-            _step(10, "systemd.daemon-reload", "systemctl daemon-reload", "Przeładuj jednostki."),
-            _step(11, "systemd.restart", "systemctl restart edge-proxy", "Uruchom proxy."),
+            _editor_step(
+                9,
+                "nano /etc/systemd/system/edge-proxy.service",
+                _healthy_unit("edge-proxy.service"),
+                "Popraw jednostkę proxy.",
+            ),
+            _step(
+                10,
+                "systemd.daemon-reload",
+                "systemctl daemon-reload",
+                "Przeładuj jednostki.",
+            ),
+            _step(
+                11, "systemd.restart", "systemctl restart edge-proxy", "Uruchom proxy."
+            ),
             _step(12, "remote.ssh", f"ssh {client}", "Wróć do sondy."),
-            _step(13, "network.curl", "curl http://portal.internal", "Zweryfikuj pełną ścieżkę."),
+            _step(
+                13,
+                "network.curl",
+                "curl http://portal.internal",
+                "Zweryfikuj pełną ścieżkę.",
+            ),
         )
     elif combination_id == "H-04":
         steps = (
-            _step(1, "network.curl", "curl http://portal.internal", "Potwierdź awarię."),
+            _step(
+                1, "network.curl", "curl http://portal.internal", "Potwierdź awarię."
+            ),
             _step(2, "remote.ssh", f"ssh {app}", "Przejdź na host aplikacji."),
-            _editor_step(3, "nano /opt/orders-api/app.conf", "DATABASE_HOST=database.internal\n", "Popraw konfigurację API."),
-            _step(4, "systemd.restart", "systemctl restart orders-api", "Przeładuj API."),
+            _editor_step(
+                3,
+                "nano /opt/orders-api/app.conf",
+                "DATABASE_HOST=database.internal\n",
+                "Popraw konfigurację API.",
+            ),
+            _step(
+                4, "systemd.restart", "systemctl restart orders-api", "Przeładuj API."
+            ),
             _step(5, "remote.ssh", f"ssh {edge}", "Zweryfikuj częściową poprawę."),
             _step(6, "network.curl", "curl http://api.internal:8080", "Sprawdź API."),
-            _editor_step(7, "nano /opt/edge-proxy/upstream.conf", "UPSTREAM_PORT=8080\n", "Popraw port upstream."),
-            _step(8, "systemd.restart", "systemctl restart edge-proxy", "Przeładuj proxy."),
+            _editor_step(
+                7,
+                "nano /opt/edge-proxy/upstream.conf",
+                "UPSTREAM_PORT=8080\n",
+                "Popraw port upstream.",
+            ),
+            _step(
+                8, "systemd.restart", "systemctl restart edge-proxy", "Przeładuj proxy."
+            ),
             _step(9, "remote.ssh", f"ssh {client}", "Wróć do sondy."),
-            _step(10, "network.curl", "curl http://portal.internal", "Zweryfikuj pełną ścieżkę."),
+            _step(
+                10,
+                "network.curl",
+                "curl http://portal.internal",
+                "Zweryfikuj pełną ścieżkę.",
+            ),
         )
     else:
         steps = (
-            _step(1, "network.curl", "curl http://portal.internal", "Potwierdź awarię."),
+            _step(
+                1, "network.curl", "curl http://portal.internal", "Potwierdź awarię."
+            ),
             _step(2, "remote.ssh", f"ssh {app}", "Przejdź na host aplikacji."),
-            _step(3, "networkmanager.command", "nmcli device status", "Sprawdź połączenie."),
-            _step(4, "networkmanager.command", "nmcli connection up System-ens192", "Aktywuj połączenie."),
-            _step(5, "network.dig", "dig database.internal", "Zweryfikuj częściową poprawę."),
+            _step(
+                3,
+                "networkmanager.command",
+                "nmcli device status",
+                "Sprawdź połączenie.",
+            ),
+            _step(
+                4,
+                "networkmanager.command",
+                "nmcli connection up System-ens192",
+                "Aktywuj połączenie.",
+            ),
+            _step(
+                5,
+                "network.dig",
+                "dig database.internal",
+                "Zweryfikuj częściową poprawę.",
+            ),
             _step(6, "remote.ssh", f"ssh {data}", "Przejdź na host danych."),
             _step(7, "firewalld.command", "firewall-cmd --list-all", "Sprawdź reguły."),
-            _step(8, "firewalld.command", "firewall-cmd --permanent --add-port=5432/tcp", "Przywróć port zależności."),
+            _step(
+                8,
+                "firewalld.command",
+                "firewall-cmd --permanent --add-port=5432/tcp",
+                "Przywróć port zależności.",
+            ),
             _step(9, "firewalld.command", "firewall-cmd --reload", "Aktywuj regułę."),
             _step(10, "remote.ssh", f"ssh {client}", "Wróć do sondy."),
-            _step(11, "network.curl", "curl http://portal.internal", "Zweryfikuj pełną ścieżkę."),
+            _step(
+                11,
+                "network.curl",
+                "curl http://portal.internal",
+                "Zweryfikuj pełną ścieżkę.",
+            ),
         )
 
     repair_labels = {
@@ -913,11 +1236,615 @@ def build_hard_draft(combination_id: str, *, seed: int) -> GeneratedIncidentDraf
             secondary_fault=repair_labels[combination.secondary_fault_category],
             impact_path=("sonda zewnętrzna", "reverse proxy", "API", "usługa danych"),
             repair_sequence=tuple(
-                repair_labels[category] for category in combination.reference_repair_order
+                repair_labels[category]
+                for category in combination.reference_repair_order
             ),
             partial_recovery_explanation=combination.symptom_progression[1].summary,
             learning_summary=(
                 "Po każdej naprawie ponownie sprawdzaj całą ścieżkę. Zmiana symptomu nie oznacza jeszcze pełnego usunięcia incydentu."
             ),
         ),
+    )
+
+
+def _build_expanded_hard_draft(
+    combination: HardFaultCombination, *, seed: int
+) -> GeneratedIncidentDraft:
+    base = build_hard_draft("H-04", seed=seed)
+    resources = {
+        resource.resource_id: resource
+        for resource in base.initial_world_state.resources
+    }
+
+    def update_resource(resource_id: str, *, state=None, **attributes) -> None:
+        resource = _with_attributes(resources[resource_id], **attributes)
+        if state is not None:
+            resource = resource.model_copy(update={"state": state})
+        resources[resource_id] = resource
+
+    update_resource(
+        "file-api-config",
+        content="DATABASE_HOST=database.internal\n",
+        current_mode="0640",
+        owner="app",
+    )
+    update_resource(
+        "file-proxy-config",
+        content="UPSTREAM_PORT=8080\n",
+        expected_content="UPSTREAM_PORT=8080\n",
+        current_mode="0640",
+        owner="app",
+    )
+    update_resource(
+        "service-api",
+        state="running",
+        configured_exec_start="orders-api",
+    )
+    update_resource(
+        "service-proxy",
+        state="running",
+        configured_exec_start="edge-proxy",
+    )
+    update_resource(
+        "host-app-01",
+        installed_packages=("python3-psycopg2",),
+        connection_active=True,
+    )
+    update_resource(
+        "host-edge-01",
+        firewall_runtime_services=("ssh", "http"),
+        firewall_permanent_services=("ssh", "http"),
+    )
+
+    configuration_requirements = base.configuration_requirements
+    primary_dependency = "dep-proxy-api"
+    edge = next(
+        field.value
+        for field in resources["host-edge-01"].attributes
+        if field.key == "hostname"
+    )
+    app = next(
+        field.value
+        for field in resources["host-app-01"].attributes
+        if field.key == "hostname"
+    )
+    client = next(
+        field.value
+        for field in resources["host-client-01"].attributes
+        if field.key == "hostname"
+    )
+
+    if combination.combination_id == "H-06":
+        update_resource(
+            "service-api",
+            state="failed",
+            configured_exec_start="orders-api-old",
+        )
+        update_resource("file-proxy-config", current_mode="0600", owner="root")
+        update_resource(
+            "service-proxy",
+            journal_clue="Nie można odczytać pliku /opt/edge-proxy/upstream.conf.",
+        )
+        configuration_requirements = (
+            base.configuration_requirements[0],
+            base.configuration_requirements[1].model_copy(
+                update={"expected_mode": "0640", "expected_owner": "app"}
+            ),
+        )
+        conditions = (
+            CompletionCondition(
+                resource_id="service-api",
+                field="current_state",
+                operator=ConditionOperator.EQUALS,
+                expected="running",
+            ),
+            CompletionCondition(
+                resource_id="service-proxy",
+                field="attributes.configuration_health",
+                operator=ConditionOperator.EQUALS,
+                expected="healthy",
+            ),
+        )
+        steps = (
+            _step(
+                1,
+                "network.curl",
+                "curl http://portal.internal",
+                "Potwierdź degradację.",
+            ),
+            _step(2, "remote.ssh", f"ssh {app}", "Przejdź na host aplikacji."),
+            _step(
+                3, "systemd.status", "systemctl status orders-api", "Sprawdź stan API."
+            ),
+            _step(
+                4, "journal.read", "journalctl -u orders-api", "Odczytaj błąd startu."
+            ),
+            _step(
+                5,
+                "systemd.cat",
+                "systemctl cat orders-api",
+                "Sprawdź definicję jednostki.",
+            ),
+            _editor_step(
+                6,
+                "nano /etc/systemd/system/orders-api.service",
+                _healthy_unit("orders-api.service"),
+                "Popraw jednostkę API.",
+            ),
+            _step(
+                7,
+                "systemd.daemon-reload",
+                "systemctl daemon-reload",
+                "Przeładuj cache systemd.",
+            ),
+            _step(8, "systemd.restart", "systemctl restart orders-api", "Uruchom API."),
+            _step(9, "remote.ssh", f"ssh {edge}", "Przejdź na host proxy."),
+            _step(
+                10,
+                "filesystem.path-stat",
+                "stat /opt/edge-proxy/upstream.conf",
+                "Sprawdź dostęp do konfiguracji.",
+            ),
+            _step(
+                11,
+                "filesystem.chmod",
+                "chmod 640 /opt/edge-proxy/upstream.conf",
+                "Przywróć tryb pliku.",
+            ),
+            _step(
+                12,
+                "filesystem.chown",
+                "chown app:app /opt/edge-proxy/upstream.conf",
+                "Przywróć właściciela.",
+            ),
+            _step(
+                13,
+                "systemd.restart",
+                "systemctl restart edge-proxy",
+                "Przeładuj proxy.",
+            ),
+            _step(14, "remote.ssh", f"ssh {client}", "Wróć do sondy."),
+            _step(
+                15,
+                "network.curl",
+                "curl http://portal.internal",
+                "Zweryfikuj pełną ścieżkę.",
+            ),
+        )
+    elif combination.combination_id == "H-07":
+        update_resource("host-app-01", installed_packages=())
+        update_resource("service-api", state="failed")
+        update_resource(
+            "file-proxy-config",
+            content="UPSTREAM_HOST=api-archive.internal\n",
+            expected_content="UPSTREAM_HOST=api.internal\n",
+        )
+        update_resource(
+            "service-proxy",
+            journal_clue="Skonfigurowany upstream nie odpowiada.",
+        )
+        conditions = (
+            CompletionCondition(
+                resource_id="service-api",
+                field="current_state",
+                operator=ConditionOperator.EQUALS,
+                expected="running",
+            ),
+            CompletionCondition(
+                resource_id="service-proxy",
+                field="attributes.configuration_health",
+                operator=ConditionOperator.EQUALS,
+                expected="healthy",
+            ),
+        )
+        steps = (
+            _step(
+                1,
+                "network.curl",
+                "curl http://portal.internal",
+                "Potwierdź degradację.",
+            ),
+            _step(2, "remote.ssh", f"ssh {app}", "Przejdź na host aplikacji."),
+            _step(
+                3, "systemd.status", "systemctl status orders-api", "Sprawdź stan API."
+            ),
+            _step(
+                4,
+                "journal.read",
+                "journalctl -u orders-api",
+                "Odczytaj błąd zależności.",
+            ),
+            _step(
+                5,
+                "packages.rpm",
+                "rpm -q python3-psycopg2",
+                "Sprawdź wymagany pakiet.",
+                expected_success=False,
+            ),
+            _step(
+                6,
+                "packages.command",
+                "dnf install -y python3-psycopg2",
+                "Zainstaluj pakiet.",
+            ),
+            _step(7, "systemd.restart", "systemctl restart orders-api", "Uruchom API."),
+            _step(8, "remote.ssh", f"ssh {edge}", "Przejdź na host proxy."),
+            _step(
+                9, "journal.read", "journalctl -u edge-proxy", "Sprawdź błąd upstream."
+            ),
+            _step(
+                10,
+                "filesystem.read",
+                "cat /opt/edge-proxy/upstream.conf",
+                "Sprawdź konfigurację proxy.",
+            ),
+            _editor_step(
+                11,
+                "nano /opt/edge-proxy/upstream.conf",
+                "UPSTREAM_HOST=api.internal\n",
+                "Popraw upstream proxy.",
+            ),
+            _step(
+                12,
+                "systemd.restart",
+                "systemctl restart edge-proxy",
+                "Przeładuj proxy.",
+            ),
+            _step(13, "remote.ssh", f"ssh {client}", "Wróć do sondy."),
+            _step(
+                14,
+                "network.curl",
+                "curl http://portal.internal",
+                "Zweryfikuj pełną ścieżkę.",
+            ),
+        )
+    elif combination.combination_id == "H-08":
+        update_resource(
+            "file-api-config",
+            content="DATABASE_HOST=database.service.internal\n",
+        )
+        update_resource("file-proxy-config", content="UPSTREAM_PORT=8081\n")
+        update_resource(
+            "service-api",
+            journal_clue="Nazwa usługi danych nie może zostać rozwiązana.",
+        )
+        update_resource(
+            "service-proxy",
+            journal_clue="Upstream odrzuca połączenie na skonfigurowanym porcie.",
+        )
+        conditions = (
+            CompletionCondition(
+                resource_id="service-api",
+                field="attributes.configuration_health",
+                operator=ConditionOperator.EQUALS,
+                expected="healthy",
+            ),
+            CompletionCondition(
+                resource_id="service-proxy",
+                field="attributes.configuration_health",
+                operator=ConditionOperator.EQUALS,
+                expected="healthy",
+            ),
+        )
+        steps = (
+            _step(
+                1,
+                "network.curl",
+                "curl http://portal.internal",
+                "Potwierdź degradację.",
+            ),
+            _step(2, "remote.ssh", f"ssh {app}", "Przejdź na host aplikacji."),
+            _step(
+                3,
+                "network.ping",
+                "ping 10.24.8.30",
+                "Potwierdź osiągalność hosta danych.",
+            ),
+            _step(
+                4,
+                "network.dig",
+                "dig database.service.internal",
+                "Sprawdź błędną nazwę.",
+                expected_success=False,
+            ),
+            _step(
+                5, "network.dig", "dig database.internal", "Potwierdź właściwy rekord."
+            ),
+            _step(
+                6,
+                "filesystem.read",
+                "cat /opt/orders-api/app.conf",
+                "Sprawdź konfigurację API.",
+            ),
+            _editor_step(
+                7,
+                "nano /opt/orders-api/app.conf",
+                "DATABASE_HOST=database.internal\n",
+                "Popraw nazwę zależności.",
+            ),
+            _step(
+                8, "systemd.restart", "systemctl restart orders-api", "Przeładuj API."
+            ),
+            _step(9, "remote.ssh", f"ssh {edge}", "Przejdź na host proxy."),
+            _step(10, "network.listeners", "ss -lntp", "Sprawdź lokalne listenery."),
+            _step(
+                11,
+                "filesystem.read",
+                "cat /opt/edge-proxy/upstream.conf",
+                "Sprawdź port upstream.",
+            ),
+            _editor_step(
+                12,
+                "nano /opt/edge-proxy/upstream.conf",
+                "UPSTREAM_PORT=8080\n",
+                "Ujednolić port proxy.",
+            ),
+            _step(
+                13,
+                "systemd.restart",
+                "systemctl restart edge-proxy",
+                "Przeładuj proxy.",
+            ),
+            _step(14, "remote.ssh", f"ssh {client}", "Wróć do sondy."),
+            _step(
+                15,
+                "network.curl",
+                "curl http://portal.internal",
+                "Zweryfikuj pełną ścieżkę.",
+            ),
+        )
+    elif combination.combination_id == "H-09":
+        update_resource("host-app-01", connection_active=False)
+        update_resource(
+            "host-edge-01",
+            firewall_runtime_services=("ssh",),
+            firewall_permanent_services=("ssh",),
+        )
+        conditions = (
+            CompletionCondition(
+                resource_id="host-app-01",
+                field="attributes.network_health",
+                operator=ConditionOperator.EQUALS,
+                expected="healthy",
+            ),
+            CompletionCondition(
+                resource_id="host-edge-01",
+                field="attributes.firewall_health",
+                operator=ConditionOperator.EQUALS,
+                expected="healthy",
+            ),
+        )
+        steps = (
+            _step(
+                1,
+                "network.curl",
+                "curl http://portal.internal",
+                "Potwierdź niedostępność.",
+                expected_success=False,
+            ),
+            _step(2, "remote.ssh", f"ssh {app}", "Przejdź do konsoli hosta aplikacji."),
+            _step(
+                3,
+                "networkmanager.command",
+                "nmcli device status",
+                "Sprawdź stan interfejsu.",
+            ),
+            _step(4, "network.route", "ip route", "Sprawdź trasy hosta."),
+            _step(
+                5,
+                "networkmanager.command",
+                "nmcli connection up System-ens192",
+                "Aktywuj profil połączenia.",
+            ),
+            _step(6, "network.ping", "ping 10.24.8.30", "Potwierdź częściową poprawę."),
+            _step(7, "remote.ssh", f"ssh {edge}", "Przejdź na host brzegowy."),
+            _step(
+                8,
+                "firewalld.command",
+                "firewall-cmd --list-all",
+                "Sprawdź publiczną regułę.",
+            ),
+            _step(
+                9,
+                "firewalld.command",
+                "firewall-cmd --permanent --add-service=http",
+                "Dodaj usługę HTTP.",
+            ),
+            _step(10, "firewalld.command", "firewall-cmd --reload", "Aktywuj regułę."),
+            _step(11, "remote.ssh", f"ssh {client}", "Wróć do sondy."),
+            _step(
+                12,
+                "network.curl",
+                "curl http://portal.internal",
+                "Zweryfikuj pełną ścieżkę.",
+            ),
+        )
+    else:
+        update_resource(
+            "service-api",
+            state="failed",
+            current_selinux_context="unconfined_u:object_r:default_t:s0",
+            expected_selinux_context="system_u:object_r:bin_t:s0",
+        )
+        update_resource(
+            "file-proxy-config",
+            content="UPSTREAM_HOST=api-archive.internal\n",
+            expected_content="UPSTREAM_HOST=api.internal\n",
+        )
+        update_resource(
+            "service-proxy",
+            journal_clue="Skonfigurowany upstream nie odpowiada.",
+        )
+        conditions = (
+            CompletionCondition(
+                resource_id="service-api",
+                field="current_state",
+                operator=ConditionOperator.EQUALS,
+                expected="running",
+            ),
+            CompletionCondition(
+                resource_id="service-proxy",
+                field="attributes.configuration_health",
+                operator=ConditionOperator.EQUALS,
+                expected="healthy",
+            ),
+        )
+        steps = (
+            _step(
+                1,
+                "network.curl",
+                "curl http://portal.internal",
+                "Potwierdź degradację.",
+            ),
+            _step(2, "remote.ssh", f"ssh {app}", "Przejdź na host aplikacji."),
+            _step(
+                3, "systemd.status", "systemctl status orders-api", "Sprawdź stan API."
+            ),
+            _step(
+                4,
+                "journal.read",
+                "journalctl -u orders-api",
+                "Odczytaj odmowę SELinux.",
+            ),
+            _step(5, "selinux.getenforce", "getenforce", "Sprawdź tryb SELinux."),
+            _step(
+                6,
+                "selinux.restorecon",
+                "restorecon -R /opt/orders-api",
+                "Przywróć kontekst API.",
+            ),
+            _step(7, "systemd.restart", "systemctl restart orders-api", "Uruchom API."),
+            _step(8, "remote.ssh", f"ssh {edge}", "Przejdź na host proxy."),
+            _step(
+                9, "journal.read", "journalctl -u edge-proxy", "Sprawdź błąd upstream."
+            ),
+            _step(
+                10,
+                "filesystem.read",
+                "cat /opt/edge-proxy/upstream.conf",
+                "Sprawdź konfigurację proxy.",
+            ),
+            _editor_step(
+                11,
+                "nano /opt/edge-proxy/upstream.conf",
+                "UPSTREAM_HOST=api.internal\n",
+                "Popraw upstream proxy.",
+            ),
+            _step(
+                12,
+                "systemd.restart",
+                "systemctl restart edge-proxy",
+                "Przeładuj proxy.",
+            ),
+            _step(13, "remote.ssh", f"ssh {client}", "Wróć do sondy."),
+            _step(
+                14,
+                "network.curl",
+                "curl http://portal.internal",
+                "Zweryfikuj pełną ścieżkę.",
+            ),
+        )
+
+    faults = tuple(
+        FaultInstance(
+            fault_id=f"fault-{position}",
+            fault_type=category.replace("-", "_"),
+            version="4.0",
+            target_resource_id=conditions[index].resource_id,
+            severity=FaultSeverity.HIGH,
+            parameters=_fields(
+                component_id=category,
+                combination_id=combination.combination_id,
+                position=position,
+                forbidden_public_terms=(
+                    "orders-api-old",
+                    "python3-psycopg2",
+                    "database.service.internal",
+                    "UPSTREAM_PORT",
+                    "restorecon",
+                    "chmod 640",
+                    "chown app:app",
+                ),
+            ),
+            resolution_condition=conditions[index],
+        )
+        for index, (position, category) in enumerate(
+            (
+                ("primary", combination.primary_fault_category),
+                ("secondary", combination.secondary_fault_category),
+            )
+        )
+    )
+    labels = {
+        "systemd-stale-unit-config": "nieaktualna definicja jednostki systemd API",
+        "service-config-permission-denied": "brak dostępu proxy do pliku konfiguracji",
+        "dependency-package-missing": "brak pakietu wymaganego przez API",
+        "service-config-invalid": "błędna konfiguracja upstream reverse proxy",
+        "dependency-dns-name-mismatch": "nieprawidłowa nazwa DNS zależności API",
+        "dependency-port-mismatch": "niezgodny port upstream reverse proxy",
+        "networkmanager-connection-inactive": "nieaktywne połączenie NetworkManager hosta aplikacji",
+        "external-firewall-mismatch": "brak publicznej reguły firewalld",
+        "selinux-context-invalid": "nieprawidłowy kontekst SELinux plików API",
+    }
+    organizations = {
+        "H-06": "Centrum Operacyjne Srebrny Szlak",
+        "H-07": "Bursztynowa Sieć Usług",
+        "H-08": "Nadwiślańskie Centrum Danych",
+        "H-09": "Latarnia Operacyjna",
+        "H-10": "Pracownia Systemów Północ",
+    }
+    propagation = (
+        base.symptom_propagation[0].model_copy(
+            update={"dependency_id": primary_dependency}
+        ),
+        base.symptom_propagation[1],
+    )
+    world = base.initial_world_state.model_copy(
+        update={"resources": tuple(resources.values())}
+    )
+    presentation = base.presentation.model_copy(
+        update={
+            "organization": organizations[combination.combination_id],
+            "environment_label": "Krytyczna ścieżka usług wielowarstwowych",
+            "ticket_reference": f"HARD-{seed % 100000:05d}",
+        }
+    )
+    primary_label = labels[combination.primary_fault_category]
+    secondary_label = labels[combination.secondary_fault_category]
+    return base.model_copy(
+        update={
+            "draft_id": f"hard-{combination.combination_id.lower()}-{seed}",
+            "generator_version": "5.0",
+            "components": _components(combination),
+            "presentation": presentation,
+            "initial_world_state": world,
+            "faults": faults,
+            "solution": _renumber(steps),
+            "configuration_requirements": configuration_requirements,
+            "symptom_propagation": propagation,
+            "post_incident": PostIncidentDefinition(
+                root_cause=f"Łańcuch dwóch powiązanych problemów: {primary_label} oraz {secondary_label}.",
+                affected_service_ids=(
+                    "service-proxy",
+                    "service-api",
+                    "service-database",
+                ),
+                repair_capability_ids=combination.required_capabilities,
+                root_cause_chain=(primary_label, secondary_label),
+                primary_fault=primary_label,
+                secondary_fault=secondary_label,
+                impact_path=(
+                    "sonda zewnętrzna",
+                    "reverse proxy",
+                    "API",
+                    "usługa danych",
+                ),
+                repair_sequence=(primary_label, secondary_label),
+                partial_recovery_explanation=combination.symptom_progression[1].summary,
+                learning_summary=(
+                    "Po pierwszej naprawie należy ponownie sprawdzić całą ścieżkę, ponieważ "
+                    "zmiana symptomu może ujawnić drugi aktywny fault."
+                ),
+            ),
+        }
     )

@@ -8,6 +8,7 @@ from app.admin_duty.domain.ai_plan import (
     EASY_ENVIRONMENTS,
     EASY_FAULTS,
     MEDIUM_FAULTS,
+    MEDIUM_REVERSE_PROXY_FAULTS,
     SYMPTOMS,
     AIIncidentPlan,
     get_plan_capability_catalog,
@@ -46,7 +47,7 @@ def make_plan(
         fault_category=fault,
         affected_service_archetype=EASY_ENVIRONMENTS[environment][0]
         if level == "easy"
-        else ("reverse-proxy" if fault == "external-firewall-mismatch" else "web-api"),
+        else ("reverse-proxy" if fault in MEDIUM_REVERSE_PROXY_FAULTS else "web-api"),
         dependency_archetype="direct-service"
         if level == "easy"
         else "proxy-api-database",
@@ -154,7 +155,11 @@ def test_all_hard_plans_materialize_two_faults_and_replay(combination):
 
 @pytest.mark.parametrize("level", ["easy", "medium"])
 def test_easy_and_medium_reject_secondary_fault(level):
-    plan = make_plan(level, "systemd-service-failed" if level == "easy" else "dependency-firewall-blocked", "web-application" if level == "easy" else "web-stack")
+    plan = make_plan(
+        level,
+        "systemd-service-failed" if level == "easy" else "dependency-firewall-blocked",
+        "web-application" if level == "easy" else "web-stack",
+    )
     payload = plan.model_dump(mode="json")
     payload["secondary_fault_category"] = "selinux-context-invalid"
 
@@ -181,7 +186,7 @@ def test_hard_catalog_is_small_and_contains_only_approved_pairs():
     )
     catalog = get_plan_capability_catalog(request)
 
-    assert len(catalog["hard_pairs"]) == 5
+    assert len(catalog["hard_pairs"]) == 10
     assert catalog["fault_count"] == 2
     assert catalog["hosts"] == [5, 5]
     assert len((INSTRUCTION + build_generation_prompt(request)).encode()) < 6144
