@@ -68,6 +68,12 @@ def test_dynamic_workspace_bootstraps_only_session_id_and_frontend_containers():
     assert 'id="monitoring-overlay"' in response.text
     assert 'id="post-incident-root-chain"' in response.text
     assert 'id="post-incident-partial-explanation"' in response.text
+    assert 'id="post-incident-repair-timeline"' in response.text
+    assert 'id="post-incident-efficiency"' in response.text
+    assert 'id="post-incident-key-signals"' in response.text
+    assert '<details id="post-incident-command-review"' in response.text
+    assert 'id="post-incident-learning-points"' in response.text
+    assert 'id="post-incident-real-world"' in response.text
     assert 'id="rack-overlay"' in response.text
     assert 'id="request-hint-button"' in response.text
     assert 'id="exit-session-button"' in response.text
@@ -116,6 +122,14 @@ def test_dynamic_gameplay_assets_include_keyboard_and_overlay_contracts():
     assert 'window.location.replace("/admin-duty/dynamic/")' in scenario.text
     assert 'link.label === "zależy od"' in scenario.text
     assert "post_incident" in scenario.text
+    assert "Array.isArray(report.command_review)" in scenario.text
+    assert "reviewPanel.hidden = !review.length" in scenario.text
+    assert 'getElementById("post-incident-repair-section").hidden = !timeline.length' in scenario.text
+
+    styles = client.get("/static/admin_duty/dynamic/dynamic.css")
+    assert styles.status_code == 200
+    assert ".command-review summary:focus-visible" in styles.text
+    assert "prefers-reduced-motion: reduce" in styles.text
 
 
 def test_dynamic_workspace_rejects_invalid_uuid():

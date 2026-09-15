@@ -93,7 +93,7 @@ def test_copy_does_not_replace_a_directory_and_mkdir_p_is_idempotent():
         "nmcli connection down System-ens192",
         "firewall-cmd --add-service=http",
         "setenforce 0",
-        "systemctl restart example-api",
+        "systemctl restart orders-api",
         "chmod 600 ~/README.txt",
         "chown app:app ~/README.txt",
         "cp ~/README.txt ~/copy",
@@ -114,7 +114,7 @@ def test_mutating_commands_are_atomic_on_invalid_timestamp(command):
     [
         "dnf install nginx",
         "firewall-cmd --add-service=http",
-        "systemctl disable example-api",
+        "systemctl disable orders-api",
         "nmcli connection down System-ens192",
         "setenforce 0",
     ],
@@ -135,7 +135,7 @@ def test_editor_save_rolls_back_file_and_reload_flag_on_accounting_error():
         service.save_file(
             definition,
             state,
-            path="/etc/systemd/system/example-api.service",
+            path="/etc/systemd/system/orders-api.service",
             content="[Service]\nExecStart=/new\n",
             now=NOW - timedelta(seconds=1),
         )
@@ -151,7 +151,7 @@ def test_editor_rejects_inactive_sessions_atomically(status):
         service.save_file(
             definition,
             state,
-            path="/etc/systemd/system/example-api.service",
+            path="/etc/systemd/system/orders-api.service",
             content="[Service]",
             now=NOW,
         )
@@ -160,7 +160,7 @@ def test_editor_rejects_inactive_sessions_atomically(status):
 
 def test_unit_editor_requires_daemon_reload_then_updates_processes_and_journal():
     definition, state, service = build_shell()
-    path = "/etc/systemd/system/example-api.service"
+    path = "/etc/systemd/system/orders-api.service"
     original_cache = dict(state.virtual_rocky.systemd_unit_cache)
     editor = execute(definition, state, service, f"nano {path}").editor
     assert editor
@@ -171,16 +171,16 @@ def test_unit_editor_requires_daemon_reload_then_updates_processes_and_journal()
     assert execute(definition, state, service, f"nano {path}").editor.content == content
     assert state.virtual_rocky.systemd_unit_cache == original_cache
     assert not execute(
-        definition, state, service, "systemctl restart example-api"
+        definition, state, service, "systemctl restart orders-api"
     ).success
     assert (
         "daemon-reload"
-        in execute(definition, state, service, "systemctl status example-api").output
+        in execute(definition, state, service, "systemctl status orders-api").output
     )
     assert execute(definition, state, service, "systemctl daemon-reload").success
     assert not state.virtual_rocky.daemon_reload_required
     assert execute(
-        definition, state, service, "systemctl restart example-api"
+        definition, state, service, "systemctl restart orders-api"
     ).progress.mission_complete
     assert any(
         p.service_resource_id == "service-api"
@@ -243,21 +243,21 @@ def test_firewall_permanent_reload_network_and_nmcli_interact():
     execute(definition, state, service, "firewall-cmd --reload")
     assert execute(definition, state, service, "curl http://app-01").success
     assert not execute(
-        definition, state, service, "curl http://example.internal"
+        definition, state, service, "curl http://probe.internal"
     ).success
     execute(definition, state, service, "firewall-cmd --remove-service=http")
     execute(definition, state, service, "firewall-cmd --add-port=80/tcp")
     assert execute(definition, state, service, "curl http://app-01").success
     execute(definition, state, service, "firewall-cmd --remove-port=80/tcp")
     assert not execute(definition, state, service, "curl http://app-01").success
-    assert execute(definition, state, service, "ping -c 1 example.internal").success
+    assert execute(definition, state, service, "ping -c 1 probe.internal").success
     assert (
         "10.24.8.40"
-        in execute(definition, state, service, "dig example.internal").output
+        in execute(definition, state, service, "dig probe.internal").output
     )
     assert (
         "10.24.8.40"
-        in execute(definition, state, service, "getent hosts example.internal").output
+        in execute(definition, state, service, "getent hosts probe.internal").output
     )
     execute(definition, state, service, "nmcli connection down System-ens192")
     assert (
@@ -265,7 +265,7 @@ def test_firewall_permanent_reload_network_and_nmcli_interact():
         in execute(definition, state, service, "nmcli device status").output
     )
     assert execute(definition, state, service, "ip route").output == ""
-    assert not execute(definition, state, service, "ping example.internal").success
+    assert not execute(definition, state, service, "ping probe.internal").success
     assert execute(definition, state, service, "curl localhost").success
     execute(definition, state, service, "nmcli connection up System-ens192")
     assert "default via" in execute(definition, state, service, "ip route").output
@@ -273,41 +273,41 @@ def test_firewall_permanent_reload_network_and_nmcli_interact():
 
 def test_selinux_context_controls_service_start_and_restorecon_repairs_it():
     definition, state, service = build_shell(seed=1)
-    state.virtual_rocky.selinux.file_contexts["/opt/example-api"] = (
+    state.virtual_rocky.selinux.file_contexts["/opt/orders-api"] = (
         "system_u:object_r:wrong_t:s0"
     )
     assert not execute(
-        definition, state, service, "systemctl restart example-api"
+        definition, state, service, "systemctl restart orders-api"
     ).success
     assert (
         "SELinux"
-        in execute(definition, state, service, "journalctl -u example-api -n 1").output
+        in execute(definition, state, service, "journalctl -u orders-api -n 1").output
     )
     assert "Enforcing" in execute(definition, state, service, "getenforce").output
     execute(definition, state, service, "setenforce 0")
     assert state.virtual_rocky.selinux.mode == "Permissive"
     execute(definition, state, service, "setenforce 1")
     assert (
-        "/opt/example-api"
+        "/opt/orders-api"
         in execute(definition, state, service, "semanage fcontext -l").output
     )
     assert execute(definition, state, service, "restorecon -R /opt").success
-    assert execute(definition, state, service, "systemctl restart example-api").success
+    assert execute(definition, state, service, "systemctl restart orders-api").success
 
 
 def test_systemd_enable_disable_stop_and_journal_time_filter():
     definition, state, service = build_shell()
-    execute(definition, state, service, "systemctl disable example-api")
+    execute(definition, state, service, "systemctl disable orders-api")
     assert not execute(
-        definition, state, service, "systemctl is-enabled example-api"
+        definition, state, service, "systemctl is-enabled orders-api"
     ).success
-    execute(definition, state, service, "systemctl enable example-api")
+    execute(definition, state, service, "systemctl enable orders-api")
     assert execute(
-        definition, state, service, "systemctl is-enabled example-api"
+        definition, state, service, "systemctl is-enabled orders-api"
     ).success
-    execute(definition, state, service, "systemctl stop example-api")
+    execute(definition, state, service, "systemctl stop orders-api")
     assert not execute(
-        definition, state, service, "systemctl is-active example-api"
+        definition, state, service, "systemctl is-active orders-api"
     ).success
     assert "Stopped" in execute(definition, state, service, "journalctl -n 1").output
     assert (
@@ -368,7 +368,7 @@ def test_no_host_access_for_commands_or_editor(monkeypatch):
             "rpm -qa",
             "systemctl start nginx",
             "curl localhost",
-            "ping example.internal",
+            "ping probe.internal",
             "getenforce",
             "firewall-cmd --list-all",
             "nmcli connection show",
@@ -382,9 +382,9 @@ def test_no_host_access_for_commands_or_editor(monkeypatch):
             "pwd && whoami",
             "ls | cat",
             "echo x > /tmp/x",
-            "systemctl set-exec-start example-api api-server",
-            "env restore example-api DATABASE_URL",
-            "chmod restore /opt/example-api/api-server",
+            "systemctl set-exec-start orders-api api-server",
+            "env restore orders-api DATABASE_URL",
+            "chmod restore /opt/orders-api/api-server",
         ):
             with pytest.raises(CommandParseError):
                 execute(definition, state, service, command)

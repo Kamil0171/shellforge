@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from typing import Protocol
+from typing import Literal, Protocol
 from uuid import UUID
 
 from pydantic import Field
@@ -19,6 +19,13 @@ from app.admin_duty.domain.difficulty import (
 )
 from app.admin_duty.domain.generation import IncidentGenerationRequest
 from app.admin_duty.domain.progress import SessionProgress, get_session_progress
+from app.admin_duty.domain.reporting import (
+    PostIncidentCommandReview,
+    PostIncidentEfficiency,
+    PostIncidentKeySignal,
+    PostIncidentRepairStep,
+    build_post_incident_analysis,
+)
 from app.admin_duty.domain.runtime import (
     InactiveSessionError,
     SessionRuntimeState,
@@ -104,6 +111,8 @@ class PublicShellState(FrozenDomainModel):
 
 
 class PublicPostIncidentReport(FrozenDomainModel):
+    version: Literal["2.0"] = "2.0"
+    incident_summary: str = Field(min_length=1, max_length=1200)
     root_cause: str = Field(min_length=1, max_length=1000)
     affected_services: tuple[str, ...] = Field(min_length=1, max_length=64)
     diagnostic_milestones: tuple[Identifier, ...] = Field(default=(), max_length=512)
@@ -112,6 +121,7 @@ class PublicPostIncidentReport(FrozenDomainModel):
     commands_used: tuple[str, ...] = Field(default=(), max_length=512)
     hints_used: int = Field(ge=0)
     score: int = Field(ge=0, le=1_000_000)
+    hint_cost: int = Field(ge=0)
     root_cause_chain: tuple[str, ...] = Field(default=(), max_length=8)
     primary_fault: str | None = Field(default=None, min_length=1, max_length=500)
     secondary_fault: str | None = Field(default=None, min_length=1, max_length=500)
@@ -121,6 +131,18 @@ class PublicPostIncidentReport(FrozenDomainModel):
         default=None, min_length=1, max_length=1000
     )
     learning_summary: str | None = Field(default=None, min_length=1, max_length=1000)
+    command_review: tuple[PostIncidentCommandReview, ...] = Field(
+        default=(), max_length=512
+    )
+    efficiency: PostIncidentEfficiency
+    key_signals: tuple[PostIncidentKeySignal, ...] = Field(
+        default=(), max_length=8
+    )
+    repair_timeline: tuple[PostIncidentRepairStep, ...] = Field(
+        default=(), max_length=32
+    )
+    learning_points: tuple[str, ...] = Field(default=(), max_length=5)
+    real_world_takeaways: tuple[str, ...] = Field(default=(), max_length=4)
 
 
 class DynamicSessionStartResult(FrozenDomainModel):
@@ -284,33 +306,43 @@ def _get_post_incident_report(
     progress = get_session_progress(definition, state)
     if post_incident is None or not progress.mission_complete:
         return None
+    analysis = build_post_incident_analysis(definition, state)
     affected_ids = set(post_incident.affected_service_ids)
     affected_services = tuple(
         _public_resource_label(resource)
         for resource in state.world_state.resources.values()
         if resource.resource_id in affected_ids
     )
-    repair_capabilities = set(post_incident.repair_capability_ids)
     return PublicPostIncidentReport(
+        incident_summary=analysis.incident_summary,
         root_cause=post_incident.root_cause,
         affected_services=affected_services,
-        diagnostic_milestones=tuple(sorted(state.discovered_fact_ids)),
-        repair_actions=tuple(
-            record.command
-            for record in state.command_history
-            if record.capability_id in repair_capabilities and record.success
-        ),
+        diagnostic_milestones=(),
+        repair_actions=analysis.repair_commands,
         final_state=_get_public_infrastructure(definition, state).nodes,
         commands_used=tuple(record.command for record in state.command_history),
         hints_used=state.hints_used,
         score=state.score,
+        hint_cost=sum(hint.cost for hint in definition.hints[: state.hints_used]),
         root_cause_chain=post_incident.root_cause_chain,
         primary_fault=post_incident.primary_fault,
         secondary_fault=post_incident.secondary_fault,
-        impact_path=post_incident.impact_path,
-        repair_sequence=post_incident.repair_sequence,
-        partial_recovery_explanation=post_incident.partial_recovery_explanation,
-        learning_summary=post_incident.learning_summary,
+        impact_path=analysis.impact_path,
+        repair_sequence=tuple(
+            step.description for step in analysis.repair_sequence
+        ),
+        partial_recovery_explanation=(
+            analysis.partial_recovery_explanation
+        ),
+        learning_summary=(
+            post_incident.learning_summary or analysis.learning_points[0]
+        ),
+        command_review=analysis.command_review,
+        efficiency=analysis.efficiency,
+        key_signals=analysis.key_signals,
+        repair_timeline=analysis.repair_sequence,
+        learning_points=analysis.learning_points,
+        real_world_takeaways=analysis.real_world_takeaways,
     )
 
 

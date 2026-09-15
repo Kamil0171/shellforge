@@ -88,7 +88,7 @@ def test_running_service_can_have_degraded_dependency_health_and_502_symptom():
     status = DynamicCommandService().execute(
         definition,
         state,
-        "systemctl status example-api",
+        "systemctl status orders-api",
         now=NOW + timedelta(seconds=2),
     )
     assert "Active: active (running)" in status.output
@@ -104,7 +104,7 @@ def test_medium_can_be_completed_by_alternative_state_based_solution():
     commands = (
         "ssh app-01",
         "dnf install python3-psycopg2",
-        "systemctl start example-api",
+        "systemctl start orders-api",
         "ssh edge-01",
         "curl http://portal.internal",
     )

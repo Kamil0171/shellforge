@@ -10,7 +10,6 @@ from app.admin_duty.domain.ai_plan import get_plan_capability_catalog, parse_ai_
 from app.admin_duty.domain.definition import (
     DataField,
     GenerationSource,
-    PostIncidentDefinition,
     ResourceType,
     ServiceDependency,
     WorldResource,
@@ -22,13 +21,6 @@ from app.admin_duty.domain.generation import (
     parse_generated_draft,
 )
 from app.admin_duty.generators.deterministic import _build_candidate
-
-EASY_ROOT_CAUSES = {
-    "systemd-service-failed": "Proces usługi zakończył się błędem; jednostka wymagała ponownego uruchomienia.",
-    "systemd-wrong-exec-start": "ExecStart jednostki systemd wskazywał nieprawidłowy plik wykonywalny.",
-    "systemd-missing-environment-variable": "W konfiguracji jednostki systemd brakowało wymaganej zmiennej środowiskowej.",
-    "systemd-permission-denied": "Plik wykonywalny usługi nie miał wymaganego uprawnienia do wykonania.",
-}
 
 
 class AIIncidentMaterializer:
@@ -122,15 +114,7 @@ class AIIncidentMaterializer:
                         port=8080,
                     ),
                 ),
-                post_incident=PostIncidentDefinition(
-                    root_cause=EASY_ROOT_CAUSES[plan.fault_category],
-                    affected_service_ids=(primary.resource_id,),
-                    repair_capability_ids=tuple(
-                        dict.fromkeys(
-                            step.capability_id for step in definition.solution
-                        )
-                    ),
-                ),
+                post_incident=definition.post_incident,
             )
             draft = GeneratedIncidentDraft(**fields)
         world = draft.initial_world_state

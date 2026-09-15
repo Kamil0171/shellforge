@@ -33,6 +33,7 @@ from app.admin_duty.domain.definition import (
     InitialWorldState,
     InterfaceCapability,
     Objective,
+    PostIncidentDefinition,
     ScoringRules,
     SolutionStep,
     Symptom,
@@ -43,6 +44,7 @@ from app.admin_duty.domain.generation import (
     IncidentGenerationRequest,
     convert_draft_to_definition,
 )
+from app.admin_duty.domain.reporting import get_fault_report_profile
 from app.admin_duty.rocky.registry import HANDLERS
 from app.admin_duty.validators import IncidentValidationError, IncidentValidator
 
@@ -273,6 +275,10 @@ def _build_candidate(
         ),
     )
 
+    report_profile = get_fault_report_profile(fault.fault_type)
+    if report_profile is None or report_profile.root_cause is None:
+        raise GenerationError("Fault EASY nie ma profilu raportowania.")
+
     return IncidentDefinition(
         scenario_id=uuid4(),
         schema_version="1.0",
@@ -364,6 +370,11 @@ def _build_candidate(
         ),
         hints=fault.hints[: profile.hint_limit],
         solution=_solution(fault, context),
+        post_incident=PostIncidentDefinition(
+            root_cause=report_profile.root_cause,
+            affected_service_ids=(service_resource_id,),
+            repair_capability_ids=report_profile.repair_capability_ids,
+        ),
     )
 
 

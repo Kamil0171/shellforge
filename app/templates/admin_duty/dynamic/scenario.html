@@ -177,23 +177,52 @@
             <h1>Incydent zakończony</h1>
             <p>Wynik i postęp pozostaną dostępne do czasu wygaśnięcia sesji.</p>
             <div class="end-summary-grid"><div><span>Poziom</span><strong id="summary-difficulty">—</strong></div><div><span>Wynik</span><strong id="summary-score">—</strong></div><div><span>Komendy</span><strong id="summary-commands">—</strong></div><div><span>Cele</span><strong id="summary-objectives">—</strong></div></div>
-            <section id="post-incident-report" class="post-incident-report" hidden>
-                <h2>Podsumowanie po incydencie</h2>
-                <dl>
-                    <div><dt>Przyczyna źródłowa</dt><dd id="post-incident-root-cause">—</dd></div>
-                    <div><dt>Dotknięte usługi</dt><dd id="post-incident-services">—</dd></div>
-                </dl>
-                <dl id="post-incident-chain-details" hidden>
-                    <div><dt>Pierwszy problem</dt><dd id="post-incident-primary-fault">—</dd></div>
-                    <div><dt>Drugi problem</dt><dd id="post-incident-secondary-fault">—</dd></div>
-                    <div><dt>Łańcuch przyczyn</dt><dd id="post-incident-root-chain">—</dd></div>
-                    <div><dt>Ścieżka wpływu</dt><dd id="post-incident-impact-path">—</dd></div>
-                    <div><dt>Kolejność napraw</dt><dd id="post-incident-repair-sequence">—</dd></div>
-                    <div><dt>Dlaczego pierwsza naprawa nie wystarczyła</dt><dd id="post-incident-partial-explanation">—</dd></div>
-                    <div><dt>Wniosek</dt><dd id="post-incident-learning-summary">—</dd></div>
-                </dl>
-                <h3>Skuteczne działania naprawcze</h3>
-                <ul id="post-incident-actions"></ul>
+            <section id="post-incident-report" class="post-incident-report" aria-label="Podsumowanie po incydencie" hidden>
+                <header class="post-incident-header">
+                    <div><span class="dynamic-eyebrow">POST-INCIDENT REPORT V2</span><h2>Incydent rozwiązany</h2></div>
+                    <div class="post-incident-score"><span>Wynik końcowy</span><strong id="post-incident-score">—</strong></div>
+                </header>
+                <div class="post-incident-section">
+                    <h3>Podsumowanie incydentu</h3>
+                    <p id="post-incident-summary">—</p>
+                    <dl class="post-incident-facts">
+                        <div><dt>Przyczyna źródłowa</dt><dd id="post-incident-root-cause">—</dd></div>
+                        <div><dt>Dotknięte usługi</dt><dd id="post-incident-services">—</dd></div>
+                    </dl>
+                </div>
+                <div id="post-incident-chain-details" class="post-incident-section" hidden>
+                    <h3>Łańcuch przyczyn</h3>
+                    <div class="root-cause-chain"><div><span>01</span><p id="post-incident-primary-fault">—</p></div><div><span>02</span><p id="post-incident-secondary-fault">—</p></div></div>
+                    <p id="post-incident-root-chain" class="visually-hidden">—</p>
+                </div>
+                <div class="post-incident-section">
+                    <h3>Ścieżka wpływu</h3>
+                    <ol id="post-incident-impact-timeline" class="impact-timeline"></ol>
+                    <p id="post-incident-impact-path" class="visually-hidden">—</p>
+                </div>
+                <div id="post-incident-repair-section" class="post-incident-section">
+                    <h3>Skuteczna ścieżka naprawy</h3>
+                    <ol id="post-incident-repair-timeline" class="repair-timeline"></ol>
+                    <p id="post-incident-repair-sequence" class="visually-hidden">—</p>
+                    <div id="post-incident-partial" class="partial-recovery-note" hidden><strong>Partial recovery</strong><p id="post-incident-partial-explanation">—</p></div>
+                    <ul id="post-incident-actions" hidden></ul>
+                </div>
+                <div class="post-incident-section">
+                    <h3>Efektywność diagnostyki</h3>
+                    <div id="post-incident-efficiency" class="post-incident-metrics"></div>
+                </div>
+                <div class="post-incident-section">
+                    <h3>Najważniejsze sygnały</h3>
+                    <ul id="post-incident-key-signals" class="key-signals"></ul>
+                </div>
+                <details id="post-incident-command-review" class="command-review">
+                    <summary><span>Twoja ścieżka diagnostyczna</span><strong id="post-incident-command-count">0 komend</strong></summary>
+                    <div id="post-incident-command-items" class="command-review-items"></div>
+                </details>
+                <div class="post-incident-learning-grid">
+                    <section><h3>Czego się nauczyłeś</h3><ul id="post-incident-learning-points"></ul><p id="post-incident-learning-summary" class="visually-hidden">—</p></section>
+                    <section><h3>Jak działać w Rocky/RHEL/Linux</h3><ul id="post-incident-real-world"></ul></section>
+                </div>
             </section>
             <a href="/admin-duty/dynamic/" class="dynamic-primary-button">Nowy incydent <span aria-hidden="true">→</span></a>
         </div>

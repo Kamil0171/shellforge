@@ -369,6 +369,148 @@
         openOverlay(completionOverlay, document.getElementById("end-session-button"));
     }
 
+    function renderReportList(containerId, values, formatter = (value) => value) {
+        const container = document.getElementById(containerId);
+        container.replaceChildren();
+        values.forEach((value) => {
+            const item = document.createElement("li");
+            item.textContent = formatter(value);
+            container.appendChild(item);
+        });
+    }
+
+    function formatResolutionTime(seconds) {
+        if (!Number.isFinite(seconds)) return "—";
+        if (seconds < 60) return `${seconds} s`;
+        const minutes = Math.floor(seconds / 60);
+        const remainder = seconds % 60;
+        return remainder ? `${minutes} min ${remainder} s` : `${minutes} min`;
+    }
+
+    function renderReportMetrics(report) {
+        const efficiency = report.efficiency || {};
+        const ratio = Number.isFinite(efficiency.diagnostic_efficiency)
+            ? `${Math.round(efficiency.diagnostic_efficiency * 100)}%`
+            : "Brak komend";
+        const metrics = [
+            ["Wszystkie komendy", efficiency.commands_total ?? 0],
+            ["Diagnostyczne", efficiency.diagnostic_commands ?? 0],
+            ["Naprawcze", efficiency.repair_commands ?? 0],
+            ["Weryfikacyjne", efficiency.verification_commands ?? 0],
+            ["Efektywność", ratio],
+            ["Podpowiedzi", `${report.hints_used ?? 0} · koszt ${report.hint_cost ?? 0} pkt`],
+            ["Czas rozwiązania", formatResolutionTime(efficiency.time_to_resolve_seconds)],
+            ["Niezwiązane", efficiency.unnecessary_commands ?? 0],
+        ];
+        const container = document.getElementById("post-incident-efficiency");
+        container.replaceChildren();
+        metrics.forEach(([label, value]) => {
+            const card = document.createElement("div");
+            const term = document.createElement("span");
+            const result = document.createElement("strong");
+            term.textContent = label;
+            result.textContent = value;
+            card.append(term, result);
+            container.appendChild(card);
+        });
+    }
+
+    function renderCommandReview(report) {
+        const classifications = {
+            diagnostic: "Diagnostyka",
+            repair: "Naprawa",
+            verification: "Weryfikacja",
+            navigation: "Nawigacja",
+            unnecessary: "Niezwiązana",
+        };
+        const relevance = { direct: "Istotna", supporting: "Wspierająca", unrelated: "Niezwiązana" };
+        const review = Array.isArray(report.command_review) ? report.command_review : [];
+        const reviewPanel = document.getElementById("post-incident-command-review");
+        reviewPanel.hidden = !review.length;
+        document.getElementById("post-incident-command-count").textContent = `${review.length} komend`;
+        const container = document.getElementById("post-incident-command-items");
+        container.replaceChildren();
+        if (!review.length) return;
+        review.forEach((entry) => {
+            const item = document.createElement("article");
+            item.className = "command-review-item";
+            const heading = document.createElement("div");
+            const command = document.createElement("code");
+            command.textContent = entry.command;
+            const badges = document.createElement("div");
+            const category = document.createElement("span");
+            category.className = "command-badge";
+            category.dataset.classification = entry.classification;
+            category.textContent = classifications[entry.classification] || entry.classification;
+            const relation = document.createElement("span");
+            relation.className = "command-badge command-relevance";
+            relation.textContent = relevance[entry.relevance] || entry.relevance;
+            const status = document.createElement("span");
+            status.className = "command-result";
+            status.dataset.success = String(entry.success);
+            status.textContent = entry.success ? "Sukces" : "Bez powodzenia";
+            badges.append(category, relation, status);
+            heading.append(command, badges);
+            const context = document.createElement("p");
+            context.className = "command-context";
+            context.textContent = `#${entry.order} · ${entry.host}`;
+            const explanation = document.createElement("p");
+            explanation.textContent = entry.explanation;
+            item.append(heading, context, explanation);
+            container.appendChild(item);
+        });
+    }
+
+    function renderPostIncidentReport(report) {
+        document.getElementById("post-incident-score").textContent = report.score;
+        document.getElementById("post-incident-summary").textContent = report.incident_summary;
+        document.getElementById("post-incident-root-cause").textContent = report.root_cause;
+        document.getElementById("post-incident-services").textContent = report.affected_services.join(", ");
+
+        const rootChain = Array.isArray(report.root_cause_chain) ? report.root_cause_chain : [];
+        const chain = document.getElementById("post-incident-chain-details");
+        chain.hidden = rootChain.length < 2;
+        document.getElementById("post-incident-root-chain").textContent = rootChain.join(" → ");
+        if (!chain.hidden) {
+            document.getElementById("post-incident-primary-fault").textContent = report.primary_fault || rootChain[0];
+            document.getElementById("post-incident-secondary-fault").textContent = report.secondary_fault || rootChain[1];
+        }
+
+        const impactPath = Array.isArray(report.impact_path) ? report.impact_path : [];
+        renderReportList("post-incident-impact-timeline", impactPath);
+        document.getElementById("post-incident-impact-path").textContent = impactPath.join(" → ");
+
+        const timeline = Array.isArray(report.repair_timeline)
+            ? report.repair_timeline
+            : (report.repair_sequence || []).map((description, index) => ({ order: index + 1, description, phase: "repair" }));
+        const timelineContainer = document.getElementById("post-incident-repair-timeline");
+        timelineContainer.replaceChildren();
+        document.getElementById("post-incident-repair-section").hidden = !timeline.length;
+        timeline.forEach((step) => {
+            const item = document.createElement("li");
+            item.dataset.phase = step.phase;
+            const order = document.createElement("span");
+            order.textContent = String(step.order).padStart(2, "0");
+            const text = document.createElement("p");
+            text.textContent = step.description;
+            item.append(order, text);
+            timelineContainer.appendChild(item);
+        });
+        document.getElementById("post-incident-repair-sequence").textContent = timeline.map((step) => step.description).join(" → ");
+        renderReportList("post-incident-actions", report.repair_actions || []);
+
+        const partial = document.getElementById("post-incident-partial");
+        partial.hidden = !report.partial_recovery_explanation;
+        if (!partial.hidden) document.getElementById("post-incident-partial-explanation").textContent = report.partial_recovery_explanation;
+
+        renderReportMetrics(report);
+        renderReportList("post-incident-key-signals", report.key_signals || [], (signal) => signal.signal);
+        renderCommandReview(report);
+        renderReportList("post-incident-learning-points", report.learning_points || []);
+        renderReportList("post-incident-real-world", report.real_world_takeaways || []);
+        document.getElementById("post-incident-learning-summary").textContent = report.learning_summary || "—";
+    }
+
     function renderSummary(progress) {
         destroyGame();
         if (activeOverlay) activeOverlay.hidden = true;
@@ -385,28 +527,7 @@
         const report = sessionData?.post_incident;
         const reportPanel = document.getElementById("post-incident-report");
         reportPanel.hidden = !report;
-        if (report) {
-            document.getElementById("post-incident-root-cause").textContent = report.root_cause;
-            document.getElementById("post-incident-services").textContent = report.affected_services.join(", ");
-            const actions = document.getElementById("post-incident-actions");
-            actions.replaceChildren();
-            report.repair_actions.forEach((action) => {
-                const item = document.createElement("li");
-                item.textContent = action;
-                actions.appendChild(item);
-            });
-            const chain = document.getElementById("post-incident-chain-details");
-            chain.hidden = !report.primary_fault;
-            if (report.primary_fault) {
-                document.getElementById("post-incident-primary-fault").textContent = report.primary_fault;
-                document.getElementById("post-incident-secondary-fault").textContent = report.secondary_fault;
-                document.getElementById("post-incident-root-chain").textContent = report.root_cause_chain.join(" → ");
-                document.getElementById("post-incident-impact-path").textContent = report.impact_path.join(" → ");
-                document.getElementById("post-incident-repair-sequence").textContent = report.repair_sequence.join(" → ");
-                document.getElementById("post-incident-partial-explanation").textContent = report.partial_recovery_explanation;
-                document.getElementById("post-incident-learning-summary").textContent = report.learning_summary;
-            }
-        }
+        if (report) renderPostIncidentReport(report);
     }
 
     function showWorkspace(data) {

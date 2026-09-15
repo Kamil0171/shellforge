@@ -1,15 +1,11 @@
-from enum import StrEnum
-
-from app.admin_duty.domain.definition import Identifier, IncidentDefinition
+from app.admin_duty.domain.definition import (
+    Identifier,
+    IncidentDefinition,
+    IncidentRecoveryState,
+)
 from app.admin_duty.domain.difficulty import DifficultyLevel
 from app.admin_duty.domain.objectives import evaluate_condition
 from app.admin_duty.domain.runtime import SessionRuntimeState
-
-
-class IncidentRecoveryState(StrEnum):
-    BROKEN = "broken"
-    PARTIALLY_RECOVERED = "partially_recovered"
-    HEALTHY = "healthy"
 
 
 def resolved_fault_ids(

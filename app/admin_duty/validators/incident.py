@@ -215,7 +215,9 @@ def _validate_post_incident(definition: IncidentDefinition) -> None:
         capability not in capabilities
         for capability in definition.post_incident.repair_capability_ids
     ):
-        raise IncidentValidationError("Post-incident wskazuje nieznane capability.")
+        raise IncidentValidationError(
+            "Post-incident używa niedostępnego capability."
+        )
 
 
 def _fault_category(fault) -> str | None:

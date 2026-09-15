@@ -105,7 +105,7 @@ def test_public_monitoring_tracks_repair_without_root_cause():
     definition, state, service = build_shell(seed=1)
     before = project_public_monitoring(definition, state)
     assert any(signal.severity == "critical" for signal in before.signals)
-    execute(definition, state, service, "systemctl restart example-api")
+    execute(definition, state, service, "systemctl restart orders-api")
     after = project_public_monitoring(definition, state)
     assert all(signal.severity == "ok" for signal in after.signals)
     assert "attributes" not in after.model_dump_json()

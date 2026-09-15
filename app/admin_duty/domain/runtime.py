@@ -183,8 +183,12 @@ class CommandRecord(MutableDomainModel):
     order: int = Field(ge=1)
     command: str = Field(min_length=1, max_length=1024)
     capability_id: Identifier
+    resource_id: str = Field(default=".", min_length=1, max_length=1024)
+    arguments: tuple[str, ...] = Field(default=(), max_length=32)
     host_id: Identifier
     success: bool
+    environment_changed: bool = False
+    resolved_fault_ids: tuple[Identifier, ...] = Field(default=(), max_length=2)
     occurred_at: AwareDatetime
 
 
@@ -627,7 +631,7 @@ def create_virtual_rocky_hosts(
     dns_records.update(
         {
             "repo.rockylinux.org": "151.101.2.132",
-            "example.internal": "10.24.8.40",
+            "probe.internal": "10.24.8.40",
         }
     )
     for resource in definition.initial_world_state.resources:
