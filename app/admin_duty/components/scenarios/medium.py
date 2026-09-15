@@ -91,8 +91,8 @@ def _service(
 ):
     app_name = service_name.removesuffix(".service")
     service_kind = {
-        "example-proxy.service": "reverse-proxy",
-        "example-api.service": "web-api",
+        "edge-proxy.service": "reverse-proxy",
+        "orders-api.service": "web-api",
         "database.service": "database",
     }.get(service_name, "systemd-service")
     executable_id = f"file-{resource_id.removeprefix('service-')}-binary"
@@ -327,14 +327,14 @@ def build_medium_draft(category: str, *, seed: int) -> GeneratedIncidentDraft:
     proxy = _service(
         "service-proxy",
         "host-edge-01",
-        "example-proxy.service",
+        "edge-proxy.service",
         edge_port,
         unhealthy_status_code=502,
     )
     api = _service(
         "service-api",
         "host-app-01",
-        "example-api.service",
+        "orders-api.service",
         8080,
         state=api_state,
         required_package="python3-psycopg2",
@@ -421,7 +421,7 @@ def build_medium_draft(category: str, *, seed: int) -> GeneratedIncidentDraft:
         state="present",
         parent_id="host-app-01",
         attributes=_fields(
-            path="/opt/example-api/app.conf",
+            path="/opt/orders-api/app.conf",
             content="DATABASE_HOST=database.internal\n",
             expected_content="DATABASE_HOST=database.internal\n",
             current_mode="0640",
@@ -458,7 +458,7 @@ def build_medium_draft(category: str, *, seed: int) -> GeneratedIncidentDraft:
     solutions = {
         "dependency-firewall-blocked": (
             ("network.curl", "curl http://portal.internal", True),
-            ("systemd.status", "systemctl status example-proxy", True),
+            ("systemd.status", "systemctl status edge-proxy", True),
             ("network.curl", "curl http://api.internal:8080", True),
             ("remote.ssh", "ssh data-01", True),
             ("firewalld.command", "firewall-cmd --list-all", True),
@@ -474,23 +474,23 @@ def build_medium_draft(category: str, *, seed: int) -> GeneratedIncidentDraft:
         "dependency-package-missing": (
             ("network.curl", "curl http://portal.internal", True),
             ("remote.ssh", "ssh app-01", True),
-            ("systemd.status", "systemctl status example-api", True),
-            ("journal.read", "journalctl -u example-api", True),
+            ("systemd.status", "systemctl status orders-api", True),
+            ("journal.read", "journalctl -u orders-api", True),
             ("packages.rpm", "rpm -q python3-psycopg2", False),
             ("packages.command", "dnf install -y python3-psycopg2", True),
-            ("systemd.restart", "systemctl restart example-api", True),
+            ("systemd.restart", "systemctl restart orders-api", True),
             ("remote.ssh", "ssh edge-01", True),
             ("network.curl", "curl http://portal.internal", True),
         ),
         "selinux-context-invalid": (
             ("network.curl", "curl http://portal.internal", True),
             ("remote.ssh", "ssh app-01", True),
-            ("systemd.status", "systemctl status example-api", True),
-            ("journal.read", "journalctl -u example-api", True),
+            ("systemd.status", "systemctl status orders-api", True),
+            ("journal.read", "journalctl -u orders-api", True),
             ("selinux.getenforce", "getenforce", True),
             ("selinux.semanage", "semanage fcontext -l", True),
-            ("selinux.restorecon", "restorecon -R /opt/example-api", True),
-            ("systemd.restart", "systemctl restart example-api", True),
+            ("selinux.restorecon", "restorecon -R /opt/orders-api", True),
+            ("systemd.restart", "systemctl restart orders-api", True),
             ("remote.ssh", "ssh edge-01", True),
             ("network.curl", "curl http://portal.internal", True),
         ),
@@ -511,7 +511,7 @@ def build_medium_draft(category: str, *, seed: int) -> GeneratedIncidentDraft:
         "external-firewall-mismatch": (
             ("network.curl", "curl https://portal.internal", False),
             ("remote.ssh", "ssh edge-01", True),
-            ("systemd.status", "systemctl status example-proxy", True),
+            ("systemd.status", "systemctl status edge-proxy", True),
             ("network.listeners", "ss -lntp", True),
             ("firewalld.command", "firewall-cmd --list-all", True),
             (

@@ -106,6 +106,12 @@ class FaultRelationType(StrEnum):
     DEPENDENCY_CHAIN = "dependency_chain"
 
 
+class IncidentRecoveryState(StrEnum):
+    BROKEN = "broken"
+    PARTIALLY_RECOVERED = "partially_recovered"
+    HEALTHY = "healthy"
+
+
 class SymptomVisibility(StrEnum):
     BRIEFING = "briefing"
     MONITORING = "monitoring"

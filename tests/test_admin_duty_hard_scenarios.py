@@ -167,8 +167,8 @@ def test_reversed_repair_order_stays_partial_then_completes():
     service = DynamicCommandService()
     commands = (
         "ssh app-0037",
-        "restorecon -R /opt/example-api",
-        "systemctl restart example-api",
+        "restorecon -R /opt/orders-api",
+        "systemctl restart orders-api",
     )
     for index, command in enumerate(commands, 1):
         service.execute(definition, state, command, now=NOW + timedelta(seconds=index))

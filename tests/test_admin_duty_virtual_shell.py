@@ -65,21 +65,21 @@ def test_ls_cat_head_tail_grep_and_stat_use_only_virtual_filesystem():
     execute(definition, state, service, "cd /etc/systemd/system")
 
     listing = execute(definition, state, service, "ls -la")
-    unit = execute(definition, state, service, "cat example-api.service")
-    head = execute(definition, state, service, "head -n 2 example-api.service")
-    tail = execute(definition, state, service, "tail -n 2 example-api.service")
-    grep = execute(definition, state, service, "grep ExecStart example-api.service")
-    stat = execute(definition, state, service, "stat example-api.service")
+    unit = execute(definition, state, service, "cat orders-api.service")
+    head = execute(definition, state, service, "head -n 2 orders-api.service")
+    tail = execute(definition, state, service, "tail -n 2 orders-api.service")
+    grep = execute(definition, state, service, "grep ExecStart orders-api.service")
+    stat = execute(definition, state, service, "stat orders-api.service")
     missing = execute(
         definition, state, service, "cat C:/Windows/System32/drivers/etc/hosts"
     )
 
-    assert "example-api.service" in listing.output
-    assert "ExecStart=/opt/example-api/legacy-api-server" in unit.output
+    assert "orders-api.service" in listing.output
+    assert "ExecStart=/opt/orders-api/legacy-api-server" in unit.output
     assert head.output.startswith("[Unit]\nDescription=")
     assert tail.output.endswith("WantedBy=multi-user.target")
-    assert grep.output == "ExecStart=/opt/example-api/legacy-api-server"
-    assert "File: /etc/systemd/system/example-api.service" in stat.output
+    assert grep.output == "ExecStart=/opt/orders-api/legacy-api-server"
+    assert "File: /etc/systemd/system/orders-api.service" in stat.output
     assert "No such file or directory" in missing.output
 
 
@@ -90,18 +90,18 @@ def test_virtual_filesystem_tracks_exec_start_and_permission_fault_repairs():
         definition,
         state,
         service,
-        "ls /opt/example-api",
+        "ls /opt/orders-api",
     )
     before_unit = execute(
         definition,
         state,
         service,
-        "cat /etc/systemd/system/example-api.service",
+        "cat /etc/systemd/system/orders-api.service",
     )
     service.save_file(
         definition,
         state,
-        path="/etc/systemd/system/example-api.service",
+        path="/etc/systemd/system/orders-api.service",
         content=before_unit.output.replace("legacy-api-server", "api-server"),
         now=NOW,
     )
@@ -109,13 +109,13 @@ def test_virtual_filesystem_tracks_exec_start_and_permission_fault_repairs():
         definition,
         state,
         service,
-        "cat /etc/systemd/system/example-api.service",
+        "cat /etc/systemd/system/orders-api.service",
     )
 
     assert "api-server" in before_listing.output
     assert "README.md" in before_listing.output
     assert "legacy-api-server" in before_unit.output
-    assert "ExecStart=/opt/example-api/api-server" in after_unit.output
+    assert "ExecStart=/opt/orders-api/api-server" in after_unit.output
     assert "legacy-api-server" not in after_unit.output
 
     permission_definition, permission_state, permission_service = build_shell(seed=0)
@@ -185,14 +185,14 @@ def test_system_resource_and_network_commands_have_deterministic_rocky_output(
 def test_systemd_status_cat_and_journal_accept_unit_name_or_resource_id():
     definition, state, service = build_shell()
 
-    status = execute(definition, state, service, "systemctl status example-api")
-    unit = execute(definition, state, service, "systemctl cat example-api.service")
+    status = execute(definition, state, service, "systemctl status orders-api")
+    unit = execute(definition, state, service, "systemctl cat orders-api.service")
     journal = execute(definition, state, service, "journalctl -u service-api")
     extended = execute(definition, state, service, "journalctl -xe")
 
     assert "Active: failed" in status.output
-    assert "Loaded: loaded (/etc/systemd/system/example-api.service" in status.output
-    assert "ExecStart=/opt/example-api/legacy-api-server" in unit.output
+    assert "Loaded: loaded (/etc/systemd/system/orders-api.service" in status.output
+    assert "ExecStart=/opt/orders-api/legacy-api-server" in unit.output
     assert "Failed at step EXEC" in journal.output
     assert "Failed at step EXEC" in extended.output
 
@@ -206,10 +206,10 @@ def test_start_stop_and_restart_mutate_only_controlled_virtual_service():
         definition,
         restart_state,
         service,
-        "systemctl restart example-api",
+        "systemctl restart orders-api",
     )
-    stopped = execute(definition, stop_state, service, "systemctl stop example-api")
-    started = execute(definition, start_state, service, "systemctl start example-api")
+    stopped = execute(definition, stop_state, service, "systemctl stop orders-api")
+    started = execute(definition, start_state, service, "systemctl start orders-api")
 
     assert restarted.success
     assert stopped.success
@@ -250,12 +250,12 @@ def test_wrong_exec_start_scenario_has_real_shell_diagnosis_and_controlled_repai
         "pwd",
         "cd /etc/systemd/system",
         "ls -la",
-        "systemctl status example-api",
-        "journalctl -u example-api",
-        "systemctl cat example-api",
-        "nano /etc/systemd/system/example-api.service",
+        "systemctl status orders-api",
+        "journalctl -u orders-api",
+        "systemctl cat orders-api",
+        "nano /etc/systemd/system/orders-api.service",
         "systemctl daemon-reload",
-        "systemctl restart example-api",
+        "systemctl restart orders-api",
     )
 
     results = []

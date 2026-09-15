@@ -337,7 +337,7 @@ def build_hard_draft(combination_id: str, *, seed: int) -> GeneratedIncidentDraf
     api_state = "running"
     api_context = None
     proxy_state = "running"
-    proxy_exec = "example-proxy"
+    proxy_exec = "edge-proxy"
     api_config = "DATABASE_HOST=database.internal\n"
     proxy_config = "UPSTREAM_PORT=8080\n"
 
@@ -352,7 +352,7 @@ def build_hard_draft(combination_id: str, *, seed: int) -> GeneratedIncidentDraf
         app_packages = ()
         api_state = "failed"
         proxy_state = "failed"
-        proxy_exec = "example-proxy-missing"
+        proxy_exec = "edge-proxy-missing"
     elif combination_id == "H-04":
         api_config = "DATABASE_HOST=database-wrong.internal\n"
         proxy_config = "UPSTREAM_PORT=8081\n"
@@ -426,7 +426,7 @@ def build_hard_draft(combination_id: str, *, seed: int) -> GeneratedIncidentDraf
     proxy = _service(
         "service-proxy",
         "host-edge-01",
-        "example-proxy.service",
+        "edge-proxy.service",
         80,
         state=proxy_state,
         unhealthy_status_code=502,
@@ -435,7 +435,7 @@ def build_hard_draft(combination_id: str, *, seed: int) -> GeneratedIncidentDraf
     api = _service(
         "service-api",
         "host-app-01",
-        "example-api.service",
+        "orders-api.service",
         8080,
         state=api_state,
         required_package="python3-psycopg2",
@@ -497,7 +497,7 @@ def build_hard_draft(combination_id: str, *, seed: int) -> GeneratedIncidentDraf
         state="present",
         parent_id="host-app-01",
         attributes=_fields(
-            path="/opt/example-api/app.conf",
+            path="/opt/orders-api/app.conf",
             content=api_config,
             expected_content="DATABASE_HOST=database.internal\n",
             current_mode="0640",
@@ -510,7 +510,7 @@ def build_hard_draft(combination_id: str, *, seed: int) -> GeneratedIncidentDraf
         state="present",
         parent_id="host-edge-01",
         attributes=_fields(
-            path="/opt/example-proxy/upstream.conf",
+            path="/opt/edge-proxy/upstream.conf",
             content=proxy_config,
             expected_content="UPSTREAM_PORT=8080\n",
             current_mode="0640",
@@ -685,8 +685,8 @@ def build_hard_draft(combination_id: str, *, seed: int) -> GeneratedIncidentDraf
             _step(6, "network.curl", "curl http://database.internal:5432", "Zweryfikuj częściową poprawę."),
             _step(7, "remote.ssh", f"ssh {app}", "Przejdź na host aplikacji."),
             _step(8, "selinux.getenforce", "getenforce", "Sprawdź tryb SELinux."),
-            _step(9, "selinux.restorecon", "restorecon -R /opt/example-api", "Przywróć kontekst."),
-            _step(10, "systemd.restart", "systemctl restart example-api", "Uruchom API."),
+            _step(9, "selinux.restorecon", "restorecon -R /opt/orders-api", "Przywróć kontekst."),
+            _step(10, "systemd.restart", "systemctl restart orders-api", "Uruchom API."),
             _step(11, "remote.ssh", f"ssh {client}", "Wróć do sondy."),
             _step(12, "network.curl", "curl http://portal.internal", "Zweryfikuj pełną ścieżkę."),
         )
@@ -710,13 +710,13 @@ def build_hard_draft(combination_id: str, *, seed: int) -> GeneratedIncidentDraf
             _step(2, "remote.ssh", f"ssh {app}", "Przejdź na host aplikacji."),
             _step(3, "packages.rpm", "rpm -q python3-psycopg2", "Sprawdź pakiet.", expected_success=False),
             _step(4, "packages.command", "dnf install -y python3-psycopg2", "Zainstaluj zależność."),
-            _step(5, "systemd.restart", "systemctl restart example-api", "Uruchom API."),
+            _step(5, "systemd.restart", "systemctl restart orders-api", "Uruchom API."),
             _step(6, "remote.ssh", f"ssh {edge}", "Zweryfikuj częściową poprawę."),
             _step(7, "network.curl", "curl http://api.internal:8080", "Sprawdź API."),
-            _step(8, "systemd.status", "systemctl status example-proxy", "Sprawdź proxy."),
-            _editor_step(9, "nano /etc/systemd/system/example-proxy.service", _healthy_unit("example-proxy.service"), "Popraw jednostkę proxy."),
+            _step(8, "systemd.status", "systemctl status edge-proxy", "Sprawdź proxy."),
+            _editor_step(9, "nano /etc/systemd/system/edge-proxy.service", _healthy_unit("edge-proxy.service"), "Popraw jednostkę proxy."),
             _step(10, "systemd.daemon-reload", "systemctl daemon-reload", "Przeładuj jednostki."),
-            _step(11, "systemd.restart", "systemctl restart example-proxy", "Uruchom proxy."),
+            _step(11, "systemd.restart", "systemctl restart edge-proxy", "Uruchom proxy."),
             _step(12, "remote.ssh", f"ssh {client}", "Wróć do sondy."),
             _step(13, "network.curl", "curl http://portal.internal", "Zweryfikuj pełną ścieżkę."),
         )
@@ -724,12 +724,12 @@ def build_hard_draft(combination_id: str, *, seed: int) -> GeneratedIncidentDraf
         steps = (
             _step(1, "network.curl", "curl http://portal.internal", "Potwierdź awarię."),
             _step(2, "remote.ssh", f"ssh {app}", "Przejdź na host aplikacji."),
-            _editor_step(3, "nano /opt/example-api/app.conf", "DATABASE_HOST=database.internal\n", "Popraw konfigurację API."),
-            _step(4, "systemd.restart", "systemctl restart example-api", "Przeładuj API."),
+            _editor_step(3, "nano /opt/orders-api/app.conf", "DATABASE_HOST=database.internal\n", "Popraw konfigurację API."),
+            _step(4, "systemd.restart", "systemctl restart orders-api", "Przeładuj API."),
             _step(5, "remote.ssh", f"ssh {edge}", "Zweryfikuj częściową poprawę."),
             _step(6, "network.curl", "curl http://api.internal:8080", "Sprawdź API."),
-            _editor_step(7, "nano /opt/example-proxy/upstream.conf", "UPSTREAM_PORT=8080\n", "Popraw port upstream."),
-            _step(8, "systemd.restart", "systemctl restart example-proxy", "Przeładuj proxy."),
+            _editor_step(7, "nano /opt/edge-proxy/upstream.conf", "UPSTREAM_PORT=8080\n", "Popraw port upstream."),
+            _step(8, "systemd.restart", "systemctl restart edge-proxy", "Przeładuj proxy."),
             _step(9, "remote.ssh", f"ssh {client}", "Wróć do sondy."),
             _step(10, "network.curl", "curl http://portal.internal", "Zweryfikuj pełną ścieżkę."),
         )

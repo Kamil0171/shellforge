@@ -93,8 +93,8 @@ def test_each_host_has_isolated_rocky_subsystems_and_local_services():
     assert edge.network is not app.network
     assert edge.firewall is not app.firewall
     assert edge.selinux is not app.selinux
-    assert edge.systemd_unit_cache == {"example-proxy.service": edge.systemd_unit_cache["example-proxy.service"]}
-    assert "example-api.service" in app.systemd_unit_cache
+    assert edge.systemd_unit_cache == {"edge-proxy.service": edge.systemd_unit_cache["edge-proxy.service"]}
+    assert "orders-api.service" in app.systemd_unit_cache
     assert "database.service" in data.systemd_unit_cache
 
 
@@ -114,4 +114,4 @@ def test_systemd_commands_cannot_control_service_on_another_host():
     definition, state = build_session()
 
     with pytest.raises(ValueError, match="innym hoście"):
-        execute(definition, state, "systemctl status example-api", 1)
+        execute(definition, state, "systemctl status orders-api", 1)
