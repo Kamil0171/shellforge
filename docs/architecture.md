@@ -204,6 +204,8 @@ Po ukończeniu incydentu backend buduje deterministyczny Post-Incident Report V2
 
 ## World Engine i Virtual Rocky
 
-World Engine łączy mapę środowiska z publicznym stanem rozgrywki, interakcjami i celami incydentu. Virtual Rocky utrzymuje izolowany stan hostów oraz udostępnia kontrolowany zestaw poleceń administracyjnych. Cała symulacja pozostaje wewnątrz sesji aplikacji i nie wykonuje poleceń ani połączeń na rzeczywistych hostach.
+World Engine łączy mapę środowiska z publicznym stanem rozgrywki, interakcjami i celami incydentu. Warstwa świata obsługuje registry data-driven layoutów: **Modern NOC** oraz **Datacenter Hall**. `map_id` identyfikuje komponent scenariusza, natomiast `world_id` wskazuje fizyczny layout wybrany deterministycznie na podstawie seeda. Obie mapy korzystają ze wspólnego renderera, kolizji, kamery, discovery/fog oraz istniejących typów interakcji.
+
+Virtual Rocky utrzymuje izolowany stan hostów oraz udostępnia kontrolowany zestaw poleceń administracyjnych. Neutralne sloty obiektów mapy wiążą publiczne hosty i usługi z wyposażeniem bez uzależniania layoutu od faultu lub root cause. Cała symulacja pozostaje wewnątrz sesji aplikacji i nie wykonuje poleceń ani połączeń na rzeczywistych hostach.
 
 Diagram Mermaid powyżej przedstawia aktualny przegląd systemu i zależności między jego głównymi komponentami.

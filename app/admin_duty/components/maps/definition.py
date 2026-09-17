@@ -37,10 +37,16 @@ class PublicGameObject(FrozenDomainModel):
         "partition",
         "door",
         "cable-tray",
+        "network-rack",
+        "patch-panel",
+        "ups-unit",
+        "cooling-unit",
+        "access-panel",
     ]
     rect: PublicGameRect
     variant: str = Field(default="default", max_length=40)
     binding_role: Literal["service", "host"] | None = None
+    binding_slot: Identifier | None = None
     resource_id: Identifier | None = None
     label: str | None = Field(default=None, min_length=1, max_length=80)
     tone: Literal["cyan", "blue", "amber", "green", "neutral", "danger"]
@@ -54,6 +60,7 @@ class PublicGameInteraction(FrozenDomainModel):
     radius: float = Field(gt=0, le=1000)
     resource_id: Identifier | None = None
     role: Literal["primary", "support"] = "primary"
+    object_id: Identifier | None = None
 
 
 class PublicGameSector(FrozenDomainModel):
@@ -64,6 +71,7 @@ class PublicGameSector(FrozenDomainModel):
 
 class PublicGameMap(FrozenDomainModel):
     id: Identifier
+    world_id: Identifier | None = None
     version: str = Field(min_length=1, max_length=64)
     name: str = Field(min_length=1, max_length=120)
     theme: Identifier
@@ -87,6 +95,12 @@ class PublicGameMap(FrozenDomainModel):
             or len(sector_ids) != len(set(sector_ids))
         ):
             raise ValueError("Mapa zawiera powtórzony identyfikator.")
+        object_ids = set(ids)
+        if any(
+            item.object_id is not None and item.object_id not in object_ids
+            for item in self.interactions
+        ):
+            raise ValueError("Interakcja wskazuje nieznany obiekt mapy.")
         for rect in (
             *self.collision_zones,
             *(item.rect for item in self.objects),

@@ -1,4 +1,4 @@
-from app.admin_duty.components.maps import get_map_template
+from app.admin_duty.components.maps import instantiate_map_snapshot
 from app.admin_duty.domain.definition import (
     CapabilitySet,
     CompletionCondition,
@@ -178,22 +178,13 @@ def _step(order, capability, command, purpose, *, expected_success=True):
     )
 
 
-def _map_snapshot(initial_host_id, secondary_host_id):
-    template = get_map_template("web-operations-room")
-    interactions = tuple(
-        interaction.model_copy(
-            update={
-                "interaction_id": f"{interaction.capability_id}-{initial_host_id}",
-                "target_resource_id": (
-                    initial_host_id
-                    if interaction.capability_id in {"terminal", "monitoring"}
-                    else secondary_host_id
-                ),
-            }
-        )
-        for interaction in template.snapshot.interactions
+def _map_snapshot(initial_host_id, secondary_host_id, *, seed):
+    return instantiate_map_snapshot(
+        "web-operations-room",
+        seed=seed,
+        primary_host_id=initial_host_id,
+        support_host_id=secondary_host_id,
     )
-    return template.snapshot.model_copy(update={"interactions": interactions})
 
 
 def _components(category, *, version="3.0"):
@@ -633,7 +624,7 @@ def build_medium_draft(category: str, *, seed: int) -> GeneratedIncidentDraft:
         initial_world_state=InitialWorldState(
             environment_id=f"medium-{category}",
             environment_version="3.0",
-            map=_map_snapshot(initial_host_id, "host-data-01"),
+            map=_map_snapshot(initial_host_id, "host-data-01", seed=seed),
             resources=tuple(resources),
         ),
         faults=(fault,),

@@ -192,6 +192,7 @@ class CollisionZone(FrozenDomainModel):
 
 class MapInteraction(FrozenDomainModel):
     interaction_id: Identifier
+    world_interaction_id: Identifier
     capability_id: Identifier
     label: str = Field(min_length=1, max_length=160)
     position: Point
@@ -202,6 +203,7 @@ class MapInteraction(FrozenDomainModel):
 
 class MapSnapshot(FrozenDomainModel):
     map_id: Identifier
+    world_id: Identifier
     component_version: Version
     width: int = Field(ge=1, le=10000)
     height: int = Field(ge=1, le=10000)

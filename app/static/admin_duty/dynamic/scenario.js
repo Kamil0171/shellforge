@@ -17,7 +17,10 @@
     const interactionPromptLabel = document.getElementById("interaction-prompt-label");
     const mobilePattern = /Android|iPad|iPhone|Mobile|Tablet|Silk/i;
     const pointerQuery = window.matchMedia("(pointer: coarse)");
-    const commandHistoryMessage = "Połączenie z bezpiecznym środowiskiem zostało ustanowione.\nZnajdź stanowisko OPS-01 i naciśnij E.";
+    const sessionGreeting = (map) => {
+        const terminalPoint = map.interactions.find((item) => item.type === "terminal");
+        return `Połączenie z bezpiecznym środowiskiem zostało ustanowione.\nZnajdź punkt „${terminalPoint?.label || "Terminal administracyjny"}” i naciśnij E.`;
+    };
     let sessionData = null;
     let currentProgress = null;
     let currentInfrastructure = { nodes: [], links: [] };
@@ -545,9 +548,13 @@
         renderProgress(data.progress);
         terminal.setPrompt(data.shell.prompt);
         document.getElementById("game-map-name").textContent = data.game_map.name;
-        document.getElementById("game-sector-label").textContent = "WEJŚCIE NOC";
+        root.dataset.worldTheme = data.game_map.theme;
+        const spawn = data.game_map.player_spawn;
+        const initialSector = data.game_map.sectors.find(({ rect }) => spawn.x >= rect.x && spawn.y >= rect.y && spawn.x <= rect.x + rect.width && spawn.y <= rect.y + rect.height);
+        document.getElementById("game-sector-label").textContent = (initialSector?.label || "Wejście").toUpperCase();
+        document.querySelector(".game-viewport-panel").setAttribute("aria-label", `Interaktywna mapa ${data.game_map.name}`);
         if (!terminalAnnounced) {
-            terminal.append("system", commandHistoryMessage);
+            terminal.append("system", sessionGreeting(data.game_map));
             terminalAnnounced = true;
         }
         createGameIfReady();

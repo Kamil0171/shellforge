@@ -11,6 +11,7 @@ from app.admin_duty.components import (
     ResourceRole,
     get_map_template,
 )
+from app.admin_duty.components.maps import instantiate_map_snapshot
 from app.admin_duty.components.models import AttributeMutationTemplate
 from app.admin_duty.components.scenarios import (
     HARD_COMBINATIONS,
@@ -303,7 +304,10 @@ def _build_candidate(
         initial_world_state=InitialWorldState(
             environment_id=environment.component_id,
             environment_version=environment.version,
-            map=map_template.snapshot,
+            map=instantiate_map_snapshot(
+                map_template.component_id,
+                seed=effective_seed,
+            ),
             resources=_apply_fault(environment, fault),
         ),
         faults=(

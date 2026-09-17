@@ -85,7 +85,7 @@
         "width": 840,
         "height": 440
       },
-      "label": "OPERATIONS FLOOR",
+      "label": "SALA OPERACYJNA",
       "tone": "blue",
       "variant": "carpet",
       "binding_role": null
@@ -99,7 +99,7 @@
         "width": 840,
         "height": 300
       },
-      "label": "OBSERVABILITY",
+      "label": "MONITORING",
       "tone": "cyan",
       "variant": "carpet",
       "binding_role": null
@@ -113,7 +113,7 @@
         "width": 520,
         "height": 880
       },
-      "label": "DATA HALL",
+      "label": "SERWEROWNIA",
       "tone": "amber",
       "variant": "raised",
       "binding_role": null
@@ -127,7 +127,7 @@
         "width": 300,
         "height": 680
       },
-      "label": "SUPPORT BAY",
+      "label": "CENTRUM WSPARCIA",
       "tone": "green",
       "variant": "wood",
       "binding_role": null

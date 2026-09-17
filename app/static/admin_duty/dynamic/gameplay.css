@@ -216,6 +216,36 @@ body.dynamic-session-page .interaction-prompt {
     background: rgba(7, 15, 28, 0.94);
 }
 
+[data-world-theme="datacenter-hall"] .interaction-prompt {
+    border: 1px solid #9eaa98;
+    border-left: 3px solid #c5ab73;
+    border-radius: 2px;
+    background: rgba(32, 40, 40, 0.96) !important;
+    color: #e0e2d5;
+    box-shadow: 0 3px 14px #10171755;
+}
+
+[data-world-theme="datacenter-hall"] .game-map-label,
+[data-world-theme="datacenter-hall"] .game-announcement,
+[data-world-theme="datacenter-hall"] .exploration-status {
+    border-color: #858e7c !important;
+    border-radius: 2px;
+    background: rgba(31, 39, 39, 0.94) !important;
+}
+
+[data-world-theme="datacenter-hall"] .exploration-status strong {
+    color: #cdd0b7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.dynamic-session-page .game-announcement,
+    body.dynamic-session-page .interaction-prompt,
+    body.dynamic-session-page .gameplay-left-panel {
+        transition: none;
+        animation: none;
+    }
+}
+
 body.dynamic-session-page .gameplay-left-panel,
 body.dynamic-session-page .gameplay-left-panel.is-collapsed {
     top: 12px;

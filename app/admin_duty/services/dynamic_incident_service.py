@@ -1,3 +1,4 @@
+import secrets
 from datetime import UTC, datetime
 from typing import Literal, Protocol
 from uuid import UUID
@@ -193,6 +194,10 @@ class HintUnavailableError(ValueError):
 
 def utc_now() -> datetime:
     return datetime.now(UTC)
+
+
+def _resolve_seed(seed: int | None) -> int:
+    return seed if seed is not None else secrets.randbelow(2**63)
 
 
 def _resolve_now(now: datetime | None) -> datetime:
@@ -409,20 +414,26 @@ class DynamicIncidentService:
         now: datetime | None = None,
     ) -> DynamicSessionStartResult:
         current_time = _resolve_now(now)
+        effective_seed = _resolve_seed(seed)
         self._cleanup(current_time)
         definition = self._generator.generate(
             difficulty,
-            seed=seed,
+            seed=effective_seed,
             now=current_time,
         )
         return self._start_definition(definition, current_time)
 
     async def start_session_async(self, difficulty, *, seed=None, now=None):
+        effective_seed = _resolve_seed(seed)
         if self._generation_service is None:
-            return self.start_session(difficulty, seed=seed, now=now)
+            return self.start_session(difficulty, seed=effective_seed, now=now)
         current_time = _resolve_now(now)
         definition = await self._generation_service.generate(
-            IncidentGenerationRequest(difficulty=difficulty, seed=seed, generation_source="ai"),
+            IncidentGenerationRequest(
+                difficulty=difficulty,
+                seed=effective_seed,
+                generation_source="ai",
+            ),
             now=current_time,
         )
         return self._start_definition(definition, _resolve_now(now))

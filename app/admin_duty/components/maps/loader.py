@@ -8,3 +8,4 @@ def load_map(path: Path) -> MapDefinition:
 
 
 MODERN_NOC = load_map(Path(__file__).with_name("modern_noc.json"))
+DATACENTER_HALL = load_map(Path(__file__).with_name("datacenter_hall.json"))
