@@ -73,6 +73,7 @@ def test_complete_dynamic_api_flow(api_context):
     assert started["revealed_hints"] == []
     assert started["infrastructure"]["nodes"]
     assert started["game_map"]["theme"] == "modern-noc"
+    assert started["game_map"]["world_id"] == "modern-noc"
     assert {item["type"] for item in started["game_map"]["interactions"]} == {
         "terminal",
         "monitoring",
@@ -437,6 +438,38 @@ def test_public_game_map_matches_selected_component_without_internal_wrapper(
     assert "snapshot" not in public_map
     assert "parameters" not in str(public_map)
     assert "capability_id" not in str(public_map)
+
+
+def test_datacenter_map_survives_start_get_and_end_flow(api_context):
+    started_response = start_easy(seed=0)
+    assert started_response.status_code == 200
+    started = started_response.json()
+    game_map = started["game_map"]
+    definition = api_context["scenarios"].get(UUID(started["scenario_id"]))
+    assert game_map["id"] == definition.initial_world_state.map.map_id
+    assert game_map["world_id"] == "datacenter-hall"
+    assert game_map["theme"] == "datacenter-hall"
+    assert game_map["width"] == 2200
+    assert game_map["height"] == 1400
+    assert len(game_map["objects"]) == 59
+    assert {item["variant"] for item in game_map["objects"]} >= {
+        "maintenance-cart", "fiber-frame", "service-crate", "power-distribution",
+    }
+    assert len(game_map["interactions"]) == 5
+
+    current = client.get(
+        f"/admin-duty/dynamic/api/sessions/{started['session_id']}"
+    )
+    assert current.status_code == 200
+    assert current.json()["game_map"]["world_id"] == "datacenter-hall"
+    assert current.json()["game_map"] == game_map
+
+    ended = client.post(
+        "/admin-duty/dynamic/api/end",
+        json={"session_id": started["session_id"]},
+    )
+    assert ended.status_code == 200
+    assert ended.json()["progress"]["status"] == "ended"
 
 
 def test_unavailable_capability_maps_to_400(monkeypatch):

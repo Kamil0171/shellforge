@@ -102,6 +102,7 @@ def build_incident_definition(
             environment_version="1.0",
             map=MapSnapshot(
                 map_id="operations-center",
+                world_id="modern-noc",
                 component_version="1.0",
                 width=960,
                 height=540,
@@ -112,6 +113,7 @@ def build_incident_definition(
                 interactions=(
                     MapInteraction(
                         interaction_id="terminal-ops",
+                        world_interaction_id="terminal",
                         capability_id="terminal",
                         label="Otwórz terminal",
                         position=Point(x=160, y=236),

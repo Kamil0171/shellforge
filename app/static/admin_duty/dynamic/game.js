@@ -3,6 +3,8 @@
     W.WorldManager = class WorldManager {
         constructor(options) {
             const map = W.MapLoader.load(options.map);
+            const profile = W.visualProfile(map);
+            this.motion = new W.MotionPreference();
             this.bridge = new W.RuntimeBridge(options.monitoring);
             this.locked = false;
             const manager = this;
@@ -11,7 +13,7 @@
                     manager.scene = this;
                     this.physics.world.setBounds(0, 0, map.width, map.height);
                     W.drawFloors(this, map);
-                    this.effects = new W.WorldEffects(this);
+                    this.effects = new W.WorldEffects(this, profile);
                     const obstacles = this.physics.add.staticGroup();
                     for (const r of map.collision_zones) {
                         const body = this.add.rectangle(r.x + r.width / 2, r.y + r.height / 2, r.width, r.height, 0, 0);
@@ -21,22 +23,23 @@
                         const r = object.rect;
                         const floor = ["light-strip", "floor-marking", "cable-tray"].includes(object.kind);
                         if (!floor) this.add.ellipse(r.x + r.width / 2 + 6, r.y + r.height + 2, r.width + 10, 17, 0x07141b, .18).setDepth(2);
-                        this.add.image(r.x, r.y, W.textureObject(this, object)).setOrigin(0).setDepth(floor ? 2 : 10 + r.y + r.height * .7);
+                        this.add.image(r.x, r.y, W.textureObject(this, object, profile)).setOrigin(0).setDepth(floor ? 2 : 10 + r.y + r.height * .7);
                     }
-                    this.operator = new W.PlayerController(this, map, obstacles);
+                    this.operator = new W.PlayerController(this, map, obstacles, manager.motion);
                     this.cameraController = new W.CameraController(this, this.operator.sprite, map);
                     this.discovery = new W.DiscoverySystem(this, map, options.onSectorChange);
-                    this.interactions = new W.InteractionSystem(this, map, options.onInteractionChange, options.onInteract);
-                    this.ambient = new W.AmbientAnimationSystem(this, manager.bridge, map.objects, this.effects);
+                    this.interactions = new W.InteractionSystem(this, map, options.onInteractionChange, options.onInteract, manager.motion);
+                    this.ambient = new W.AmbientAnimationSystem(this, manager.bridge, map.objects, this.effects, profile, manager.motion);
                     this.scale.on("resize", () => this.cameraController.resize());
                     this.lastReport = 0;
                     this.discovery.update(this.operator.sprite.x, this.operator.sprite.y);
-                    this.cameras.main.fadeIn(350, 15, 24, 32);
+                    if (!manager.motion.reduced) this.cameras.main.fadeIn(350, 15, 24, 32);
                 }
                 update(time, delta) {
                     if (!this.operator) return;
                     this.operator.update(time, delta, manager.locked);
                     this.ambient.update(time);
+                    this.interactions.feedback(time);
                     const player = this.operator.sprite;
                     if (!manager.locked) {
                         this.discovery.update(player.x, player.y);
@@ -69,7 +72,7 @@
             else { this.game.canvas.setAttribute("tabindex", "-1"); this.game.canvas.focus({ preventScroll: true }); }
         }
         updateMonitoring(monitoring) { this.bridge.update(monitoring); }
-        destroy() { this.options.onInteractionChange(null); this.game.destroy(true); this.scene = null; }
+        destroy() { this.motion.destroy(); this.options.onInteractionChange(null); this.game.destroy(true); this.scene = null; }
     };
     window.ShellForgeDynamicGame = { createGame: options => new W.WorldManager(options) };
 })();

@@ -1107,7 +1107,7 @@ def build_hard_draft(combination_id: str, *, seed: int) -> GeneratedIncidentDraf
         initial_world_state=InitialWorldState(
             environment_id=HARD_ENVIRONMENT_ARCHETYPE,
             environment_version="4.0",
-            map=_map_snapshot("host-client-01", "host-data-01"),
+            map=_map_snapshot("host-client-01", "host-data-01", seed=seed),
             resources=tuple(resources),
         ),
         faults=faults,

@@ -14,8 +14,16 @@
             }
             const pointValid = p => p && [p.x, p.y].every(Number.isFinite) && p.x >= 0 && p.y >= 0 && p.x <= data.width && p.y <= data.height;
             if (!pointValid(data.player_spawn)) throw new Error("Nieprawidłowy spawn.");
+            const interactionIds = new Set();
             for (const item of data.interactions) {
-                if (!pointValid(item.position) || !Number.isFinite(item.radius) || item.radius <= 0) throw new Error("Nieprawidłowa interakcja.");
+                if (interactionIds.has(item.id) || !pointValid(item.position) || !Number.isFinite(item.radius) || item.radius <= 0 || (item.object_id && !ids.has(item.object_id))) throw new Error("Nieprawidłowa interakcja.");
+                interactionIds.add(item.id);
+            }
+            const sectorIds = new Set();
+            for (const item of data.sectors) {
+                const r = item.rect;
+                if (sectorIds.has(item.id) || !r || ![r.x, r.y, r.width, r.height].every(Number.isFinite) || r.x < 0 || r.y < 0 || r.width <= 0 || r.height <= 0 || r.x + r.width > data.width || r.y + r.height > data.height) throw new Error("Nieprawidłowy sektor mapy.");
+                sectorIds.add(item.id);
             }
             return data;
         }

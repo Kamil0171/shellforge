@@ -1,8 +1,11 @@
+import asyncio
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
 
+import app.admin_duty.services.dynamic_incident_service as service_module
+from app.admin_duty.domain.definition import GenerationSource
 from app.admin_duty.domain.difficulty import DifficultyLevel
 from app.admin_duty.domain.runtime import (
     SessionStatus,
@@ -31,6 +34,56 @@ def build_service(*, max_sessions=500):
     return service, scenarios, sessions
 
 
+def test_async_start_resolves_fresh_backend_seed_before_generation(monkeypatch):
+    generator = DeterministicIncidentGenerator()
+    scenarios = InMemoryScenarioRepository()
+    sessions = InMemorySessionRepository(max_sessions=10)
+
+    class RecordingGenerationService:
+        def __init__(self):
+            self.requests = []
+
+        async def generate(self, request, *, now=None):
+            self.requests.append(request)
+            deterministic_request = request.model_copy(
+                update={"generation_source": GenerationSource.DETERMINISTIC}
+            )
+            return generator.generate_from_request(deterministic_request, now=now)
+
+    generation = RecordingGenerationService()
+    service = DynamicIncidentService(
+        generator=generator,
+        generation_service=generation,
+        scenario_repository=scenarios,
+        session_repository=sessions,
+    )
+    generated_seeds = iter((100, 101))
+    monkeypatch.setattr(
+        service_module.secrets,
+        "randbelow",
+        lambda upper: next(generated_seeds),
+    )
+
+    async def start_twice():
+        first = await service.start_session_async(
+            DifficultyLevel.EASY,
+            now=FIXED_NOW,
+        )
+        second = await service.start_session_async(
+            DifficultyLevel.EASY,
+            now=FIXED_NOW,
+        )
+        return first, second
+
+    first, second = asyncio.run(start_twice())
+
+    assert [request.seed for request in generation.requests] == [100, 101]
+    assert scenarios.get(first.scenario_id).generation.seed == 100
+    assert scenarios.get(second.scenario_id).generation.seed == 101
+    assert first.game_map.world_id == "datacenter-hall"
+    assert second.game_map.world_id == "modern-noc"
+
+
 def test_service_get_progress_is_read_only():
     service, scenarios, sessions = build_service()
     started = service.start_session(
@@ -55,6 +108,7 @@ def test_service_get_progress_is_read_only():
     assert isinstance(view.game_map, PublicGameMap)
     definition = scenarios.get(started.scenario_id)
     assert view.game_map.id == definition.initial_world_state.map.map_id
+    assert view.game_map.world_id == definition.initial_world_state.map.world_id
     assert "snapshot" not in PublicGameMap.model_fields
     assert "parameters" not in PublicGameMap.model_fields
 

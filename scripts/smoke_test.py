@@ -52,7 +52,7 @@ def run_dynamic_flow(base_url: str) -> None:
         base_url,
         "/admin-duty/dynamic/api/start",
         method="POST",
-        payload={"difficulty": "easy", "seed": 1},
+        payload={"difficulty": "easy", "seed": 0},
     )
 
     if status != 200 or not isinstance(started, dict):
@@ -63,8 +63,8 @@ def run_dynamic_flow(base_url: str) -> None:
     interactions = game_map.get("interactions", [])
     interaction_types = {interaction.get("type") for interaction in interactions}
 
-    if game_map.get("theme") != "modern-noc":
-        raise SmokeFailure("Start sesji nie zwrócił mapy Modern NOC.")
+    if game_map.get("world_id") != "datacenter-hall":
+        raise SmokeFailure("Start sesji nie zwrócił mapy Datacenter Hall.")
 
     if interaction_types != {"terminal", "monitoring", "rack", "support"}:
         raise SmokeFailure("Publiczna mapa nie zawiera wymaganych interakcji.")
