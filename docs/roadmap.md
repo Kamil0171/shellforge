@@ -24,7 +24,9 @@ Roadmapa opisuje aktualny stan i kierunek rozwoju projektu. Sekcja przyszłych p
 - wyszukiwanie i filtrowanie lekcji;
 - podział listy lekcji na moduły tematyczne;
 - nawigacja do poprzedniej i następnej lekcji;
-- materiały z podstaw terminala, administracji systemem, sieci i bezpieczeństwa oraz wdrażania aplikacji.
+- kompletna ścieżka 66 lekcji w sześciu dostępnych poziomach: podstawy terminala, administracja systemem, sieć i bezpieczeństwo, wdrażanie aplikacji, DevOps i automatyzacja oraz monitoring i utrzymanie;
+- ćwiczenia z health checków, obserwowalności, alertów, SLO, diagnozy incydentów, kopii i testowego odtwarzania PostgreSQL;
+- Prometheus i Grafana jako przykłady edukacyjne, bez instalacji w środowisku aplikacji.
 
 ### Praktyka
 
@@ -50,7 +52,7 @@ Roadmapa opisuje aktualny stan i kierunek rozwoju projektu. Sekcja przyszłych p
 
 ## Aktualny kierunek
 
-- dalszy rozwój treści z obszaru DevOps i automatyzacji;
+- utrzymanie spójności ukończonej ścieżki poziomów 1–6;
 - rozwijanie materiałów opartych na praktycznych problemach administracyjnych;
 - doskonalenie spójności między lekcjami, utrwalaniem wiedzy i Symulatorem;
 - utrzymanie jakości, czytelności i aktualności dokumentacji projektu.
@@ -60,11 +62,9 @@ Roadmapa opisuje aktualny stan i kierunek rozwoju projektu. Sekcja przyszłych p
 Poniższe kierunki są pomysłami do rozważenia, a nie deklaracją terminów lub kompletnego zakresu wdrożenia:
 
 - kolejne scenariusze incydentów administracyjnych;
-- dalsze materiały o automatyzacji testów i wdrożeń;
-- praktyczne podstawy konteneryzacji;
-- monitorowanie aplikacji i usług;
-- metryki, alerty i analiza logów;
-- procedury utrzymaniowe, kopie zapasowe i odtwarzanie;
+- dalsze materiały o automatyzacji wdrożeń;
+- pogłębione scenariusze monitoringu i reagowania na incydenty;
+- dodatkowe ćwiczenia z ochrony i odtwarzania danych;
 - rozwijanie narzędzi do praktycznego sprawdzania wiedzy.
 
 ## Zasady rozwoju

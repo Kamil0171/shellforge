@@ -66,6 +66,22 @@ Ten dokument zawiera główne źródła wykorzystywane podczas budowy aplikacji 
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
 - [Dependabot Documentation](https://docs.github.com/en/code-security/dependabot)
 
+## Kontenery i PostgreSQL
+
+- [Docker Documentation](https://docs.docker.com/)
+- [Docker Compose Documentation](https://docs.docker.com/compose/)
+- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+- [PostgreSQL — SQL Dump](https://www.postgresql.org/docs/17/backup-dump.html)
+- [PostgreSQL — pg_restore](https://www.postgresql.org/docs/17/app-pgrestore.html)
+
+## Monitoring i utrzymanie — źródła edukacyjne
+
+- [Prometheus Documentation](https://prometheus.io/docs/)
+- [Grafana Documentation](https://grafana.com/docs/)
+- [Google SRE Workbook — Alerting on SLOs](https://sre.google/workbook/alerting-on-slos/)
+
+Prometheus i Grafana są opisane w lekcjach jako narzędzia obserwowalności. Nie są składnikami środowiska uruchomieniowego ShellForge.
+
 ## Plany rozwoju i praktyka
 
 - [DevOps Roadmap](https://roadmap.sh/devops)
@@ -77,14 +93,10 @@ Ten dokument zawiera główne źródła wykorzystywane podczas budowy aplikacji 
 
 Poniższe dokumentacje dotyczą kierunków rozważanych na dalszych etapach. Ich obecność na liście nie oznacza, że technologie są już używane w ShellForge ani że zostaną wdrożone.
 
-### Kontenery
+### Narzędzia kontenerowe poza obecnym zakresem
 
-- [Docker Documentation](https://docs.docker.com/)
-- [Docker Compose Documentation](https://docs.docker.com/compose/)
 - [Podman Documentation](https://docs.podman.io/en/latest/)
 
-### Monitorowanie
+### Pozostałe narzędzia monitoringu
 
-- [Prometheus Documentation](https://prometheus.io/docs/)
-- [Grafana Documentation](https://grafana.com/docs/)
 - [Grafana Loki Documentation](https://grafana.com/docs/loki/latest/)

@@ -112,40 +112,55 @@ def roadmap_page(request: Request):
         {
             "level": "Poziom 5",
             "title": "DevOps i automatyzacja",
-            "status": "Planowane",
-            "status_type": "planned",
+            "status": "Dostępne",
+            "status_type": "active",
             "description": (
-                "Po opanowaniu ręcznego deploymentu kolejnym krokiem jest automatyzacja. "
-                "Ten etap prowadzi przez konteneryzację, automatyczne testy, CI/CD "
-                "i bardziej powtarzalne wdrożenia."
+                "Kompletny etap prowadzi od kontenerów i obrazów aplikacji przez "
+                "PostgreSQL po automatyczne testy, budowanie i kontrolowane "
+                "dostarczanie zmian w GitHub Actions."
             ),
             "lessons": [
                 "Podstawy konteneryzacji",
+                "Cykl życia kontenera i diagnostyka",
+                "Dane, porty i sieć kontenerów",
                 "Dockerfile dla aplikacji webowej",
+                "Budowanie obrazów: kontekst, .dockerignore i cache",
+                "Bezpieczny obraz aplikacji",
                 "PostgreSQL w środowisku aplikacji",
-                "CI/CD z GitHub Actions",
+                "Aplikacja i baza w Docker Compose",
+                "Trwałość danych, migracje i podstawowy backup PostgreSQL",
+                "CI/CD z GitHub Actions: pierwszy workflow",
+                "Automatyczne testy i budowanie w pipeline",
+                "Dostarczanie zmian i diagnostyka pipeline",
             ],
-            "cta_label": "Planowane",
-            "cta_url": None,
+            "cta_label": "Przejdź do lekcji",
+            "cta_url": "/lessons",
         },
         {
             "level": "Poziom 6",
             "title": "Monitoring i utrzymanie",
-            "status": "Planowane",
-            "status_type": "planned",
+            "status": "Dostępne",
+            "status_type": "active",
             "description": (
-                "Ostatni etap koncentruje się na utrzymaniu aplikacji po wdrożeniu. "
-                "Użytkownik poznaje podstawy monitorowania, health checków, logów, "
-                "metryk, alertów i procedur operacyjnych."
+                "Kompletny etap prowadzi od health checków, logów i metryk przez alerty, "
+                "SLO oraz diagnozę incydentów do bezpiecznych kopii, odtwarzania i runbooka."
             ),
             "lessons": [
-                "Health checki i podstawy obserwowalności",
-                "Monitoring aplikacji",
-                "Metryki i alerty",
-                "Backup i procedury odtworzeniowe",
+                "Health checki i gotowość aplikacji",
+                "Obserwowalność: logi, metryki i ślady",
+                "Logi usług i aplikacji",
+                "Monitoring aplikacji i zależności",
+                "Metryki i percentyle w praktyce",
+                "Alerty i eskalacja",
+                "SLI, SLO, SLA i budżet błędów",
+                "Diagnoza incydentu: od alertu do weryfikacji",
+                "Strategia backupu aplikacji",
+                "Backup PostgreSQL w kontenerze",
+                "Odtworzenie PostgreSQL i test kopii",
+                "Runbook i utrzymanie po wdrożeniu",
             ],
-            "cta_label": "Planowane",
-            "cta_url": None,
+            "cta_label": "Przejdź do lekcji",
+            "cta_url": "/lessons/55",
         },
     ]
 

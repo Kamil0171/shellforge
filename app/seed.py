@@ -3,33 +3,57 @@ import json
 from sqlmodel import Session, select
 
 from app.content.admin_directories import ADMIN_DIRECTORIES
+from app.content.alerting_escalation import ALERTING_ESCALATION
+from app.content.application_backup_strategy import APPLICATION_BACKUP_STRATEGY
 from app.content.application_dns import APPLICATION_DNS
+from app.content.application_health_checks import APPLICATION_HEALTH_CHECKS
+from app.content.application_monitoring import APPLICATION_MONITORING
 from app.content.basic_system_diagnostics import BASIC_SYSTEM_DIAGNOSTICS
 from app.content.certbot_https import CERTBOT_HTTPS
+from app.content.ci_tests_build import CI_TESTS_BUILD
+from app.content.compose_app_database import COMPOSE_APP_DATABASE
+from app.content.container_basics import CONTAINER_BASICS
+from app.content.container_data_network import CONTAINER_DATA_NETWORK
+from app.content.container_lifecycle import CONTAINER_LIFECYCLE
 from app.content.deployment_backup_rollback import DEPLOYMENT_BACKUP_ROLLBACK
 from app.content.deployment_checklist import DEPLOYMENT_CHECKLIST
 from app.content.deployment_preparation import DEPLOYMENT_PREPARATION
 from app.content.disk_space_cleanup import DISK_SPACE_CLEANUP
 from app.content.dns_practice import DNS_PRACTICE
+from app.content.docker_build_cache import DOCKER_BUILD_CACHE
+from app.content.dockerfile_web_app import DOCKERFILE_WEB_APP
 from app.content.environment_secrets import ENVIRONMENT_SECRETS
 from app.content.file_permissions import FILE_PERMISSIONS
 from app.content.files_and_directories import FILES_AND_DIRECTORIES
 from app.content.firewall_basics import FIREWALL_BASICS
 from app.content.firewalld_zones_services_ports import FIREWALLD_ZONES_SERVICES_PORTS
 from app.content.git_application_update import GIT_APPLICATION_UPDATE
+from app.content.github_actions_first_workflow import GITHUB_ACTIONS_FIRST_WORKFLOW
+from app.content.incident_diagnosis_workflow import INCIDENT_DIAGNOSIS_WORKFLOW
 from app.content.ip_addressing import IP_ADDRESSING
 from app.content.log_analysis import LOG_ANALYSIS
+from app.content.metrics_percentiles import METRICS_PERCENTILES
 from app.content.network_diagnostics import NETWORK_DIAGNOSTICS
 from app.content.network_dns_routing_connections import NETWORK_DNS_ROUTING_CONNECTIONS
 from app.content.network_ports_services import NETWORK_PORTS_SERVICES
 from app.content.nginx_reverse_proxy import NGINX_REVERSE_PROXY
+from app.content.observability_signals import OBSERVABILITY_SIGNALS
+from app.content.operations_runbook import OPERATIONS_RUNBOOK
 from app.content.package_management import PACKAGE_MANAGEMENT
+from app.content.pipeline_delivery_diagnostics import PIPELINE_DELIVERY_DIAGNOSTICS
 from app.content.post_deployment_diagnostics import POST_DEPLOYMENT_DIAGNOSTICS
+from app.content.postgres_backup_container import POSTGRES_BACKUP_CONTAINER
+from app.content.postgres_container import POSTGRES_CONTAINER
+from app.content.postgres_persistence import POSTGRES_PERSISTENCE
+from app.content.postgres_restore_test import POSTGRES_RESTORE_TEST
 from app.content.processes import PROCESSES
 from app.content.python_server_environment import PYTHON_SERVER_ENVIRONMENT
 from app.content.scheduled_tasks import SCHEDULED_TASKS
+from app.content.secure_container_image import SECURE_CONTAINER_IMAGE
 from app.content.selinux_basics import SELINUX_BASICS
 from app.content.selinux_troubleshooting import SELINUX_TROUBLESHOOTING
+from app.content.service_application_logs import SERVICE_APPLICATION_LOGS
+from app.content.service_objectives import SERVICE_OBJECTIVES
 from app.content.ssh_administration import SSH_ADMINISTRATION
 from app.content.ssh_keys_practice import SSH_KEYS_PRACTICE
 from app.content.ssh_secure_configuration import SSH_SECURE_CONFIGURATION
@@ -90,6 +114,30 @@ LESSONS = [
     DEPLOYMENT_BACKUP_ROLLBACK,
     POST_DEPLOYMENT_DIAGNOSTICS,
     DEPLOYMENT_CHECKLIST,
+    CONTAINER_BASICS,
+    CONTAINER_LIFECYCLE,
+    CONTAINER_DATA_NETWORK,
+    DOCKERFILE_WEB_APP,
+    DOCKER_BUILD_CACHE,
+    SECURE_CONTAINER_IMAGE,
+    POSTGRES_CONTAINER,
+    COMPOSE_APP_DATABASE,
+    POSTGRES_PERSISTENCE,
+    GITHUB_ACTIONS_FIRST_WORKFLOW,
+    CI_TESTS_BUILD,
+    PIPELINE_DELIVERY_DIAGNOSTICS,
+    APPLICATION_HEALTH_CHECKS,
+    OBSERVABILITY_SIGNALS,
+    SERVICE_APPLICATION_LOGS,
+    APPLICATION_MONITORING,
+    METRICS_PERCENTILES,
+    ALERTING_ESCALATION,
+    SERVICE_OBJECTIVES,
+    INCIDENT_DIAGNOSIS_WORKFLOW,
+    APPLICATION_BACKUP_STRATEGY,
+    POSTGRES_BACKUP_CONTAINER,
+    POSTGRES_RESTORE_TEST,
+    OPERATIONS_RUNBOOK,
 ]
 
 

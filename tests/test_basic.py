@@ -35,7 +35,7 @@ from app.content.tls_https_basics import TLS_HTTPS_BASICS
 from app.content.uvicorn_application import UVICORN_APPLICATION
 from app.database import create_db_and_tables, engine
 from app.main import app
-from app.models import Lesson
+from app.models import Flashcard, LearningModule, Lesson, Quiz, QuizAnswer, QuizQuestion
 from app.routers.lessons import get_adjacent_lessons
 from app.seed import LESSONS, seed_database
 
@@ -1328,13 +1328,15 @@ def test_lessons_page_groups_lessons_into_described_module_sections():
     response = client.get("/lessons")
 
     assert response.status_code == 200
-    assert response.text.count("data-module-section") == 4
+    assert response.text.count("data-module-section") == 6
 
     section_markers = [
         'id="lesson-module-1-heading"',
         'id="lesson-module-2-heading"',
         'id="lesson-module-3-heading"',
         'id="lesson-module-4-heading"',
+        'id="lesson-module-5-heading"',
+        'id="lesson-module-6-heading"',
     ]
     positions = [response.text.index(marker) for marker in section_markers]
     rendered_lesson_titles = [
@@ -1350,7 +1352,7 @@ def test_lessons_page_groups_lessons_into_described_module_sections():
 
     assert positions == sorted(positions)
     assert rendered_lesson_titles == expected_lesson_titles
-    assert all(f"MODUŁ {number}" in response.text for number in range(1, 5))
+    assert all(f"MODUŁ {number}" in response.text for number in range(1, 7))
     assert "Podstawy Linuxa i terminala" not in response.text
     assert "Ten blok prowadzi od pierwszych komend terminala" not in response.text
     assert "Pierwszy blok obejmuje podstawy Linuxa" not in response.text
@@ -1375,6 +1377,311 @@ def test_lessons_page_groups_lessons_into_described_module_sections():
         "Linux — od środowiska Python i Uvicorna po systemd, Nginx, DNS, "
         "HTTPS, aktualizacje i diagnostykę po wdrożeniu." in response.text
     )
+    assert (
+        "Poznaj kontenery i budowanie obrazów aplikacji, połącz usługę z PostgreSQL "
+        "oraz zautomatyzuj testy i przygotowanie zmian przez GitHub Actions."
+        in response.text
+    )
+    assert (
+        "Sprawdzaj stan aplikacji, analizuj logi i metryki, reaguj na alerty oraz "
+        "ćwicz bezpieczne kopie i odtwarzanie danych."
+        in response.text
+    )
+
+
+DEVOPS_TITLES = [
+    "Podstawy konteneryzacji",
+    "Cykl życia kontenera i diagnostyka",
+    "Dane, porty i sieć kontenerów",
+    "Dockerfile dla aplikacji webowej",
+    "Budowanie obrazów: kontekst, .dockerignore i cache",
+    "Bezpieczny obraz aplikacji",
+    "PostgreSQL w środowisku aplikacji",
+    "Aplikacja i baza w Docker Compose",
+    "Trwałość danych, migracje i podstawowy backup PostgreSQL",
+    "CI/CD z GitHub Actions: pierwszy workflow",
+    "Automatyczne testy i budowanie w pipeline",
+    "Dostarczanie zmian i diagnostyka pipeline",
+]
+
+MONITORING_TITLES = [
+    "Health checki i gotowość aplikacji",
+    "Obserwowalność: logi, metryki i ślady",
+    "Logi usług i aplikacji",
+    "Monitoring aplikacji i zależności",
+    "Metryki i percentyle w praktyce",
+    "Alerty i eskalacja",
+    "SLI, SLO, SLA i budżet błędów",
+    "Diagnoza incydentu: od alertu do weryfikacji",
+    "Strategia backupu aplikacji",
+    "Backup PostgreSQL w kontenerze",
+    "Odtworzenie PostgreSQL i test kopii",
+    "Runbook i utrzymanie po wdrożeniu",
+]
+
+
+def test_devops_content_order_structure_and_placeholder_audit():
+    assert len(LESSONS) == 66
+    assert [bundle["lesson"]["title"] for bundle in LESSONS[42:54]] == DEVOPS_TITLES
+
+    all_question_texts = []
+    all_flashcard_questions = []
+    for bundle in LESSONS[42:54]:
+        lesson = bundle["lesson"]
+        assert bundle["module"]["title"] == "DevOps i automatyzacja"
+        assert lesson["level"] == "Średnio zaawansowany"
+        assert all(lesson[key] for key in (
+            "title", "duration", "description", "theory", "commands",
+            "practice_task", "common_mistakes", "summary",
+        ))
+        assert all(all(command[key] for key in ("command", "description", "example"))
+                   for command in lesson["commands"])
+        assert len(bundle["quiz"]["questions"]) == 6
+        assert len(bundle["flashcards"]) == 25
+        assert len({card["question"] for card in bundle["flashcards"]}) == 25
+        assert len({card["answer"] for card in bundle["flashcards"]}) == 25
+
+        visible_text = [
+            bundle["module"]["title"], bundle["module"]["description"],
+            *(lesson[key] for key in (
+                "title", "level", "duration", "description", "theory",
+                "practice_task", "summary",
+            )),
+            *lesson["common_mistakes"],
+            *(value for command in lesson["commands"] for value in command.values()),
+            bundle["quiz"]["title"], bundle["quiz"]["description"],
+        ]
+
+        for question in bundle["quiz"]["questions"]:
+            all_question_texts.append(question["text"])
+            visible_text.append(question["text"])
+            assert [answer[0] for answer in question["answers"]] == ["a", "b", "c", "d"]
+            assert len({answer[1] for answer in question["answers"]}) == 4
+            assert sum(answer[2] for answer in question["answers"]) == 1
+            visible_text.extend(answer[1] for answer in question["answers"])
+
+        for card in bundle["flashcards"]:
+            assert card["question"] and card["answer"]
+            all_flashcard_questions.append(card["question"])
+            visible_text.extend((card["question"], card["answer"]))
+
+        assert not re.search(r"\b(?:example|sample|demo)\b", " ".join(visible_text), re.I)
+
+    assert len(set(all_question_texts)) == 72
+    assert len(set(all_flashcard_questions)) == 300
+
+
+def test_devops_seed_is_idempotent_and_ids_are_continuous():
+    before = get_ordered_lessons()
+    assert [(lesson.id, lesson.title) for lesson in before[42:54]] == list(
+        zip(range(43, 55), DEVOPS_TITLES, strict=True)
+    )
+    seed_database()
+    after = get_ordered_lessons()
+    assert [(lesson.id, lesson.title) for lesson in after] == [
+        (lesson.id, lesson.title) for lesson in before
+    ]
+
+    with Session(engine) as session:
+        modules = session.exec(select(LearningModule)).all()
+        devops_module = next(module for module in modules if module.title == "DevOps i automatyzacja")
+        assert all(lesson.module_id == devops_module.id for lesson in after[42:54])
+        assert len({lesson.id for lesson in after}) == 66
+
+        for lesson in after[42:54]:
+            quiz = session.exec(select(Quiz).where(Quiz.lesson_id == lesson.id)).one()
+            questions = session.exec(select(QuizQuestion).where(QuizQuestion.quiz_id == quiz.id)).all()
+            cards = session.exec(select(Flashcard).where(Flashcard.lesson_id == lesson.id)).all()
+            assert len(questions) == 6
+            assert {question.position for question in questions} == set(range(1, 7))
+            assert len(cards) == 25
+            assert {card.position for card in cards} == set(range(1, 26))
+            for question in questions:
+                answers = session.exec(select(QuizAnswer).where(QuizAnswer.question_id == question.id)).all()
+                assert len(answers) == 4
+                assert sum(answer.is_correct for answer in answers) == 1
+
+
+def test_devops_pages_navigation_and_learning_path():
+    for lesson_id, title in enumerate(DEVOPS_TITLES, start=43):
+        lesson_response = client.get(f"/lessons/{lesson_id}")
+        assert lesson_response.status_code == 200
+        assert title in unescape(lesson_response.text)
+        assert client.get(f"/quiz/{lesson_id}").status_code == 200
+        assert client.get(f"/flashcards/{lesson_id}").status_code == 200
+
+    last_deployment = client.get("/lessons/42")
+    first_devops = client.get("/lessons/43")
+    last_devops = client.get("/lessons/54")
+    assert 'href="/lessons/43"' in last_deployment.text
+    assert 'href="/lessons/42"' in first_devops.text
+    assert 'href="/lessons/44"' in first_devops.text
+    assert 'href="/lessons/53"' in last_devops.text
+    assert 'href="/lessons/55"' in last_devops.text
+
+    roadmap = client.get("/roadmap/")
+    assert roadmap.status_code == 200
+    level_five = roadmap.text.split("Poziom 5", 1)[1].split("Poziom 6", 1)[0]
+    assert "DevOps i automatyzacja" in level_five
+    assert "Dostępne" in level_five
+    assert "Planowane" not in level_five
+    assert 'href="/lessons"' in level_five
+    assert all(unescape(title) in unescape(level_five) for title in DEVOPS_TITLES)
+    assert "Dostępne" in roadmap.text.split("Poziom 6", 1)[1]
+
+
+def test_monitoring_content_order_structure_uniqueness_and_placeholder_audit():
+    assert len(LESSONS) == 66
+    assert [bundle["lesson"]["title"] for bundle in LESSONS[54:]] == MONITORING_TITLES
+
+    all_question_texts = []
+    all_flashcard_questions = []
+    all_flashcard_answers = []
+    for bundle in LESSONS[54:]:
+        lesson = bundle["lesson"]
+        assert bundle["module"]["title"] == "Monitoring i utrzymanie"
+        assert lesson["level"] == "Średnio zaawansowany"
+        assert all(
+            lesson[key]
+            for key in (
+                "title",
+                "duration",
+                "description",
+                "theory",
+                "commands",
+                "practice_task",
+                "common_mistakes",
+                "summary",
+            )
+        )
+        assert all(
+            all(command[key] for key in ("command", "description", "example"))
+            for command in lesson["commands"]
+        )
+        assert len(bundle["quiz"]["questions"]) == 6
+        assert len(bundle["flashcards"]) == 25
+        assert len({card["question"] for card in bundle["flashcards"]}) == 25
+        assert len({card["answer"] for card in bundle["flashcards"]}) == 25
+
+        visible_text = [
+            bundle["module"]["title"],
+            bundle["module"]["description"],
+            *(
+                lesson[key]
+                for key in (
+                    "title",
+                    "level",
+                    "duration",
+                    "description",
+                    "theory",
+                    "practice_task",
+                    "summary",
+                )
+            ),
+            *lesson["common_mistakes"],
+            *(value for command in lesson["commands"] for value in command.values()),
+            bundle["quiz"]["title"],
+            bundle["quiz"]["description"],
+        ]
+
+        for question in bundle["quiz"]["questions"]:
+            all_question_texts.append(question["text"])
+            visible_text.append(question["text"])
+            assert [answer[0] for answer in question["answers"]] == ["a", "b", "c", "d"]
+            assert len({answer[1] for answer in question["answers"]}) == 4
+            assert sum(answer[2] for answer in question["answers"]) == 1
+            visible_text.extend(answer[1] for answer in question["answers"])
+
+        for card in bundle["flashcards"]:
+            all_flashcard_questions.append(card["question"])
+            all_flashcard_answers.append(card["answer"])
+            visible_text.extend((card["question"], card["answer"]))
+
+        assert not re.search(r"\b(?:example|sample|demo)\b", " ".join(visible_text), re.I)
+
+    assert len(set(all_question_texts)) == 72
+    assert len(set(all_flashcard_questions)) == 300
+    assert len(set(all_flashcard_answers)) == 300
+
+
+def test_monitoring_seed_is_idempotent_and_preserves_existing_ids():
+    before = get_ordered_lessons()
+    assert [(lesson.id, lesson.title) for lesson in before[:54]] == list(
+        zip(
+            range(1, 55),
+            [bundle["lesson"]["title"] for bundle in LESSONS[:54]],
+            strict=True,
+        )
+    )
+    assert [(lesson.id, lesson.title) for lesson in before[54:]] == list(
+        zip(range(55, 67), MONITORING_TITLES, strict=True)
+    )
+
+    seed_database()
+    after = get_ordered_lessons()
+    assert [(lesson.id, lesson.title) for lesson in after] == [
+        (lesson.id, lesson.title) for lesson in before
+    ]
+
+    with Session(engine) as session:
+        modules = session.exec(select(LearningModule)).all()
+        monitoring_module = next(
+            module for module in modules if module.title == "Monitoring i utrzymanie"
+        )
+        assert all(lesson.module_id == monitoring_module.id for lesson in after[54:])
+        assert len(after) == 66
+        assert len({lesson.id for lesson in after}) == 66
+
+        for lesson in after[54:]:
+            quizzes = session.exec(select(Quiz).where(Quiz.lesson_id == lesson.id)).all()
+            cards = session.exec(
+                select(Flashcard).where(Flashcard.lesson_id == lesson.id)
+            ).all()
+            assert len(quizzes) == 1
+            questions = session.exec(
+                select(QuizQuestion).where(QuizQuestion.quiz_id == quizzes[0].id)
+            ).all()
+            assert len(questions) == 6
+            assert {question.position for question in questions} == set(range(1, 7))
+            assert len(cards) == 25
+            assert {card.position for card in cards} == set(range(1, 26))
+            for question in questions:
+                answers = session.exec(
+                    select(QuizAnswer).where(QuizAnswer.question_id == question.id)
+                ).all()
+                assert len(answers) == 4
+                assert sum(answer.is_correct for answer in answers) == 1
+
+
+def test_monitoring_pages_navigation_and_all_roadmap_levels_available():
+    for lesson_id, title in enumerate(MONITORING_TITLES, start=55):
+        lesson_response = client.get(f"/lessons/{lesson_id}")
+        assert lesson_response.status_code == 200
+        assert title in unescape(lesson_response.text)
+        assert client.get(f"/quiz/{lesson_id}").status_code == 200
+        assert client.get(f"/flashcards/{lesson_id}").status_code == 200
+
+    lesson_54 = client.get("/lessons/54")
+    lesson_55 = client.get("/lessons/55")
+    lesson_66 = client.get("/lessons/66")
+    assert 'href="/lessons/55"' in lesson_54.text
+    assert 'href="/lessons/54"' in lesson_55.text
+    assert 'href="/lessons/56"' in lesson_55.text
+    assert 'href="/lessons/65"' in lesson_66.text
+    assert "Następna lekcja" not in lesson_66.text
+
+    roadmap = client.get("/roadmap/")
+    assert roadmap.status_code == 200
+    rendered = unescape(roadmap.text)
+    for level in range(1, 7):
+        start = rendered.index(f"Poziom {level}")
+        end = rendered.find(f"Poziom {level + 1}", start)
+        stage = rendered[start:] if end == -1 else rendered[start:end]
+        assert "Dostępne" in stage
+        assert "Planowane" not in stage
+    level_six = rendered.split("Poziom 6", 1)[1]
+    assert 'href="/lessons/55"' in level_six
+    assert all(title in level_six for title in MONITORING_TITLES)
 
 
 def test_admin_duty_page_returns_200():
