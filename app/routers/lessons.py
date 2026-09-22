@@ -15,6 +15,8 @@ MODULE_ORDER = {
     "Administracja systemem": 2,
     "Sieć i bezpieczeństwo": 3,
     "Deployment aplikacji": 4,
+    "DevOps i automatyzacja": 5,
+    "Monitoring i utrzymanie": 6,
 }
 
 MODULE_DESCRIPTIONS = {
@@ -35,6 +37,14 @@ MODULE_DESCRIPTIONS = {
         "Przejdź przez proces przygotowania i wdrożenia aplikacji na serwer "
         "Linux — od środowiska Python i Uvicorna po systemd, Nginx, DNS, "
         "HTTPS, aktualizacje i diagnostykę po wdrożeniu."
+    ),
+    "DevOps i automatyzacja": (
+        "Poznaj kontenery i budowanie obrazów aplikacji, połącz usługę z PostgreSQL "
+        "oraz zautomatyzuj testy i przygotowanie zmian przez GitHub Actions."
+    ),
+    "Monitoring i utrzymanie": (
+        "Sprawdzaj stan aplikacji, analizuj logi i metryki, reaguj na alerty oraz "
+        "ćwicz bezpieczne kopie i odtwarzanie danych."
     ),
 }
 
