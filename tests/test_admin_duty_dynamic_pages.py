@@ -124,11 +124,27 @@ def test_dynamic_gameplay_assets_include_keyboard_and_overlay_contracts():
     assert "post_incident" in scenario.text
     assert "Array.isArray(report.command_review)" in scenario.text
     assert "reviewPanel.hidden = !review.length" in scenario.text
+    assert "review.forEach((entry)" in scenario.text
+    assert 'container.setAttribute("role", "list")' in scenario.text
+    assert 'item.dataset.relevance = entry.relevance' in scenario.text
+    assert 'relation.dataset.relevance = entry.relevance' in scenario.text
+    assert 'status.textContent = entry.success ? "Sukces" : "Błąd"' in scenario.text
+    assert "marker.textContent = `#${entry.order}`" in scenario.text
+    assert "host.textContent = entry.host" in scenario.text
+    assert "command.textContent = entry.command" in scenario.text
+    assert "explanation.textContent = entry.explanation" in scenario.text
     assert 'getElementById("post-incident-repair-section").hidden = !timeline.length' in scenario.text
 
     styles = client.get("/static/admin_duty/dynamic/dynamic.css")
     assert styles.status_code == 200
     assert ".command-review summary:focus-visible" in styles.text
+    assert '.command-review-item[data-relevance="direct"]' in styles.text
+    assert '.command-review-item[data-relevance="supporting"]' in styles.text
+    assert '.command-review-item[data-relevance="unrelated"]' in styles.text
+    assert "grid-template-columns: 31px minmax(0, 1fr)" in styles.text
+    assert "box-sizing: border-box" in styles.text
+    assert "overflow-wrap: anywhere" in styles.text
+    assert "white-space: pre-wrap" in styles.text
     assert "prefers-reduced-motion: reduce" in styles.text
 
 
