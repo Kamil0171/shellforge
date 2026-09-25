@@ -28,6 +28,12 @@ from app.models import DynamicIncidentSession
 NOW = datetime(2026, 9, 25, 10, 0, tzinfo=UTC)
 
 
+def logical_utc(value):
+    if value.tzinfo is None or value.utcoffset() is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
+
 def build_engine(database_path):
     engine = create_engine(
         f"sqlite:///{database_path.as_posix()}",
@@ -87,10 +93,25 @@ def test_create_and_new_repository_instance_restore_same_aggregate(tmp_path):
     assert restored.state == before.state
     assert restored.state is not before.state
     assert restored.state.host_runtimes is not before.state.host_runtimes
+    assert restored.state.created_at.tzinfo is not None
+    assert restored.state.created_at.utcoffset() == timedelta(0)
+    assert restored.state.last_activity.tzinfo is not None
+    assert restored.state.last_activity.utcoffset() == timedelta(0)
     record = get_record(engine_b, started.session_id)
     assert record.schema_version == 1
     assert record.snapshot_json.startswith('{"schema_version":1,')
-    assert record.expires_at == NOW.replace(tzinfo=None) + SESSION_TTL
+    assert logical_utc(record.expires_at) == NOW + SESSION_TTL
+
+
+def test_database_time_keeps_timezone_aware_utc_values():
+    database_time = sql_repository_module._database_time(NOW)
+    restored_time = sql_repository_module._aware_database_time(database_time)
+
+    assert database_time.tzinfo is not None
+    assert database_time.utcoffset() == timedelta(0)
+    assert restored_time.tzinfo is not None
+    assert restored_time.utcoffset() == timedelta(0)
+    assert restored_time == NOW
 
 
 def test_hard_partial_recovery_restart_completion_and_report(tmp_path):
@@ -310,7 +331,7 @@ def test_ttl_is_persisted_get_does_not_extend_and_mutation_does(tmp_path):
     mutation_time = NOW + timedelta(minutes=20)
     service.request_hint(started.session_id, now=mutation_time)
     updated_expiry = get_record(engine, started.session_id).expires_at
-    assert updated_expiry == mutation_time.replace(tzinfo=None) + SESSION_TTL
+    assert logical_utc(updated_expiry) == mutation_time + SESSION_TTL
 
     with pytest.raises(SessionNotFoundError):
         repository.get(

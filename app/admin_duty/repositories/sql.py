@@ -37,11 +37,15 @@ def _resolve_now(now: datetime | None) -> datetime:
 
 
 def _database_time(value: datetime) -> datetime:
-    return value.astimezone(UTC).replace(tzinfo=None)
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError("Czas zapisywany w repository musi zawierać strefę czasową.")
+    return value.astimezone(UTC)
 
 
 def _aware_database_time(value: datetime) -> datetime:
-    return value.replace(tzinfo=UTC)
+    if value.tzinfo is None or value.utcoffset() is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
 
 
 class SQLIncidentSessionRepository:
@@ -185,7 +189,7 @@ class SQLIncidentSessionRepository:
                 record = session.get(DynamicIncidentSession, str(session_id))
                 if record is None:
                     raise SessionNotFoundError("Sesja nie istnieje.")
-                if record.expires_at <= _database_time(current_time):
+                if _aware_database_time(record.expires_at) <= current_time:
                     session.delete(record)
                     session.commit()
                     raise SessionNotFoundError("Sesja nie istnieje.")
@@ -210,7 +214,9 @@ class SQLIncidentSessionRepository:
         try:
             with Session(self._engine) as session:
                 existing = session.get(DynamicIncidentSession, str(state.session_id))
-                if existing is None or existing.expires_at <= _database_time(current_time):
+                if existing is None or (
+                    _aware_database_time(existing.expires_at) <= current_time
+                ):
                     if existing is not None:
                         session.delete(existing)
                         session.commit()
