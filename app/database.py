@@ -1,5 +1,6 @@
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session, create_engine
 
+from app import models
 from app.config import DATA_DIR, DATABASE_URL
 
 DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -12,7 +13,7 @@ engine = create_engine(
 
 
 def create_db_and_tables():
-    SQLModel.metadata.create_all(engine)
+    models.SQLModel.metadata.create_all(engine)
 
 
 def get_session():

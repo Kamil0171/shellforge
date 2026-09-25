@@ -1,5 +1,7 @@
+from datetime import datetime
 from typing import Optional
 
+from sqlalchemy import Column, Text
 from sqlmodel import Field, SQLModel
 
 
@@ -51,3 +53,18 @@ class Flashcard(SQLModel, table=True):
     question: str
     answer: str
     position: int
+
+
+class DynamicIncidentSession(SQLModel, table=True):
+    __tablename__ = "dynamic_incident_session"
+
+    session_id: str = Field(primary_key=True, max_length=36)
+    scenario_id: str = Field(index=True, max_length=36)
+    status: str = Field(index=True, max_length=16)
+    revision: int = Field(ge=0)
+    schema_version: int = Field(ge=1)
+    snapshot_json: str = Field(sa_column=Column(Text, nullable=False))
+    created_at: datetime
+    updated_at: datetime
+    completed_at: datetime | None = None
+    expires_at: datetime = Field(index=True)

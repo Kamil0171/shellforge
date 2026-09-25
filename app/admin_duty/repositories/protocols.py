@@ -30,6 +30,47 @@ class SessionLimitError(RepositoryError):
     pass
 
 
+class RepositoryUnavailableError(RepositoryError):
+    pass
+
+
+class IncidentSessionAggregate(Protocol):
+    definition: IncidentDefinition
+    state: SessionRuntimeState
+
+
+class IncidentSessionRepository(Protocol):
+    def create(
+        self,
+        definition: IncidentDefinition,
+        state: SessionRuntimeState,
+        *,
+        now: datetime | None = None,
+    ) -> None: ...
+
+    def get(
+        self,
+        session_id: UUID,
+        *,
+        now: datetime | None = None,
+    ) -> IncidentSessionAggregate: ...
+
+    def update(
+        self,
+        definition: IncidentDefinition,
+        state: SessionRuntimeState,
+        *,
+        expected_revision: int,
+        now: datetime | None = None,
+    ) -> None: ...
+
+    def cleanup_expired(
+        self,
+        *,
+        now: datetime | None = None,
+    ) -> tuple[UUID, ...]: ...
+
+
 class ScenarioRepository(Protocol):
     def save(self, definition: IncidentDefinition) -> None: ...
 

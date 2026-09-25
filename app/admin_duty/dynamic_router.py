@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -7,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.admin_duty.domain.difficulty import DifficultyLevel
+from app.admin_duty.domain.persistence import SessionSnapshotError
 from app.admin_duty.domain.runtime import InactiveSessionError
 from app.admin_duty.dynamic_command_parser import (
     MAX_DYNAMIC_COMMAND_LENGTH,
@@ -23,13 +25,13 @@ from app.admin_duty.generators import (
     UnsupportedDifficultyError,
 )
 from app.admin_duty.repositories import (
-    InMemoryScenarioRepository,
-    InMemorySessionRepository,
+    RepositoryUnavailableError,
     ScenarioConflictError,
     ScenarioNotFoundError,
     SessionConflictError,
     SessionLimitError,
     SessionNotFoundError,
+    SQLIncidentSessionRepository,
 )
 from app.admin_duty.services import (
     DynamicHintResult,
@@ -40,6 +42,7 @@ from app.admin_duty.services import (
     HintUnavailableError,
 )
 from app.admin_duty.services.incident_generation import configured_generation_service
+from app.database import engine
 
 router = APIRouter(
     prefix="/admin-duty/dynamic",
@@ -47,6 +50,7 @@ router = APIRouter(
 )
 
 templates = Jinja2Templates(directory="app/templates")
+logger = logging.getLogger(__name__)
 
 
 class StrictRequestModel(BaseModel):
@@ -77,14 +81,12 @@ class DynamicHintRequest(StrictRequestModel):
     session_id: UUID
 
 
-_scenario_repository = InMemoryScenarioRepository()
-_session_repository = InMemorySessionRepository()
+_session_repository = SQLIncidentSessionRepository(engine)
 _deterministic_generator = DeterministicIncidentGenerator()
 _dynamic_incident_service = DynamicIncidentService(
     generator=_deterministic_generator,
     generation_service=configured_generation_service(_deterministic_generator),
-    scenario_repository=_scenario_repository,
-    session_repository=_session_repository,
+    aggregate_repository=_session_repository,
 )
 
 
@@ -149,6 +151,20 @@ def _error_response(error: Exception) -> JSONResponse:
         return JSONResponse(
             status_code=503,
             content={"detail": "Limit aktywnych sesji został osiągnięty."},
+        )
+
+    if isinstance(error, RepositoryUnavailableError):
+        logger.error("dynamic_session_repository_unavailable type=%s", type(error).__name__)
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "Trwały zapis sesji jest chwilowo niedostępny."},
+        )
+
+    if isinstance(error, SessionSnapshotError):
+        logger.error("dynamic_session_snapshot_invalid type=%s", type(error).__name__)
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Nie można odtworzyć zapisanej sesji."},
         )
 
     if isinstance(error, GenerationError):
