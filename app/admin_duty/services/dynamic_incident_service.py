@@ -37,7 +37,9 @@ from app.admin_duty.domain.runtime import (
 )
 from app.admin_duty.dynamic_command_service import DynamicCommandService
 from app.admin_duty.dynamic_commands import CommandExecutionResult
+from app.admin_duty.repositories.aggregate import SplitIncidentSessionRepository
 from app.admin_duty.repositories.protocols import (
+    IncidentSessionRepository,
     ScenarioRepository,
     SessionRepository,
 )
@@ -385,26 +387,33 @@ class DynamicIncidentService:
         self,
         *,
         generator: IncidentGenerator,
-        scenario_repository: ScenarioRepository,
-        session_repository: SessionRepository,
+        scenario_repository: ScenarioRepository | None = None,
+        session_repository: SessionRepository | None = None,
+        aggregate_repository: IncidentSessionRepository | None = None,
         command_service: DynamicCommandService | None = None,
         generation_service=None,
     ) -> None:
         self._generator = generator
         self._generation_service = generation_service
-        self._scenarios = scenario_repository
-        self._sessions = session_repository
+        if aggregate_repository is not None:
+            if scenario_repository is not None or session_repository is not None:
+                raise ValueError(
+                    "Nie można łączyć aggregate repository z osobnymi repositories."
+                )
+            self._store = aggregate_repository
+        else:
+            if scenario_repository is None or session_repository is None:
+                raise ValueError("Serwis wymaga repository sesji.")
+            self._store = SplitIncidentSessionRepository(
+                scenario_repository,
+                session_repository,
+            )
         self._commands = (
             command_service if command_service is not None else DynamicCommandService()
         )
 
     def _cleanup(self, now: datetime) -> None:
-        expired_states = self._sessions.cleanup_expired(now=now)
-        expired_scenario_ids = {state.scenario_id for state in expired_states}
-
-        for scenario_id in expired_scenario_ids:
-            if not self._sessions.has_scenario(scenario_id, now=now):
-                self._scenarios.delete(scenario_id)
+        self._store.cleanup_expired(now=now)
 
     def start_session(
         self,
@@ -440,14 +449,8 @@ class DynamicIncidentService:
 
     def _start_definition(self, definition, current_time):
         self._cleanup(current_time)
-        self._scenarios.save(definition)
         state = create_session_runtime(definition, now=current_time)
-
-        try:
-            self._sessions.save(state, now=current_time)
-        except Exception:
-            self._scenarios.delete(definition.scenario_id)
-            raise
+        self._store.create(definition, state, now=current_time)
 
         progress = get_session_progress(definition, state)
         return DynamicSessionStartResult(
@@ -474,16 +477,18 @@ class DynamicIncidentService:
     ) -> CommandExecutionResult:
         current_time = _resolve_now(now)
         self._cleanup(current_time)
-        state = self._sessions.get(session_id, now=current_time)
+        aggregate = self._store.get(session_id, now=current_time)
+        state = aggregate.state
         expected_revision = state.revision
-        definition = self._scenarios.get(state.scenario_id)
+        definition = aggregate.definition
         result = self._commands.execute(
             definition,
             state,
             command,
             now=current_time,
         )
-        self._sessions.update(
+        self._store.update(
+            definition,
             state,
             expected_revision=expected_revision,
             now=current_time,
@@ -493,14 +498,18 @@ class DynamicIncidentService:
     def save_file(self, session_id, *, path, content, now=None):
         current_time = _resolve_now(now)
         self._cleanup(current_time)
-        state = self._sessions.get(session_id, now=current_time)
+        aggregate = self._store.get(session_id, now=current_time)
+        state = aggregate.state
         expected_revision = state.revision
-        definition = self._scenarios.get(state.scenario_id)
+        definition = aggregate.definition
         result = self._commands.save_file(
             definition, state, path=path, content=content, now=current_time
         )
-        self._sessions.update(
-            state, expected_revision=expected_revision, now=current_time
+        self._store.update(
+            definition,
+            state,
+            expected_revision=expected_revision,
+            now=current_time,
         )
         return result
 
@@ -512,8 +521,9 @@ class DynamicIncidentService:
     ) -> DynamicSessionView:
         current_time = _resolve_now(now)
         self._cleanup(current_time)
-        state = self._sessions.get(session_id, now=current_time)
-        definition = self._scenarios.get(state.scenario_id)
+        aggregate = self._store.get(session_id, now=current_time)
+        state = aggregate.state
+        definition = aggregate.definition
         return DynamicSessionView(
             incident=_get_public_info(definition),
             infrastructure=_get_public_infrastructure(definition, state),
@@ -535,9 +545,10 @@ class DynamicIncidentService:
     ) -> DynamicHintResult:
         current_time = _resolve_now(now)
         self._cleanup(current_time)
-        state = self._sessions.get(session_id, now=current_time)
+        aggregate = self._store.get(session_id, now=current_time)
+        state = aggregate.state
         expected_revision = state.revision
-        definition = self._scenarios.get(state.scenario_id)
+        definition = aggregate.definition
         hint_limit = _get_hint_limit(definition)
         available_count = min(hint_limit, len(definition.hints))
 
@@ -551,7 +562,8 @@ class DynamicIncidentService:
 
         hint = definition.hints[state.hints_used]
         register_hint(state, penalty=hint.cost, now=current_time)
-        self._sessions.update(
+        self._store.update(
+            definition,
             state,
             expected_revision=expected_revision,
             now=current_time,
@@ -572,11 +584,13 @@ class DynamicIncidentService:
     ) -> DynamicSessionEndResult:
         current_time = _resolve_now(now)
         self._cleanup(current_time)
-        state = self._sessions.get(session_id, now=current_time)
+        aggregate = self._store.get(session_id, now=current_time)
+        state = aggregate.state
         expected_revision = state.revision
-        definition = self._scenarios.get(state.scenario_id)
+        definition = aggregate.definition
         end_session_runtime(state, now=current_time)
-        self._sessions.update(
+        self._store.update(
+            definition,
             state,
             expected_revision=expected_revision,
             now=current_time,

@@ -1,3 +1,7 @@
+from app.admin_duty.repositories.aggregate import (
+    SplitIncidentSessionRepository,
+    StoredIncidentSession,
+)
 from app.admin_duty.repositories.memory import (
     MAX_ACTIVE_SESSIONS,
     SESSION_TTL,
@@ -5,7 +9,9 @@ from app.admin_duty.repositories.memory import (
     InMemorySessionRepository,
 )
 from app.admin_duty.repositories.protocols import (
+    IncidentSessionRepository,
     RepositoryError,
+    RepositoryUnavailableError,
     ScenarioConflictError,
     ScenarioNotFoundError,
     ScenarioRepository,
@@ -14,13 +20,17 @@ from app.admin_duty.repositories.protocols import (
     SessionNotFoundError,
     SessionRepository,
 )
+from app.admin_duty.repositories.sql import SQLIncidentSessionRepository
 
 __all__ = [
     "MAX_ACTIVE_SESSIONS",
     "SESSION_TTL",
     "InMemoryScenarioRepository",
     "InMemorySessionRepository",
+    "IncidentSessionRepository",
     "RepositoryError",
+    "RepositoryUnavailableError",
+    "SQLIncidentSessionRepository",
     "ScenarioConflictError",
     "ScenarioNotFoundError",
     "ScenarioRepository",
@@ -28,4 +38,6 @@ __all__ = [
     "SessionLimitError",
     "SessionNotFoundError",
     "SessionRepository",
+    "SplitIncidentSessionRepository",
+    "StoredIncidentSession",
 ]
