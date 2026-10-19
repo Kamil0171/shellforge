@@ -125,6 +125,8 @@
                 </p>
             </div>
 
+            <p id="desktop-start-notice" class="overlay-help" role="status" tabindex="-1">Rozgrywka wymaga komputera, klawiatury i okna o szerokości co najmniej 1024 px.</p>
+            <p class="overlay-help">Możesz wznowić incydent przez jego adres URL. Sesja wygasa po 45 minutach bezczynności.</p>
             <div class="difficulty-grid">
                 <article class="difficulty-card difficulty-card-active difficulty-card-easy">
                     <div class="difficulty-card-top">
@@ -161,6 +163,7 @@
                         class="dynamic-primary-button start-incident-button"
                         type="button"
                         data-difficulty="easy"
+                        disabled
                     >
                         <span>Rozpocznij incydent</span>
                         <span class="dynamic-cta-arrow" aria-hidden="true">→</span>
@@ -202,6 +205,7 @@
                         class="dynamic-primary-button start-incident-button"
                         type="button"
                         data-difficulty="medium"
+                        disabled
                     >
                         <span>Rozpocznij incydent MEDIUM</span>
                         <span class="dynamic-cta-arrow" aria-hidden="true">→</span>
@@ -243,6 +247,7 @@
                         class="dynamic-primary-button start-incident-button"
                         type="button"
                         data-difficulty="hard"
+                        disabled
                     >
                         <span>Rozpocznij incydent HARD</span>
                         <span class="dynamic-cta-arrow" aria-hidden="true">→</span>
@@ -292,8 +297,9 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', path='admin_duty/dynamic/device.js') }}?v=polish-1"></script>
 <script src="{{ url_for('static', path='admin_duty/dynamic/request.js') }}?v=reliability-1"></script>
 <script
-    src="{{ url_for('static', path='admin_duty/dynamic/index.js') }}?v=reliability-1"
+    src="{{ url_for('static', path='admin_duty/dynamic/index.js') }}?v=polish-1"
 ></script>
 {% endblock %}

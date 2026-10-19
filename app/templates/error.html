@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Nie udało się otworzyć strony — ShellForge{% endblock %}
+
+{% block content %}
+<section class="error-page py-5">
+    <div class="container">
+        <div class="error-card card shadow-sm">
+            <div class="card-body text-center">
+                <span class="badge text-bg-dark mb-3">Błąd {{ status_code }}</span>
+                <h1 class="fw-bold mb-3">Nie udało się otworzyć strony</h1>
+                <p class="text-muted mb-4">
+                    {% if status_code == 422 %}
+                    Adres strony zawiera nieprawidłowy identyfikator lub parametr. Wybierz stronę z menu.
+                    {% else %}
+                    Nie można teraz wyświetlić tej strony. Wróć do menu i spróbuj ponownie.
+                    {% endif %}
+                </p>
+                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    <a href="/" class="btn btn-dark">Wróć na stronę główną</a>
+                    <a href="/lessons" class="btn btn-outline-secondary">Przejdź do lekcji</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

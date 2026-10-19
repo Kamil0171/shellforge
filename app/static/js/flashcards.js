@@ -20,12 +20,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const dots = document.querySelector("#flashcards-dots");
     const previousButton = document.querySelector("#flashcard-prev");
     const nextButton = document.querySelector("#flashcard-next");
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     let currentIndex = 0;
     let isFlipped = false;
 
     flashcards.forEach((_, index) => {
-        const dot = document.createElement("span");
+        const dot = document.createElement("button");
+        dot.type = "button";
+        dot.setAttribute("aria-label", `Przejdź do fiszki ${index + 1}`);
         dot.classList.add("flashcards-dot");
 
         if (index === 0) {
@@ -53,12 +56,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
         document.querySelectorAll(".flashcards-dot").forEach((dot, index) => {
             dot.classList.toggle("is-active", index === currentIndex);
+            dot.setAttribute("aria-current", String(index === currentIndex));
         });
+        updateFlipState();
+    }
+
+    function updateFlipState() {
+        card.classList.toggle("is-flipped", isFlipped);
+        scene.setAttribute("aria-pressed", String(isFlipped));
+        scene.setAttribute("aria-label", `Fiszka ${currentIndex + 1}. ${isFlipped ? "Pokaż pytanie" : "Pokaż odpowiedź"}`);
+        scene.setAttribute("aria-describedby", isFlipped ? "flashcard-answer" : "flashcard-question");
+        question.parentElement.setAttribute("aria-hidden", String(isFlipped));
+        answer.parentElement.setAttribute("aria-hidden", String(!isFlipped));
     }
 
     function resetFlip() {
-        card.classList.remove("is-flipped");
         isFlipped = false;
+        updateFlipState();
     }
 
     function goToFlashcard(index) {
@@ -72,7 +86,7 @@ document.addEventListener("DOMContentLoaded", () => {
             setTimeout(() => {
                 currentIndex = index;
                 renderFlashcard();
-            }, 250);
+            }, reducedMotion.matches ? 0 : 250);
 
             return;
         }
@@ -83,7 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     scene.addEventListener("click", () => {
         isFlipped = !isFlipped;
-        card.classList.toggle("is-flipped", isFlipped);
+        updateFlipState();
     });
 
     previousButton.addEventListener("click", () => {
@@ -95,18 +109,22 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     document.addEventListener("keydown", (event) => {
+        if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.repeat) return;
+        if (event.target !== scene && event.target.closest("a, button, input, select, textarea, summary, audio[controls], video[controls], iframe, object, embed, [role='button'], [role='link'], [tabindex], [contenteditable]:not([contenteditable='false'])")) return;
         if (event.key === "ArrowLeft") {
+            event.preventDefault();
             goToFlashcard(currentIndex - 1);
         }
 
         if (event.key === "ArrowRight") {
+            event.preventDefault();
             goToFlashcard(currentIndex + 1);
         }
 
         if (event.key === " " || event.key === "Enter") {
             event.preventDefault();
             isFlipped = !isFlipped;
-            card.classList.toggle("is-flipped", isFlipped);
+            updateFlipState();
         }
     });
 

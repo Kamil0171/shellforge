@@ -429,6 +429,10 @@ body.dynamic-session-page .end-summary {
     min-height: 0;
 }
 
+body.dynamic-session-page .end-summary {
+    align-content: start;
+}
+
 body.dynamic-session-page.dynamic-device-blocked > main.page-content {
     overflow: hidden;
 }

@@ -40,6 +40,7 @@
                 type="button"
                 class="btn lesson-completion-button"
                 data-lesson-completion-toggle
+                disabled
                 aria-pressed="false"
                 aria-label="Oznacz lekcję jako ukończoną"
             >
@@ -47,6 +48,7 @@
                 <span data-lesson-completion-label>Oznacz jako ukończoną</span>
             </button>
         </div>
+        <p class="text-muted mt-3 mb-0" data-lesson-progress-status role="status" aria-live="polite"></p>
 
     </div>
 </section>
@@ -185,6 +187,6 @@
     </div>
 </section>
 
-<script src="{{ url_for('static', path='js/lesson_progress.js') }}"></script>
+<script src="{{ url_for('static', path='js/lesson_progress.js') }}?v=polish-1"></script>
 
 {% endblock %}

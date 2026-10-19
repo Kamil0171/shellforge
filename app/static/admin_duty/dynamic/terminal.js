@@ -163,6 +163,7 @@
             }
             if (event.key === "Escape") {
                 event.preventDefault();
+                event.stopImmediatePropagation();
                 close();
                 return;
             }
@@ -195,6 +196,7 @@
         document.addEventListener("keydown", (event) => {
             if (event.key !== "Escape" || overlay.hidden || editingPath) return;
             event.preventDefault();
+            event.stopImmediatePropagation();
             close();
         });
 

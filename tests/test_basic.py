@@ -1304,7 +1304,7 @@ def test_lessons_page_contains_local_progress_ui():
     assert 'id="lesson-completed-count"' in response.text
     assert 'id="lesson-total-count"' in response.text
     assert "Postęp jest zapisywany lokalnie w tej przeglądarce." in response.text
-    assert 'src="http://testserver/static/js/lesson_progress.js"' in response.text
+    assert 'src="http://testserver/static/js/lesson_progress.js?v=polish-1"' in response.text
     assert response.text.count("data-lesson-completed-status") == len(lessons)
 
     for lesson in lessons:
@@ -1321,7 +1321,7 @@ def test_lesson_detail_page_contains_local_progress_control():
     assert "data-lesson-completion-toggle" in response.text
     assert 'aria-pressed="false"' in response.text
     assert "Oznacz jako ukończoną" in response.text
-    assert 'src="http://testserver/static/js/lesson_progress.js"' in response.text
+    assert 'src="http://testserver/static/js/lesson_progress.js?v=polish-1"' in response.text
 
 
 def test_lessons_page_groups_lessons_into_described_module_sections():
@@ -1692,7 +1692,7 @@ def test_admin_duty_page_returns_200():
     assert "Dyżur administratora" in response.text
     assert "Polecenia wykonywane w Symulatorze działają wyłącznie" in response.text
     assert "wykonywane na rzeczywistym serwerze" in response.text
-    assert "Poziom podstawowy" in response.text
+    assert "3 poziomy trudności" in response.text
     assert "10–15 min" not in response.text
     assert "Od objawów do rozwiązania" in response.text
     assert "Punktacja i samodzielność" in response.text

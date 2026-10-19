@@ -84,11 +84,6 @@
     display: none;
 }
 
-.lesson-card {
-    opacity: 0;
-    transform: translateY(10px);
-}
-
 .lesson-card.is-completed {
     border-color: rgba(22, 163, 74, 0.38);
     background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
@@ -153,6 +148,7 @@
 }
 
 .page-loaded .lesson-card {
+    animation: sf-enter-up 0.6s ease;
     opacity: 1;
     transform: translateY(0);
     transition:
@@ -193,11 +189,10 @@
     border-radius: 14px;
     padding: 20px;
     background-color: #ffffff;
-    opacity: 0;
-    transform: translateY(8px);
 }
 
 .page-loaded .command-box {
+    animation: sf-enter-up 0.55s ease;
     opacity: 1;
     transform: translateY(0);
     transition:
@@ -219,12 +214,8 @@
     white-space: pre-wrap;
 }
 
-.lesson-content article {
-    opacity: 0;
-    transform: translateY(8px);
-}
-
 .page-loaded .lesson-content article {
+    animation: sf-enter-up 0.55s ease;
     opacity: 1;
     transform: translateY(0);
     transition:

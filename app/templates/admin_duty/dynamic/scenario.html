@@ -5,7 +5,7 @@
 
 {% block styles %}
 <link rel="stylesheet" href="{{ url_for('static', path='admin_duty/dynamic/dynamic.css') }}?v=gameplay-2">
-<link rel="stylesheet" href="{{ url_for('static', path='admin_duty/dynamic/gameplay.css') }}?v=reliability-1">
+<link rel="stylesheet" href="{{ url_for('static', path='admin_duty/dynamic/gameplay.css') }}?v=polish-1">
 {% endblock %}
 
 {% block content %}
@@ -15,8 +15,8 @@
             <span class="dynamic-eyebrow">DESKTOP REQUIRED</span>
             <div class="desktop-gate-icon" aria-hidden="true">▣</div>
             <h1>Dynamic Incident jest obecnie dostępny tylko na komputerach</h1>
-            <p>Tryb 2D został zaprojektowany z myślą o większym ekranie i sterowaniu desktopowym. Wersja mobilna pojawi się w przyszłości.</p>
-            <strong>Sesja pozostaje aktywna i nie traci postępu.</strong>
+            <p>Rozgrywka wymaga komputera z klawiaturą i okna o szerokości co najmniej 1024 px.</p>
+            <strong>Zmiana rozmiaru okna nie kończy sesji. Wróć pod ten sam adres przed upływem 45 minut bezczynności.</strong>
             <a href="/admin-duty/dynamic/" class="dynamic-secondary-button">Wróć do laboratorium</a>
         </div>
     </div>
@@ -25,7 +25,7 @@
         <div class="workspace-loading-mark" aria-hidden="true"><span></span><span></span><span></span></div>
         <span class="dynamic-eyebrow">Dynamic Incident Lab</span>
         <h1>Łączenie z centrum NOC</h1>
-        <p>Pobieramy publiczny snapshot mapy i aktualny stan incydentu.</p>
+        <p>Pobieramy mapę i aktualny stan incydentu.</p>
     </div>
 
     <div id="workspace-error" class="workspace-state-panel" hidden>
@@ -73,12 +73,13 @@
                 <div id="game-announcement" class="game-announcement" role="status" aria-live="polite"></div>
             </section>
 
-            <aside id="mission-drawer" class="gameplay-left-panel is-collapsed" aria-label="Briefing i cele" aria-hidden="true">
+            <aside id="mission-drawer" class="gameplay-left-panel is-collapsed" aria-label="Briefing i cele" aria-hidden="true" inert>
                 <header class="mission-drawer-header">
                     <div><span>AKTYWNA MISJA</span><strong>Briefing incydentu</strong></div>
                     <button id="close-briefing-button" type="button" aria-label="Zamknij panel misji">×</button>
                 </header>
                 <div id="briefing-panel-content" class="briefing-panel-content">
+                    <p class="overlay-help">Możesz zamknąć kartę i wznowić incydent przez ten sam adres URL. Sesja wygasa po 45 minutach bezczynności; samo oglądanie mapy nie przedłuża tego czasu.</p>
                     <div class="incident-card-heading"><span>INCIDENT BRIEFING</span><span id="incident-difficulty">—</span></div>
                     <h1 id="incident-title">Ładowanie briefingu...</h1>
                     <p id="incident-briefing" class="incident-briefing">—</p>
@@ -132,7 +133,7 @@
         <section class="game-overlay-panel monitoring-overlay-panel">
             <header class="overlay-panel-header"><div><span class="dynamic-eyebrow">OBSERVABILITY WALL</span><h2 id="monitoring-title">Monitoring infrastruktury</h2></div><button class="overlay-close" data-close-overlay="monitoring-overlay" type="button">ESC</button></header>
             <div id="monitoring-signals" class="monitoring-signals"></div>
-            <p class="overlay-help">Statusy pochodzą z bieżącego publicznego snapshotu sesji.</p>
+            <p class="overlay-help">Statusy przedstawiają aktualny stan infrastruktury w tej sesji.</p>
         </section>
     </div>
 
@@ -159,7 +160,7 @@
         <section class="game-overlay-panel exit-confirmation-panel">
             <span class="dynamic-eyebrow">ZAKOŃCZENIE SESJI</span>
             <h2 id="exit-confirmation-title">Opuścić aktywny incydent?</h2>
-            <p id="exit-confirmation-message">Sesja zostanie oznaczona jako zakończona. Zmiana viewportu nigdy nie wykonuje tej operacji.</p>
+            <p id="exit-confirmation-message">Zakończenie sesji uniemożliwi kontynuowanie naprawy. Aby zrobić przerwę, zamknij kartę i wróć pod ten sam adres przed upływem 45 minut bezczynności.</p>
             <div class="exit-confirmation-actions"><button id="cancel-exit-button" class="dynamic-secondary-button" type="button">Wróć do incydentu</button><button id="confirm-exit-button" class="danger-button" type="button">Opuść incydent</button></div>
             <p id="exit-error" class="completion-error" hidden></p>
         </section>
@@ -178,12 +179,12 @@
     <div id="end-summary" class="end-summary" hidden>
         <div class="end-summary-panel">
             <span class="end-summary-code">SESJA ZAKOŃCZONA</span>
-            <h1>Incydent zakończony</h1>
-            <p>Wynik i postęp pozostaną dostępne do czasu wygaśnięcia sesji.</p>
+            <h1 tabindex="-1">Incydent zakończony</h1>
+            <p>Wynik i raport są dostępne pod tym adresem do wygaśnięcia sesji po 45 minutach bezczynności.</p>
             <div class="end-summary-grid"><div><span>Poziom</span><strong id="summary-difficulty">—</strong></div><div><span>Wynik</span><strong id="summary-score">—</strong></div><div><span>Komendy</span><strong id="summary-commands">—</strong></div><div><span>Cele</span><strong id="summary-objectives">—</strong></div></div>
             <section id="post-incident-report" class="post-incident-report" aria-label="Podsumowanie po incydencie" hidden>
                 <header class="post-incident-header">
-                    <div><span class="dynamic-eyebrow">POST-INCIDENT REPORT V2</span><h2>Incydent rozwiązany</h2></div>
+                    <div><span class="dynamic-eyebrow">RAPORT PO INCYDENCIE</span><h2>Incydent rozwiązany</h2></div>
                     <div class="post-incident-score"><span>Wynik końcowy</span><strong id="post-incident-score">—</strong></div>
                 </header>
                 <div class="post-incident-section">
@@ -235,12 +236,13 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', path='admin_duty/dynamic/device.js') }}?v=polish-1"></script>
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"></script>
 <script src="{{ url_for('static', path='admin_duty/dynamic/world-core.js') }}?v=world-v2-final"></script>
 <script src="{{ url_for('static', path='admin_duty/dynamic/world-renderers.js') }}?v=world-v2-final"></script>
 <script src="{{ url_for('static', path='admin_duty/dynamic/world-systems.js') }}?v=world-v2-final"></script>
 <script src="{{ url_for('static', path='admin_duty/dynamic/game.js') }}?v=world-v2-final"></script>
 <script src="{{ url_for('static', path='admin_duty/dynamic/request.js') }}?v=reliability-1"></script>
-<script src="{{ url_for('static', path='admin_duty/dynamic/terminal.js') }}?v=reliability-1"></script>
-<script src="{{ url_for('static', path='admin_duty/dynamic/scenario.js') }}?v=reliability-1"></script>
+<script src="{{ url_for('static', path='admin_duty/dynamic/terminal.js') }}?v=polish-1"></script>
+<script src="{{ url_for('static', path='admin_duty/dynamic/scenario.js') }}?v=polish-1"></script>
 {% endblock %}

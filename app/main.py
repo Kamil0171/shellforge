@@ -1,8 +1,9 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi.exception_handlers import http_exception_handler
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -43,11 +44,35 @@ app = FastAPI(
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
+def is_html_navigation(request: Request) -> bool:
+    path = request.url.path
+    json_or_resource_paths = ("/api", "/admin-duty/dynamic/api", "/health", "/static")
+    if any(path == prefix or path.startswith(prefix + "/") for prefix in json_or_resource_paths):
+        return False
+    if path in {"/openapi.json", "/docs", "/redoc"}:
+        return False
+    return request.method in {"GET", "HEAD"} or (
+        request.method == "POST" and path.startswith("/quiz/")
+    )
+
+
+def html_error_response(request: Request, status_code: int, headers=None):
+    return templates.TemplateResponse(
+        request=request,
+        name="404.html" if status_code == 404 else "error.html",
+        context={"status_code": status_code},
+        status_code=status_code,
+        headers=headers,
+    )
+
+
 @app.exception_handler(RequestValidationError)
 async def custom_validation_exception_handler(
     request: Request,
     exc: RequestValidationError,
 ):
+    if is_html_navigation(request):
+        return html_error_response(request, 422)
     return JSONResponse(
         status_code=422,
         content={
@@ -61,18 +86,9 @@ async def custom_http_exception_handler(
     request: Request,
     exc: StarletteHTTPException,
 ):
-    if exc.status_code == 404:
-        return templates.TemplateResponse(
-            request=request,
-            name="404.html",
-            context={},
-            status_code=404,
-        )
-
-    return HTMLResponse(
-        content=str(exc.detail),
-        status_code=exc.status_code,
-    )
+    if is_html_navigation(request):
+        return html_error_response(request, exc.status_code, exc.headers)
+    return await http_exception_handler(request, exc)
 
 
 app.include_router(home.router)

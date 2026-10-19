@@ -168,9 +168,11 @@
     max-width: 260px;
 }
 
-.flashcards-dot {
+.flashcards-nav .flashcards-dot {
     width: 7px;
     height: 7px;
+    padding: 0;
+    border: 0;
     border-radius: 999px;
     background-color: #ced4da;
     transition:
@@ -178,9 +180,15 @@
         transform 0.2s ease;
 }
 
-.flashcards-dot.is-active {
+.flashcards-nav .flashcards-dot.is-active {
     background-color: #212529;
     transform: scale(1.25);
+}
+
+.flashcards-scene:focus-visible,
+.flashcards-nav button:focus-visible {
+    outline: 3px solid #2563eb;
+    outline-offset: 4px;
 }
 
 @media (max-width: 576px) {
