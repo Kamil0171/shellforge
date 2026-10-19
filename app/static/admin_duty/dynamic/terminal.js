@@ -36,19 +36,22 @@
             }
         });
         editorSave.addEventListener("click", async () => {
-            if (pending || !editingPath) return;
+            if (pending || !available || !editingPath) return;
             pending = true;
             editorSave.disabled = true;
             try {
                 const result = await onSaveFile(editingPath, editorText.value);
                 append(result.success ? "output" : "error", result.output);
+                const syncWarning = await result.synchronization;
+                if (syncWarning) append("system", syncWarning);
+                state.textContent = syncWarning || (result.success ? "Plik zapisany" : "Plik nie został zapisany");
                 pending = false;
                 if (result.success) closeEditor();
             } catch (error) {
+                append("error", error.message);
                 state.textContent = error.message;
             } finally {
                 pending = false;
-                editorSave.disabled = false;
                 sync();
             }
         });
@@ -67,9 +70,12 @@
             const enabled = available && !pending;
             input.disabled = !enabled;
             submit.disabled = !enabled;
+            editorSave.disabled = !enabled;
             form.classList.toggle("is-disabled", !enabled);
             if (enabled && !overlay.hidden && !editingPath) {
-                window.requestAnimationFrame(() => input.focus({ preventScroll: true }));
+                window.requestAnimationFrame(() => {
+                    if (available && !pending && !overlay.hidden && !editingPath) input.focus({ preventScroll: true });
+                });
             }
         }
 
@@ -122,9 +128,8 @@
             sync();
             try {
                 const result = await onSubmit(command);
-                setPrompt(result.prompt);
                 if (result.output) append("output", result.output);
-                if (result.editor) {
+                if (result.editor && available) {
                     editingPath = result.editor.path;
                     editorPath.textContent = editingPath;
                     editorText.value = result.editor.content;
@@ -132,10 +137,12 @@
                     form.hidden = true;
                     editorText.focus();
                 }
-                state.textContent = "Terminal gotowy";
+                const syncWarning = await result.synchronization;
+                if (syncWarning) append("system", syncWarning);
+                state.textContent = syncWarning || (available ? "Terminal gotowy" : "Terminal zablokowany");
             } catch (error) {
                 append("error", error.message || "Nie udało się wykonać polecenia.");
-                state.textContent = "Polecenie nie zostało wykonane";
+                state.textContent = error.uncertain ? "Wynik operacji niepotwierdzony" : "Operacja została odrzucona";
             } finally {
                 pending = false;
                 sync();

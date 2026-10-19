@@ -85,6 +85,20 @@ body.dynamic-session-page .workspace-score strong {
     font-weight: 700;
 }
 
+#session-sync-warning {
+    position: fixed;
+    top: 72px;
+    left: 50%;
+    z-index: 3100;
+    width: min(760px, 90vw);
+    padding: 12px;
+    border: 1px solid #fbbf24;
+    border-radius: 7px;
+    background: #111827;
+    color: #fef3c7;
+    transform: translateX(-50%);
+}
+
 .workspace-mission-button:hover,
 .workspace-mission-button[aria-expanded="true"] {
     border-color: rgba(96, 165, 250, 0.55);

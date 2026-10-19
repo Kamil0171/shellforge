@@ -14,6 +14,7 @@
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let requestInProgress = false;
     let selectedDifficulty = "easy";
+    const { requestJson, ApiError } = window.ShellForgeDynamicApi;
 
     function showPreparation() {
         errorPanel.hidden = true;
@@ -31,23 +32,14 @@
         document.body.classList.remove("dynamic-generation-open");
     }
 
-    async function readError(response) {
-        try {
-            const data = await response.json();
-
-            if (typeof data.detail === "string") {
-                return data.detail;
-            }
-        } catch {
-            return null;
-        }
-
-        return null;
-    }
-
     function getStartError(status, detail) {
         if (status === 503) {
-            return "Wszystkie stanowiska są teraz zajęte. Spróbuj ponownie za chwilę.";
+            const messages = {
+                "Limit aktywnych sesji został osiągnięty.": "Wszystkie stanowiska są teraz zajęte. Spróbuj ponownie za chwilę.",
+                "Trwały zapis sesji jest chwilowo niedostępny.": "Zapis sesji jest chwilowo niedostępny. Spróbuj ponownie za chwilę.",
+                "Nie udało się przygotować poprawnego incydentu.": "Nie udało się przygotować incydentu. Spróbuj ponownie za chwilę.",
+            };
+            return Object.hasOwn(messages, detail) ? messages[detail] : "Laboratorium jest chwilowo niedostępne. Spróbuj ponownie za chwilę.";
         }
 
         if (status === 400 || status === 422) {
@@ -78,24 +70,16 @@
         showPreparation();
 
         try {
-            const response = await fetch("/admin-duty/dynamic/api/start", {
+            const data = await requestJson("/admin-duty/dynamic/api/start", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({ difficulty }),
-            });
-
-            if (!response.ok) {
-                const detail = await readError(response);
-                throw {
-                    kind: "api",
-                    status: response.status,
-                    detail,
-                };
+            }, 90000);
+            if (typeof data.session_id !== "string" || !/^[0-9a-f-]{36}$/i.test(data.session_id)) {
+                throw new Error("Brak identyfikatora sesji.");
             }
-
-            const data = await response.json();
             statusText.textContent = "Sesja gotowa. Otwieranie laboratorium…";
             overlay.setAttribute("aria-busy", "false");
             window.location.replace(
@@ -104,11 +88,18 @@
         } catch (error) {
             hidePreparation();
 
-            if (error?.kind === "api") {
-                showStartError(getStartError(error.status, error.detail));
+            if (error instanceof ApiError) {
+                const knownRejection = error.status === 503 && [
+                    "Limit aktywnych sesji został osiągnięty.",
+                    "Nie udało się przygotować poprawnego incydentu.",
+                ].includes(error.message);
+                const uncertainty = error.uncertain && !knownRejection
+                    ? " Wynik utworzenia sesji jest niepewny. Żądanie nie zostanie ponowione automatycznie; kolejna próba może utworzyć nową sesję."
+                    : "";
+                showStartError(getStartError(error.status, error.message) + uncertainty);
             } else {
                 showStartError(
-                    "Nie udało się połączyć z laboratorium. Sprawdź połączenie i spróbuj ponownie.",
+                    "Nie otrzymano potwierdzenia utworzenia sesji. Sesja mogła powstać. Żądanie nie zostanie ponowione automatycznie. Kolejna próba może utworzyć nową sesję.",
                 );
             }
 
