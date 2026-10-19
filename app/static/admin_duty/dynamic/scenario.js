@@ -15,8 +15,7 @@
     const hintError = document.getElementById("hint-error");
     const interactionPrompt = document.getElementById("interaction-prompt");
     const interactionPromptLabel = document.getElementById("interaction-prompt-label");
-    const mobilePattern = /Android|iPad|iPhone|Mobile|Tablet|Silk/i;
-    const pointerQuery = window.matchMedia("(pointer: coarse)");
+    const { isDesktopAllowed, pointerQuery } = window.ShellForgeDynamicDevice;
     const sessionGreeting = (map) => {
         const terminalPoint = map.interactions.find((item) => item.type === "terminal");
         return `Połączenie z bezpiecznym środowiskiem zostało ustanowione.\nZnajdź punkt „${terminalPoint?.label || "Terminal administracyjny"}” i naciśnij E.`;
@@ -27,6 +26,8 @@
     let currentMonitoring = { title: "Monitoring", signals: [] };
     let gameController = null;
     let activeOverlay = null;
+    let overlayReturnFocus = null;
+    const modalBackground = new Map();
     let hintPending = false;
     let sessionEnding = false;
     let terminalAnnounced = false;
@@ -42,12 +43,6 @@
     const statusLabels = { active: "Aktywny", completed: "Ukończony", ended: "Zakończony" };
     const difficultyLabels = { easy: "Łatwy", medium: "Średni", hard: "Trudny" };
     const resourceTypeLabels = { host: "Host", service: "Usługa", file: "Plik", process: "Proces", listener: "Port", endpoint: "Endpoint", domain: "Domena" };
-
-    function isDesktopAllowed() {
-        const tabletLike = pointerQuery.matches && navigator.maxTouchPoints > 0;
-        const ipadDesktopUa = /Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1;
-        return window.innerWidth >= 1024 && !tabletLike && !ipadDesktopUa && !mobilePattern.test(navigator.userAgent);
-    }
 
     function destroyGame() {
         gameController?.destroy();
@@ -77,8 +72,12 @@
 
     function applyDeviceGate() {
         const allowed = isDesktopAllowed();
+        if (!allowed) {
+            terminal.close();
+            if (activeOverlay) closeOverlay(activeOverlay);
+        }
         desktopGate.hidden = allowed;
-        workspace.inert = !allowed;
+        workspace.inert = !allowed || Boolean(activeOverlay);
         workspace.setAttribute("aria-hidden", String(!allowed));
         document.body.classList.toggle("dynamic-device-blocked", !allowed);
         if (!allowed) {
@@ -118,22 +117,69 @@
         gameController?.setInputLocked(locked);
     }
 
+    function restoreModalBackground() {
+        modalBackground.forEach((inert, element) => { element.inert = inert; });
+        modalBackground.clear();
+    }
+
+    function canFocus(element) {
+        return element?.isConnected && !element.disabled && !element.closest("[hidden], [inert]") && element.getClientRects().length > 0;
+    }
+
+    function overlayControls() {
+        return Array.from(activeOverlay.querySelectorAll("a[href], button, input, select, textarea, summary, [tabindex]"))
+            .filter(element => element.tabIndex >= 0 && canFocus(element));
+    }
+
+    function focusOverlay() {
+        (overlayControls()[0] || activeOverlay).focus({ preventScroll: true });
+    }
+
     function openOverlay(element, focusTarget = null) {
+        if (!activeOverlay) overlayReturnFocus = document.activeElement;
         if (activeOverlay && activeOverlay !== element) activeOverlay.hidden = true;
+        restoreModalBackground();
         activeOverlay = element;
         element.hidden = false;
+        element.setAttribute("tabindex", "-1");
+        for (let branch = element; branch && branch !== document.body; branch = branch.parentElement) {
+            for (const sibling of branch.parentElement.children) {
+                if (sibling === branch || ["SCRIPT", "STYLE", "LINK"].includes(sibling.tagName)) continue;
+                modalBackground.set(sibling, sibling.inert);
+                sibling.inert = true;
+            }
+        }
         document.body.classList.add("dynamic-modal-open");
         lockGame(true);
-        focusTarget?.focus({ preventScroll: true });
+        if (canFocus(focusTarget)) focusTarget.focus({ preventScroll: true });
+        else focusOverlay();
     }
 
     function closeOverlay(element) {
-        if (element.hidden) return;
+        if (activeOverlay !== element) return;
         element.hidden = true;
-        if (activeOverlay === element) activeOverlay = null;
+        activeOverlay = null;
+        restoreModalBackground();
         document.body.classList.remove("dynamic-modal-open");
-        lockGame(false);
+        lockGame(!document.getElementById("mission-drawer").classList.contains("is-collapsed"));
+        if (canFocus(overlayReturnFocus)) overlayReturnFocus.focus({ preventScroll: true });
+        overlayReturnFocus = null;
     }
+
+    document.addEventListener("keydown", (event) => {
+        if (!activeOverlay || event.key !== "Tab") return;
+        const controls = overlayControls();
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        if (!first || !activeOverlay.contains(document.activeElement) || (event.shiftKey ? document.activeElement === first || document.activeElement === activeOverlay : document.activeElement === last)) {
+            event.preventDefault();
+            (event.shiftKey ? last || activeOverlay : first || activeOverlay).focus({ preventScroll: true });
+        }
+    }, true);
+
+    document.addEventListener("focusin", (event) => {
+        if (activeOverlay && !activeOverlay.contains(event.target)) focusOverlay();
+    });
 
     const terminal = window.ShellForgeDynamicTerminal.createTerminalController({
         async onSaveFile(path, content) {
@@ -143,14 +189,11 @@
             return executeTerminalOperation("command", { command });
         },
         onOpenChange(open) {
+            const overlay = document.getElementById("terminal-overlay");
             if (open) {
-                activeOverlay = document.getElementById("terminal-overlay");
-                document.body.classList.add("dynamic-modal-open");
-                lockGame(true);
+                openOverlay(overlay, document.getElementById("terminal-input"));
             } else {
-                activeOverlay = null;
-                document.body.classList.remove("dynamic-modal-open");
-                lockGame(false);
+                closeOverlay(overlay);
             }
         },
     });
@@ -549,8 +592,7 @@
 
     function renderSummary(progress) {
         destroyGame();
-        if (activeOverlay) activeOverlay.hidden = true;
-        activeOverlay = null;
+        if (activeOverlay) closeOverlay(activeOverlay);
         workspace.hidden = true;
         loadingPanel.hidden = true;
         errorPanel.hidden = true;
@@ -565,6 +607,7 @@
         reportPanel.hidden = !report;
         if (report) renderPostIncidentReport(report);
         syncPanel.hidden = true;
+        endSummary.querySelector("h1").focus({ preventScroll: true });
     }
 
     function showWorkspace(data) {
@@ -719,10 +762,12 @@
         if (!currentProgress || currentProgress.status === "ended") return;
         const completed = currentProgress.status === "completed";
         document.getElementById("exit-confirmation-title").textContent = completed ? "Zakończyć ukończony incydent?" : "Opuścić aktywny incydent?";
-        document.getElementById("exit-confirmation-message").textContent = completed ? "Sesja zostanie zakończona, a wynik pozostanie dostępny do czasu wygaśnięcia." : "Sesja zostanie oznaczona jako zakończona. Zmiana viewportu nigdy nie wykonuje tej operacji.";
+        document.getElementById("exit-confirmation-message").textContent = completed
+            ? "Zakończysz sesję i otworzysz raport. Wynik będzie dostępny pod tym adresem do wygaśnięcia sesji po 45 minutach bezczynności."
+            : "Ten przycisk zakończy sesję i nie pozwoli kontynuować naprawy. Aby zrobić przerwę, zamknij tę kartę i wróć pod ten sam adres przed upływem 45 minut bezczynności.";
         document.getElementById("confirm-exit-button").textContent = completed ? "Zakończ incydent" : "Opuść incydent";
         document.getElementById("exit-error").hidden = true;
-        openOverlay(exitOverlay, document.getElementById("confirm-exit-button"));
+        openOverlay(exitOverlay, document.getElementById("cancel-exit-button"));
     }
 
     async function endSession({ redirectAfterEnd = false } = {}) {
@@ -781,11 +826,14 @@
     function setMissionDrawer(open) {
         const panel = document.getElementById("mission-drawer");
         const toggle = document.getElementById("toggle-briefing-button");
+        const restoreToggle = !open && panel.contains(document.activeElement);
         panel.classList.toggle("is-collapsed", !open);
         panel.setAttribute("aria-hidden", String(!open));
         toggle.setAttribute("aria-expanded", String(open));
-        lockGame(open);
+        panel.inert = !open;
+        lockGame(open || Boolean(activeOverlay));
         if (open) document.getElementById("close-briefing-button").focus({ preventScroll: true });
+        else if (!activeOverlay && restoreToggle) toggle.focus({ preventScroll: true });
     }
 
     document.getElementById("toggle-briefing-button").addEventListener("click", () => setMissionDrawer(true));
@@ -795,7 +843,7 @@
     });
 
     document.addEventListener("keydown", (event) => {
-        if (sessionUnavailable) return;
+        if (sessionUnavailable || event.defaultPrevented) return;
         const missionDrawer = document.getElementById("mission-drawer");
         if (event.key.toLowerCase() === "e" && currentInteraction && !activeOverlay && missionDrawer.classList.contains("is-collapsed")) {
             event.preventDefault();

@@ -11,10 +11,21 @@
     const errorMessage = document.getElementById("start-error-message");
     const overlay = document.getElementById("generation-overlay");
     const statusText = document.getElementById("generation-status");
+    const deviceNotice = document.getElementById("desktop-start-notice");
+    const { isDesktopAllowed, pointerQuery } = window.ShellForgeDynamicDevice;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let requestInProgress = false;
     let selectedDifficulty = "easy";
     const { requestJson, ApiError } = window.ShellForgeDynamicApi;
+
+    function updateDeviceAvailability() {
+        const allowed = isDesktopAllowed();
+        startButtons.forEach(button => { button.disabled = requestInProgress || !allowed; });
+        retryButton.disabled = requestInProgress || !allowed;
+        deviceNotice.textContent = allowed
+            ? "Rozgrywka wymaga komputera, klawiatury i okna o szerokości co najmniej 1024 px."
+            : "Nie można rozpocząć incydentu na tym urządzeniu lub przy tej szerokości okna. Użyj komputera z klawiaturą i okna o szerokości co najmniej 1024 px.";
+    }
 
     function showPreparation() {
         errorPanel.hidden = true;
@@ -59,6 +70,11 @@
     }
 
     async function startIncident(difficulty = selectedDifficulty) {
+        if (!isDesktopAllowed()) {
+            updateDeviceAvailability();
+            deviceNotice.focus({ preventScroll: true });
+            return;
+        }
         if (requestInProgress) {
             return;
         }
@@ -104,8 +120,7 @@
             }
 
             requestInProgress = false;
-            startButtons.forEach((button) => { button.disabled = false; });
-            retryButton.disabled = false;
+            updateDeviceAvailability();
         }
     }
 
@@ -116,4 +131,7 @@
     retryButton.addEventListener("click", () => {
         void startIncident();
     });
+    window.addEventListener("resize", updateDeviceAvailability);
+    pointerQuery.addEventListener?.("change", updateDeviceAvailability);
+    updateDeviceAvailability();
 })();

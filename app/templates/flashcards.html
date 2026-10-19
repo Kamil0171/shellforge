@@ -41,7 +41,7 @@
                 <div class="flashcards-progress-bar" id="flashcards-progress-bar"></div>
             </div>
 
-            <div class="flashcards-scene" id="flashcards-scene">
+            <div class="flashcards-scene" id="flashcards-scene" role="button" tabindex="0" aria-pressed="false" aria-label="Fiszka 1. Pokaż odpowiedź" aria-describedby="flashcard-question">
                 <div class="flashcards-card" id="flashcards-card">
                     <div class="flashcards-face flashcards-front">
                         <span class="flashcards-face-label" id="flashcard-label">
@@ -53,11 +53,11 @@
                         </h2>
 
                         <p class="flashcards-face-hint">
-                            Kliknij kartę, aby zobaczyć odpowiedź.
+                            Kliknij kartę lub naciśnij Enter albo Spację, aby zobaczyć odpowiedź.
                         </p>
                     </div>
 
-                    <div class="flashcards-face flashcards-back">
+                    <div class="flashcards-face flashcards-back" aria-hidden="true">
                         <span class="flashcards-face-label">
                             Odpowiedź
                         </span>
@@ -102,5 +102,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', path='js/flashcards.js') }}"></script>
+<script src="{{ url_for('static', path='js/flashcards.js') }}?v=polish-1"></script>
 {% endblock %}

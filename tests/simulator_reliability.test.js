@@ -31,7 +31,7 @@ const result = (revision = 1, extra = {}) => ({
     prompt: `operator@host:/rev${revision}$`, ...extra,
 });
 
-function harness(page = "scenario", initialFetch = () => response(view())) {
+function harness(page = "scenario", initialFetch = () => response(view()), device = {}) {
     const elements = new Map();
     const frames = new Map();
     const timers = new Map();
@@ -39,11 +39,33 @@ function harness(page = "scenario", initialFetch = () => response(view())) {
     let fetchImpl = initialFetch;
     const requests = [];
     let activeElement = null;
-    function node() {
+    function node(tagName = "div") {
         const classes = new Set();
         const listeners = {};
         return {
-            hidden: false, disabled: false, value: "", dataset: {}, children: [], attributes: {},
+            tagName: tagName.toUpperCase(), hidden: false, inert: false, disabled: false, value: "", dataset: {}, children: [], attributes: {},
+            parentElement: null,
+            get isConnected() { return this === body || Boolean(this.parentElement?.isConnected); },
+            get tabIndex() { return Number(this.attributes.tabindex ?? (["BUTTON", "INPUT", "TEXTAREA", "SELECT", "A", "SUMMARY"].includes(this.tagName) ? 0 : -1)); },
+            matches(selector) {
+                return selector.split(",").some(part => {
+                    part = part.trim();
+                    if (part.startsWith("#")) return elements.get(part.slice(1)) === this;
+                    if (part.startsWith(".")) return this.classList.contains(part.slice(1));
+                    if (part === "[hidden]") return this.hidden;
+                    if (part === "[inert]") return this.inert;
+                    if (part === "[tabindex]") return "tabindex" in this.attributes;
+                    if (part === "[data-close-overlay]") return Boolean(this.dataset.closeOverlay);
+                    return this.tagName === part.replace(/\[.*$/, "").toUpperCase();
+                });
+            },
+            closest(selector) { return this.matches(selector) ? this : this.parentElement?.closest(selector) || null; },
+            contains(element) { return element === this || this.children.some(child => child.contains(element)); },
+            getClientRects() { return this.closest("[hidden]") ? [] : [{}]; },
+            querySelectorAll(selector) {
+                return this.children.flatMap(child => [...(child.matches(selector) ? [child] : []), ...child.querySelectorAll(selector)]);
+            },
+            querySelector(selector) { return this.querySelectorAll(selector)[0] || null; },
             classList: {
                 add: name => classes.add(name), remove: name => classes.delete(name),
                 contains: name => classes.has(name),
@@ -51,26 +73,40 @@ function harness(page = "scenario", initialFetch = () => response(view())) {
             },
             set textContent(value) { this.text = String(value); this.children = []; },
             get textContent() { return (this.text || "") + this.children.map(child => child.textContent).join(""); },
-            append(...children) { this.children.push(...children); },
+            append(...children) { children.forEach(child => { child.parentElement = this; this.children.push(child); }); },
             appendChild(child) { this.append(child); },
             replaceChildren(...children) { this.text = ""; this.children = children; },
             setAttribute(name, value) { this.attributes[name] = value; },
             focus() { activeElement = this; }, blur() { if (activeElement === this) activeElement = null; },
             scrollIntoView() {},
-            addEventListener(name, callback) { (listeners[name] ||= []).push(callback); },
-            emit(name, event = {}) {
-                const defaults = { preventDefault() {}, stopPropagation() {} };
-                return Promise.all((listeners[name] || []).map(callback => callback({ ...defaults, ...event })));
+            addEventListener(name, callback, capture = false) { (listeners[name] ||= [])[capture ? "unshift" : "push"](callback); },
+            async emit(name, event = {}) {
+                let stopped = false;
+                const dispatched = { target: this, defaultPrevented: false, preventDefault() { this.defaultPrevented = true; }, stopPropagation() {}, stopImmediatePropagation() { stopped = true; }, ...event };
+                for (const callback of listeners[name] || []) {
+                    await callback(dispatched);
+                    if (stopped) break;
+                }
+                return dispatched;
             },
         };
     }
+    const body = node("body");
+    const stack = [body];
     const html = fs.readFileSync(`app/templates/admin_duty/dynamic/${page}.html`, "utf8");
-    for (const match of html.matchAll(/<[^>]*?\sid="([^"]+)"[^>]*>/g)) {
-        const element = node();
+    for (const match of html.matchAll(/<\/?([a-z][\w-]*)\b[^>]*>/gi)) {
+        if (match[0].startsWith("</")) { stack.pop(); continue; }
+        const element = node(match[1]);
         element.hidden = /\shidden(?:\s|>)/.test(match[0]);
+        element.inert = /\sinert(?:\s|>)/.test(match[0]);
         const classes = match[0].match(/class="([^"]*)"/);
         classes?.[1].split(" ").forEach(name => element.classList.add(name));
-        elements.set(match[1], element);
+        for (const attr of match[0].matchAll(/([\w-]+)="([^"]*)"/g)) element.setAttribute(attr[1], attr[2]);
+        const id = element.attributes.id;
+        if (id) elements.set(id, element);
+        if (element.attributes["data-close-overlay"]) element.dataset.closeOverlay = element.attributes["data-close-overlay"];
+        stack[stack.length - 1].appendChild(element);
+        if (!["input", "br", "hr", "img", "link", "meta"].includes(match[1].toLowerCase())) stack.push(element);
     }
     const get = id => elements.get(id);
     if (page === "scenario") get("dynamic-session-workspace").dataset.sessionId = sessionId;
@@ -80,12 +116,17 @@ function harness(page = "scenario", initialFetch = () => response(view())) {
         return button;
     }) : [];
     const document = Object.assign(node(), {
-        body: node(), getElementById: get, createElement: node,
-        querySelector: () => node(),
-        querySelectorAll: selector => selector === ".start-incident-button" ? startButtons : [],
+        body, getElementById: get, createElement: node,
+        querySelector: selector => {
+            const parts = selector.split(" ");
+            return parts.length === 2 ? get(parts[0].slice(1)).querySelector(parts[1]) : body.querySelector(selector);
+        },
+        querySelectorAll: selector => selector === ".start-incident-button" ? startButtons : body.querySelectorAll(selector),
     });
+    Object.defineProperty(document, "activeElement", { get: () => activeElement });
+    const pointer = Object.assign(node(), { matches: device.coarse || false });
     const window = Object.assign(node(), {
-        innerWidth: 1440, matchMedia: () => ({ matches: false, addEventListener() {} }),
+        innerWidth: device.width ?? 1440, matchMedia: query => query === "(pointer: coarse)" ? pointer : { matches: false, addEventListener() {} },
         scrollTo() {}, location: { replace(url) { window.destination = url; } },
         requestAnimationFrame(callback) { const id = ++nextId; frames.set(id, callback); return id; },
         cancelAnimationFrame: id => frames.delete(id),
@@ -95,18 +136,25 @@ function harness(page = "scenario", initialFetch = () => response(view())) {
             createGame(options) {
                 window.gameCreations = (window.gameCreations || 0) + 1;
                 window.gameOptions = options;
-                return { destroy() {}, setInputLocked() {}, updateMonitoring(data) { window.monitoring = data; } };
+                const canvas = node("canvas");
+                get("game-canvas").appendChild(canvas);
+                return {
+                    destroy() { canvas.parentElement = null; },
+                    setInputLocked(locked) { window.inputLocked = locked; if (!locked) canvas.focus(); },
+                    updateMonitoring(data) { window.monitoring = data; },
+                };
             },
         },
     });
     const context = vm.createContext({
-        window, document, AbortController, navigator: { userAgent: "Desktop", maxTouchPoints: 0 },
+        window, document, AbortController, navigator: { userAgent: device.userAgent || "Desktop", maxTouchPoints: device.touchPoints || 0 },
         fetch(url, options) { requests.push({ url, options }); return Promise.resolve(fetchImpl(url, options)); },
     });
     function run(file) {
         vm.runInContext(fs.readFileSync(`app/static/admin_duty/dynamic/${file}.js`, "utf8"), context);
     }
     run("request");
+    run("device");
     if (page === "scenario") run("terminal");
     run(page);
     function framesNow() {
@@ -564,4 +612,134 @@ test("generation success redirects once and clears deadline", async () => {
     assert.equal(h.window.destination, `/admin-duty/dynamic/sessions/${sessionId}`);
     assert.equal(h.timers.size, 0);
     assert.equal(h.requests.length, 1);
+});
+
+for (const type of ["terminal", "monitoring", "support", "rack"]) {
+    test(`${type} dialog contains Tab focus, blocks background and restores its trigger`, async () => {
+        const h = harness(); await h.ready();
+        const trigger = h.get("exit-session-button");
+        trigger.focus();
+        h.window.gameOptions.onInteract({ type });
+        const overlay = h.get(`${type}-overlay`);
+        assert.equal(overlay.contains(h.activeElement()), true);
+        assert.equal(h.get("workspace-content").inert, true);
+        assert.equal(h.window.inputLocked, true);
+        await h.resize();
+        assert.equal(h.get("workspace-content").inert, true);
+        const controls = overlay.querySelectorAll("button, input, textarea, a[href]")
+            .filter(element => !element.disabled && !element.closest("[hidden], [inert]"));
+        controls.at(-1).focus();
+        const tab = await h.document.emit("keydown", { key: "Tab" });
+        assert.equal(tab.defaultPrevented, true);
+        assert.equal(h.activeElement(), controls[0]);
+        await h.document.emit("keydown", { key: "Tab", shiftKey: true });
+        assert.equal(h.activeElement(), controls.at(-1));
+        trigger.focus();
+        await h.document.emit("focusin", { target: trigger });
+        assert.equal(overlay.contains(h.activeElement()), true);
+        await h.document.emit("keydown", { key: "Escape" });
+        assert.equal(overlay.hidden, true);
+        assert.equal(h.get("workspace-content").inert, false);
+        assert.equal(h.activeElement(), trigger);
+        assert.equal(h.window.inputLocked, false);
+    });
+}
+
+test("terminal editor Escape closes only the editor, then terminal Escape returns focus", async () => {
+    const h = harness(); await h.ready();
+    h.get("exit-session-button").focus();
+    h.setFetch(url => url.endsWith("/command")
+        ? response(result(1, { editor: { path: "/etc/orders.conf", content: "old" } }))
+        : response(view(1)));
+    await h.command("nano /etc/orders.conf");
+    await h.get("virtual-editor").emit("keydown", { key: "Escape" });
+    h.framesNow();
+    assert.equal(h.get("virtual-editor").hidden, true);
+    assert.equal(h.get("terminal-overlay").hidden, false);
+    assert.equal(h.activeElement(), h.get("terminal-input"));
+    await h.document.emit("keydown", { key: "Escape" });
+    assert.equal(h.get("terminal-overlay").hidden, true);
+    assert.equal(h.activeElement(), h.get("exit-session-button"));
+});
+
+test("sequential dialogs preserve original focus and mission drawer keyboard lock", async () => {
+    const h = harness(); await h.ready();
+    await h.click("toggle-briefing-button");
+    const trigger = h.get("close-briefing-button");
+    h.window.gameOptions.onInteract({ type: "support" });
+    h.window.gameOptions.onInteract({ type: "monitoring" });
+    assert.equal(h.get("support-overlay").hidden, true);
+    await h.document.emit("keydown", { key: "Escape" });
+    assert.equal(h.get("monitoring-overlay").hidden, true);
+    assert.equal(h.activeElement(), trigger);
+    assert.equal(h.window.inputLocked, true);
+    await h.document.emit("keydown", { key: "Escape" });
+    assert.equal(h.get("mission-drawer").inert, true);
+    assert.equal(h.window.inputLocked, false);
+    assert.equal(h.activeElement(), h.get("toggle-briefing-button"));
+});
+
+test("completion dialog keeps Escape behavior and returns focus on explicit close", async () => {
+    const completed = view(1, { progress: progress(1, { status: "completed", mission_complete: true }) });
+    const h = harness("scenario", () => response(completed)); await h.ready();
+    await h.click("continue-session-button");
+    h.get("banner-end-button").focus();
+    await h.click("banner-end-button");
+    assert.equal(h.activeElement(), h.get("end-session-button"));
+    await h.document.emit("keydown", { key: "Escape" });
+    assert.equal(h.get("completion-overlay").hidden, false);
+    await h.click("continue-session-button");
+    assert.equal(h.activeElement(), h.get("banner-end-button"));
+    assert.equal(h.get("workspace-content").inert, false);
+});
+
+for (const device of [
+    { width: 1023 }, { width: 390, userAgent: "iPhone" },
+    { width: 1440, userAgent: "Android" }, { coarse: true, touchPoints: 1 },
+    { userAgent: "Macintosh", touchPoints: 5 },
+]) {
+    test(`unsupported device cannot generate or retry: ${JSON.stringify(device)}`, async () => {
+        const h = harness("index", () => response({ session_id: sessionId }), device);
+        assert.equal(h.get("start-easy-button").disabled, true);
+        assert.equal(h.get("retry-start-button").disabled, true);
+        await h.click("start-easy-button"); await h.click("retry-start-button");
+        assert.equal(h.requests.length, 0);
+        assert.equal(h.get("generation-overlay").hidden, true);
+        assert.match(h.get("desktop-start-notice").textContent, /Nie można rozpocząć/);
+    });
+}
+
+test("lobby rechecks viewport immediately before POST and restores supported controls", async () => {
+    const h = harness("index", () => response({ session_id: sessionId }));
+    h.window.innerWidth = 800;
+    await h.click("start-easy-button");
+    assert.equal(h.requests.length, 0);
+    h.window.innerWidth = 1024;
+    await h.resize();
+    assert.equal(h.get("start-easy-button").disabled, false);
+    await h.click("start-easy-button");
+    assert.equal(h.requests.length, 1);
+});
+
+test("failed generation after resize keeps unsupported start and retry disabled", async () => {
+    const h = harness("index", () => new Promise(() => {}));
+    await h.click("start-easy-button");
+    h.window.innerWidth = 800; await h.resize();
+    await h.expire(90000);
+    assert.equal(h.get("start-easy-button").disabled, true);
+    assert.equal(h.get("retry-start-button").disabled, true);
+    assert.equal(h.requests.length, 1);
+});
+
+test("device restriction closes an active modal without ending or stranding the session", async () => {
+    const h = harness(); await h.ready();
+    h.window.gameOptions.onInteract({ type: "terminal" });
+    h.window.innerWidth = 800; await h.resize();
+    assert.equal(h.get("terminal-overlay").hidden, true);
+    assert.equal(h.get("desktop-gate").inert, false);
+    assert.equal(h.get("workspace-content").inert, true);
+    assert.equal(h.requests.filter(r => r.options.method === "POST").length, 0);
+    h.window.innerWidth = 1440; await h.resize();
+    assert.equal(h.get("workspace-content").inert, false);
+    assert.equal(h.get("workspace-content").hidden, false);
 });

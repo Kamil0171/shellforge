@@ -104,10 +104,10 @@
                 {% for question in quiz.questions %}
                 <div class="col-12">
                     <div class="card shadow-sm quiz-question">
-                        <div class="card-body">
-                            <h5 class="fw-bold mb-3">
+                        <fieldset class="card-body">
+                            <legend class="h5 fw-bold mb-3">
                                 {{ loop.index }}. {{ question.text }}
-                            </h5>
+                            </legend>
 
                             <div class="vstack gap-2">
                                 {% for answer in question.answers %}
@@ -151,7 +151,7 @@
                                 {% endif %}
                             </div>
                             {% endif %}
-                        </div>
+                        </fieldset>
                     </div>
                 </div>
                 {% endfor %}
@@ -174,5 +174,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', path='js/quiz.js') }}"></script>
+<script src="{{ url_for('static', path='js/quiz.js') }}?v=polish-1"></script>
 {% endblock %}

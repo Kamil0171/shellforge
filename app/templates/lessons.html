@@ -42,6 +42,7 @@
                         <p class="small text-muted mb-0">
                             Postęp jest zapisywany lokalnie w tej przeglądarce.
                         </p>
+                        <p class="small text-muted mb-0" data-lesson-progress-status role="status" aria-live="polite"></p>
                     </div>
                 </div>
             </div>
@@ -229,7 +230,7 @@
     </div>
 </section>
 
-<script src="{{ url_for('static', path='js/lesson_progress.js') }}"></script>
+<script src="{{ url_for('static', path='js/lesson_progress.js') }}?v=polish-1"></script>
 <script src="{{ url_for('static', path='js/lessons.js') }}"></script>
 
 {% endblock %}

@@ -1,8 +1,10 @@
 document.addEventListener("DOMContentLoaded", () => {
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const quizForm = document.querySelector(".quiz-form");
 
     if (quizForm) {
         quizForm.addEventListener("submit", (event) => {
+            if (reducedMotion) return;
             event.preventDefault();
 
             window.scrollTo({
@@ -21,8 +23,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (progressFill) {
         const progressValue = progressFill.dataset.progress || "0";
 
-        setTimeout(() => {
+        const showProgress = () => {
             progressFill.style.width = `${progressValue}%`;
-        }, 250);
+        };
+        if (reducedMotion) showProgress();
+        else setTimeout(showProgress, 250);
     }
 });

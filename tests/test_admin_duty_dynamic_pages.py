@@ -29,7 +29,7 @@ def test_dynamic_lobby_renders_difficulty_selection_and_assets():
     )
     assert 'src="http://testserver/static/admin_duty/dynamic/index.js' in response.text
     assert "dynamic.css?v=ai-loading-1" in response.text
-    assert "index.js?v=reliability-1" in response.text
+    assert "index.js?v=polish-1" in response.text
     assert response.text.index("dynamic/request.js") < response.text.index("dynamic/index.js")
     assert "Przygotowywanie incydentu…" in response.text
     assert 'id="generation-status"' in response.text
@@ -121,8 +121,11 @@ def test_dynamic_gameplay_assets_include_keyboard_and_overlay_contracts():
     assert 'event.key === "Escape"' in terminal.text
     assert "input.focus({ preventScroll: true })" in terminal.text
     assert scenario.status_code == 200
-    assert "window.innerWidth >= 1024" in scenario.text
-    assert "navigator.maxTouchPoints" in scenario.text
+    device = client.get("/static/admin_duty/dynamic/device.js")
+    assert device.status_code == 200
+    assert "window.innerWidth >= 1024" in device.text
+    assert "navigator.maxTouchPoints" in device.text
+    assert "window.ShellForgeDynamicDevice" in scenario.text
     assert 'window.scrollTo({ top: 0, left: 0, behavior: "instant" })' in scenario.text
     assert 'window.location.replace("/admin-duty/dynamic/")' in scenario.text
     assert 'link.label === "zależy od"' in scenario.text
@@ -157,7 +160,8 @@ def test_dynamic_workspace_rejects_invalid_uuid():
     response = client.get("/admin-duty/dynamic/sessions/not-a-uuid")
 
     assert response.status_code == 422
-    assert response.json() == {"detail": "Nieprawidłowe dane żądania."}
+    assert response.headers["content-type"].startswith("text/html")
+    assert "nieprawidłowy identyfikator" in response.text
 
 
 def test_dynamic_pages_do_not_embed_backend_only_incident_data():

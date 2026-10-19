@@ -35,7 +35,7 @@
                 progress.completedLessonIds.filter(isValidLessonId),
             );
         } catch {
-            return new Set();
+            return null;
         }
     };
 
@@ -71,7 +71,16 @@
         );
         const totalCount = document.querySelector("#lesson-total-count");
 
-        let completedLessonIds = readCompletedLessonIds();
+        const progressStatus = document.querySelector("[data-lesson-progress-status]");
+        const initialLessonIds = readCompletedLessonIds();
+        let completedLessonIds = initialLessonIds ?? new Set();
+
+        const showStorageStatus = (message) => {
+            if (progressStatus) progressStatus.textContent = message;
+        };
+        if (initialLessonIds === null) {
+            showStorageStatus("Nie można odczytać postępu w tej przeglądarce. Sprawdź ustawienia pamięci lokalnej.");
+        }
 
         const updateLessonCard = (card) => {
             const lessonId = getLessonId(card);
@@ -147,6 +156,7 @@
             if (lessonId === null) {
                 completionButton.disabled = true;
             } else {
+                completionButton.disabled = false;
                 completionButton.addEventListener("click", () => {
                     const updatedLessonIds = new Set(completedLessonIds);
 
@@ -156,9 +166,13 @@
                         updatedLessonIds.add(lessonId);
                     }
 
+                    if (!writeCompletedLessonIds(updatedLessonIds)) {
+                        showStorageStatus("Nie udało się zapisać postępu w tej przeglądarce. Oznaczenie pozostaje bez zmian. Sprawdź ustawienia pamięci lokalnej i spróbuj ponownie.");
+                        return;
+                    }
                     completedLessonIds = updatedLessonIds;
-                    writeCompletedLessonIds(completedLessonIds);
                     renderProgress();
+                    showStorageStatus("Postęp zapisany w tej przeglądarce.");
                 });
             }
         }
@@ -168,8 +182,14 @@
                 return;
             }
 
-            completedLessonIds = readCompletedLessonIds();
+            const savedLessonIds = readCompletedLessonIds();
+            if (savedLessonIds === null) {
+                showStorageStatus("Nie można odczytać zapisanego postępu. Wyświetlane oznaczenie pozostaje bez zmian.");
+                return;
+            }
+            completedLessonIds = savedLessonIds;
             renderProgress();
+            showStorageStatus("");
         });
 
         renderProgress();
