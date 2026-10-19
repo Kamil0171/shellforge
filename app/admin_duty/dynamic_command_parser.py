@@ -190,6 +190,17 @@ def system(program, args):
 
 
 def network(program, args):
+    if program == "nc":
+        require(
+            len(args) == 3
+            and args[0] == "-z"
+            and bool(re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]*", args[1]))
+            and args[2].isascii()
+            and args[2].isdigit()
+            and 1 <= int(args[2]) <= 65535,
+            "nc -z <host> <port>",
+        )
+        return _request("network.tcp-probe", args[1], (args[2],))
     if program == "ssh":
         require(
             len(args) == 1
@@ -335,7 +346,7 @@ PARSERS = {
         system,
     ),
     **dict.fromkeys(
-        ("ip", "ss", "ping", "curl", "getent", "dig", "nmcli", "ssh"), network
+        ("ip", "ss", "ping", "curl", "getent", "dig", "nmcli", "ssh", "nc"), network
     ),
     **dict.fromkeys(("dnf", "yum", "rpm"), packages),
     **dict.fromkeys(

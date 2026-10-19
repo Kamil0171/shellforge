@@ -140,6 +140,11 @@ def _public_status(resource) -> str:
     health = resource.attributes.get("public_health")
     if resource.resource_type is ResourceType.SERVICE and isinstance(health, str):
         return health
+    if (
+        resource.resource_type is ResourceType.HOST
+        and resource.attributes.get("network_health") == "unhealthy"
+    ):
+        return "unreachable"
     return resource.current_state
 
 
@@ -175,6 +180,14 @@ def project_public_monitoring(
             status=_public_status(resource),
             severity=_signal_severity(_public_status(resource)),
             resource_id=resource.resource_id,
+            process_status=resource.current_state
+            if resource.resource_type is ResourceType.SERVICE
+            else None,
+            **{
+                key: resource.attributes.get(key)
+                for key in ("local_health", "transport_health", "downstream_health")
+                if resource.resource_type is ResourceType.SERVICE
+            },
         )
         for resource in resources
     )
@@ -185,6 +198,10 @@ def project_public_monitoring(
             IncidentRecoveryState.PARTIALLY_RECOVERED: "improving",
             IncidentRecoveryState.HEALTHY: "nominal",
         }[recovery]
+        if overall_status == "nominal" and any(
+            signal.severity == "critical" for signal in signals
+        ):
+            overall_status = "critical"
     else:
         overall_status = (
             "critical"

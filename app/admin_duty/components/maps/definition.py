@@ -136,6 +136,10 @@ class PublicMonitoringSignal(FrozenDomainModel):
     status: Identifier
     severity: Literal["ok", "warning", "critical"]
     resource_id: Identifier
+    process_status: Identifier | None = None
+    local_health: Literal["healthy", "unhealthy"] | None = None
+    transport_health: Literal["healthy", "unhealthy"] | None = None
+    downstream_health: Literal["healthy", "unhealthy"] | None = None
 
 
 class PublicMonitoring(FrozenDomainModel):

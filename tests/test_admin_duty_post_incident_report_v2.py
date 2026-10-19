@@ -21,6 +21,29 @@ from app.admin_duty.services import DynamicIncidentService
 NOW = datetime(2026, 9, 14, 15, 0, tzinfo=UTC)
 
 
+def test_v6_report_preserves_host_history_and_classifies_tcp_as_diagnostics():
+    definition = convert_draft_to_definition(
+        build_hard_draft("H-05", seed=17), created_at=NOW
+    )
+    report, state = _complete(definition)
+    probes = [
+        item for item in report.command_review if item.command.startswith("nc -z")
+    ]
+    assert probes
+    assert all(
+        item.classification is CommandClassification.DIAGNOSTIC for item in probes
+    )
+    assert all(item.host == "app-0017" for item in probes)
+    assert {record.host_id for record in state.command_history} == {
+        "host-edge-01",
+        "host-app-01",
+        "host-data-01",
+    }
+    assert any("app-0017" in item.description for item in report.repair_timeline)
+    assert any("data-0017" in item.description for item in report.repair_timeline)
+    assert report.impact_path == ("reverse proxy", "API", "usługa danych")
+
+
 def _service_for(definition):
     scenarios = InMemoryScenarioRepository()
     sessions = InMemorySessionRepository()
@@ -84,7 +107,13 @@ def test_command_history_keeps_minimal_structured_context_in_order():
     serialized = str(
         [record.model_dump(mode="json") for record in state.command_history]
     ).casefold()
-    for forbidden in ("terminal output", "raw_response", "provider", "model", "authorization"):
+    for forbidden in (
+        "terminal output",
+        "raw_response",
+        "provider",
+        "model",
+        "authorization",
+    ):
         assert forbidden not in serialized
 
 
@@ -93,11 +122,9 @@ def test_saved_file_content_is_not_stored_in_command_history():
     definition = next(
         candidate
         for seed in range(100)
-        if (
-            candidate := generator.generate(
-                DifficultyLevel.EASY, seed=seed, now=NOW
-            )
-        ).faults[0].fault_type
+        if (candidate := generator.generate(DifficultyLevel.EASY, seed=seed, now=NOW))
+        .faults[0]
+        .fault_type
         == "systemd_wrong_exec_start"
     )
     state = create_session_runtime(definition, now=NOW)
@@ -136,7 +163,9 @@ def test_classifier_uses_structured_capability_instead_of_command_substrings():
     )
     analysis = build_post_incident_analysis(definition, state)
 
-    assert analysis.command_review[0].classification is CommandClassification.UNNECESSARY
+    assert (
+        analysis.command_review[0].classification is CommandClassification.UNNECESSARY
+    )
 
 
 @pytest.mark.parametrize(
@@ -186,9 +215,7 @@ def test_incident_relevance_rejects_unrelated_repair_target():
     )
     state = create_session_runtime(definition, now=NOW)
     commands = DynamicCommandService()
-    commands.execute(
-        definition, state, "ssh app-01", now=NOW + timedelta(seconds=1)
-    )
+    commands.execute(definition, state, "ssh app-01", now=NOW + timedelta(seconds=1))
     commands.execute(
         definition,
         state,
@@ -217,9 +244,7 @@ def test_status_and_journal_change_from_diagnosis_to_post_repair_verification():
         "systemctl status orders-api",
     )
     for index, command in enumerate(sequence, 1):
-        commands.execute(
-            definition, state, command, now=NOW + timedelta(seconds=index)
-        )
+        commands.execute(definition, state, command, now=NOW + timedelta(seconds=index))
     review = build_post_incident_analysis(definition, state).command_review
 
     assert review[1].classification is CommandClassification.DIAGNOSTIC
@@ -346,10 +371,7 @@ def test_hard_partial_recovery_does_not_publish_final_report():
         current += timedelta(seconds=2)
         service.execute_command(started.session_id, step.input, now=current)
         state = sessions.get(started.session_id, now=current)
-        if any(
-            len(record.resolved_fault_ids) == 1
-            for record in state.command_history
-        ):
+        if any(len(record.resolved_fault_ids) == 1 for record in state.command_history):
             break
 
     view = service.get_progress(started.session_id, now=current)
@@ -395,7 +417,10 @@ def test_hard_reverse_repair_order_is_preserved_in_report():
 
     assert report is not None
     assert descriptions[0].startswith("Przywrócono oczekiwany kontekst SELinux")
-    assert next(index for index, text in enumerate(descriptions) if "firewalld" in text) > 0
+    assert (
+        next(index for index, text in enumerate(descriptions) if "firewalld" in text)
+        > 0
+    )
     assert report.secondary_fault in report.partial_recovery_explanation
     assert report.repair_actions == tuple(
         command
@@ -470,6 +495,6 @@ def test_completed_report_contains_public_data_only_and_is_deterministic():
         "raw_response",
         "provider",
         "generation_source",
-        "diagnostic_milestones\":[\"",
+        'diagnostic_milestones":["',
     ):
         assert hidden not in serialized

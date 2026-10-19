@@ -67,7 +67,11 @@ def test_every_approved_hard_pair_materializes_and_replays(combination):
         "fault-secondary",
     }
     assert all(fault.resolution_condition for fault in definition.faults)
-    assert len(definition.service_dependencies) == 4
+    assert len(definition.service_dependencies) == {
+        "H-03": 1,
+        "H-04": 2,
+        "H-05": 2,
+    }.get(combination.combination_id, 4)
 
 
 def test_difficulty_profiles_enforce_v4_fault_counts():
@@ -141,12 +145,7 @@ def test_first_repair_changes_symptoms_but_does_not_complete(combination):
         created_at=NOW,
     )
     state = create_session_runtime(definition, now=NOW)
-    initial_states = {
-        symptom.source_resource_id: state.world_state.resources[
-            symptom.source_resource_id
-        ].current_state
-        for symptom in definition.symptoms
-    }
+    initial_states = project_public_monitoring(definition, state).signals
 
     assert (
         get_incident_recovery_state(definition, state) is IncidentRecoveryState.BROKEN
@@ -160,12 +159,7 @@ def test_first_repair_changes_symptoms_but_does_not_complete(combination):
     else:
         pytest.fail("Reference solution nie osiągnęło partial recovery.")
 
-    current_states = {
-        symptom.source_resource_id: state.world_state.resources[
-            symptom.source_resource_id
-        ].current_state
-        for symptom in definition.symptoms
-    }
+    current_states = project_public_monitoring(definition, state).signals
     assert current_states != initial_states
     assert (
         get_incident_recovery_state(definition, state)

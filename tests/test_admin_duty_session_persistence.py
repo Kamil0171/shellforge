@@ -9,8 +9,10 @@ from sqlmodel import Session, SQLModel, create_engine, select
 
 import app.admin_duty.repositories.sql as sql_repository_module
 import app.seed as seed_module
+from app.admin_duty.components.scenarios import build_hard_draft
 from app.admin_duty.domain.definition import GenerationSource, IncidentRecoveryState
 from app.admin_duty.domain.difficulty import DifficultyLevel
+from app.admin_duty.domain.generation import convert_draft_to_definition
 from app.admin_duty.domain.persistence import SessionSnapshotError
 from app.admin_duty.domain.recovery import get_incident_recovery_state
 from app.admin_duty.domain.runtime import SessionStatus, touch_session
@@ -26,6 +28,106 @@ from app.admin_duty.services import DynamicIncidentService
 from app.models import DynamicIncidentSession
 
 NOW = datetime(2026, 9, 25, 10, 0, tzinfo=UTC)
+
+
+@pytest.mark.parametrize("combination", ["H-03", "H-04", "H-05"])
+@pytest.mark.parametrize("checkpoint", ["ssh", "partial"])
+def test_v6_sql_restart_preserves_host_flow_and_partial_recovery(
+    tmp_path, combination, checkpoint
+):
+    database_path = tmp_path / "v6-restart.db"
+    engine_a = build_engine(database_path)
+    service_a, repository_a = build_service(engine_a)
+    definition = convert_draft_to_definition(
+        build_hard_draft(combination, seed=17), created_at=NOW
+    )
+    started = service_a._start_definition(definition, NOW)
+    current = NOW
+    for step in definition.solution:
+        current += timedelta(seconds=2)
+        current = execute_solution_step(
+            service_a, definition, started.session_id, step, current
+        )
+        before = repository_a.get(started.session_id, now=current)
+        if (checkpoint == "ssh" and step.capability_id == "remote.ssh") or (
+            checkpoint == "partial"
+            and get_incident_recovery_state(definition, before.state)
+            is IncidentRecoveryState.PARTIALLY_RECOVERED
+        ):
+            break
+    else:
+        pytest.fail("Replay nie osiągnął punktu odtworzenia.")
+    assert before.state.status is SessionStatus.ACTIVE
+    engine_a.dispose()
+    engine_b = build_engine(database_path)
+    service_b, repository_b = build_service(engine_b)
+    after = repository_b.get(started.session_id, now=current)
+    assert after == before
+    assert after.definition.multi_host_flow == definition.multi_host_flow
+    assert after.state.active_host_id == before.state.active_host_id
+    remaining_steps = definition.solution[step.order :]
+    for step in remaining_steps:
+        current += timedelta(seconds=2)
+        current = execute_solution_step(
+            service_b, definition, started.session_id, step, current
+        )
+    completed = service_b.get_progress(started.session_id, now=current)
+    assert completed.progress.mission_complete
+    assert completed.post_incident
+    assert get_record(engine_b, started.session_id).schema_version == 1
+    engine_b.dispose()
+
+
+def test_old_v1_snapshot_without_v6_fields_restores_and_continues(tmp_path):
+    engine = build_engine(tmp_path / "old-v1.db")
+    service, repository = build_service(engine)
+    definition = convert_draft_to_definition(
+        build_hard_draft("H-01", seed=17), created_at=NOW
+    )
+    started = service._start_definition(definition, NOW)
+    with Session(engine) as session:
+        record = session.get(DynamicIncidentSession, str(started.session_id))
+        payload = json.loads(record.snapshot_json)
+        old_definition = payload["incident_definition"]
+        old_definition.pop("multi_host_flow")
+        for edge in old_definition["service_dependencies"]:
+            edge.pop("port_configuration_file_id")
+        for rule in old_definition["symptom_propagation"]:
+            rule.pop("health_layer")
+        for resource in payload["runtime_state"]["world_state"]["resources"].values():
+            attributes = resource["attributes"]
+            for key in list(attributes):
+                if key in {
+                    "local_health",
+                    "transport_health",
+                    "downstream_health",
+                    "observed_local_health",
+                } or key.startswith("dependency_status."):
+                    attributes.pop(key)
+        record.snapshot_json = json.dumps(payload)
+        session.add(record)
+        session.commit()
+    restored = SQLIncidentSessionRepository(engine).get(started.session_id, now=NOW)
+    assert restored.definition.multi_host_flow is None
+    assert all(
+        edge.port_configuration_file_id is None
+        for edge in restored.definition.service_dependencies
+    )
+    assert all(
+        rule.health_layer == "application"
+        for rule in restored.definition.symptom_propagation
+    )
+    current = NOW
+    for step in restored.definition.solution:
+        current += timedelta(seconds=2)
+        current = execute_solution_step(
+            service, restored.definition, started.session_id, step, current
+        )
+    assert (
+        repository.get(started.session_id, now=current).state.status
+        is SessionStatus.COMPLETED
+    )
+    engine.dispose()
 
 
 def logical_utc(value):

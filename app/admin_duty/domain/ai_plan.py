@@ -3,9 +3,9 @@ from typing import Literal
 
 from pydantic import Field, model_validator
 
+from app.admin_duty.components.scenarios.flows import TWO_HOST_MEDIUM
 from app.admin_duty.components.scenarios.hard import (
     HARD_COMBINATIONS,
-    HARD_DEPENDENCY_ARCHETYPE,
     HARD_ENVIRONMENT_ARCHETYPE,
     HARD_SYMPTOM_ARCHETYPE,
     get_hard_combination_for_pair,
@@ -129,7 +129,7 @@ class AIIncidentPlan(FrozenDomainModel):
         | None
     ) = None
     affected_service_archetype: Literal["web-api", "worker", "reverse-proxy"]
-    dependency_archetype: Literal["direct-service", "proxy-api-database"]
+    dependency_archetype: Literal["direct-service", "proxy-api", "proxy-api-database"]
     symptom_archetype: Literal[
         "service_unavailable",
         "service_start_failure",
@@ -209,7 +209,12 @@ class AIIncidentPlan(FrozenDomainModel):
                 self.environment_archetype == "web-stack"
                 and self.fault_category in MEDIUM_FAULTS
                 and self.affected_service_archetype == service
-                and self.dependency_archetype == "proxy-api-database"
+                and self.dependency_archetype
+                == (
+                    "proxy-api"
+                    if self.fault_category in TWO_HOST_MEDIUM
+                    else "proxy-api-database"
+                )
             )
         if not valid or self.symptom_archetype != SYMPTOMS[self.fault_category]:
             raise ValueError("Nieobsługiwana kombinacja archetypów.")
@@ -275,13 +280,24 @@ def get_plan_capability_catalog(request):
                     "secondary": item.secondary_fault_category,
                     "service": item.affected_service_archetype,
                     "skills": item.skill_tags,
+                    "dependency": item.dependency_archetype,
+                    "hosts": len(item.required_host_roles),
                 }
                 for item in combinations
             ),
-            "dependency": HARD_DEPENDENCY_ARCHETYPE,
+            "dependency": tuple(
+                dict.fromkeys(item.dependency_archetype for item in combinations)
+            ),
             "symptom": HARD_SYMPTOM_ARCHETYPE,
             "skills": SKILLS,
-            "hosts": [5, 5],
+            "hosts": [
+                min(
+                    (len(item.required_host_roles) for item in combinations), default=2
+                ),
+                max(
+                    (len(item.required_host_roles) for item in combinations), default=5
+                ),
+            ],
             "fault_count": 2,
         }
     environments = (
@@ -310,7 +326,15 @@ def get_plan_capability_catalog(request):
     return {
         "environments_and_services": environments,
         "faults_and_symptoms": {fault: SYMPTOMS[fault] for fault in faults},
-        "dependency": "direct-service" if easy else "proxy-api-database",
+        "dependency": ("direct-service",)
+        if easy
+        else ("proxy-api", "proxy-api-database"),
+        "fault_dependencies": {}
+        if easy
+        else {
+            fault: "proxy-api" if fault in TWO_HOST_MEDIUM else "proxy-api-database"
+            for fault in faults
+        },
         "external_firewall_service": "reverse-proxy" if not easy else None,
         "reverse_proxy_faults": tuple(
             fault for fault in faults if fault in MEDIUM_REVERSE_PROXY_FAULTS
@@ -318,6 +342,6 @@ def get_plan_capability_catalog(request):
         if not easy
         else (),
         "skills": SKILLS,
-        "hosts": [2, 2] if easy else [3, 4],
+        "hosts": [2, 2] if easy else [2, 4],
         "fault_count": 1,
     }

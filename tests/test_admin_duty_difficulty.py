@@ -48,8 +48,8 @@ def test_host_ranges_increase_with_difficulty():
 
     assert [(profile.min_hosts, profile.max_hosts) for profile in profiles] == [
         (2, 3),
-        (3, 5),
-        (5, 8),
+        (2, 5),
+        (2, 8),
     ]
 
 
