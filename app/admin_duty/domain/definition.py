@@ -257,6 +257,7 @@ class ServiceDependency(FrozenDomainModel):
     port: int = Field(ge=1, le=65535)
     required: bool = True
     publicly_visible: bool = True
+    port_configuration_file_id: Identifier | None = None
 
 
 class PackageRequirement(FrozenDomainModel):
@@ -281,6 +282,13 @@ class SymptomPropagationRule(FrozenDomainModel):
     affected_resource_id: Identifier
     unhealthy_state: Identifier
     healthy_state: Identifier
+    health_layer: Literal["application", "transport"] = "application"
+
+
+class MultiHostIncidentFlow(FrozenDomainModel):
+    entry_endpoint_id: Identifier
+    service_path: tuple[Identifier, ...] = Field(min_length=2, max_length=3)
+    verification_source_host_id: Identifier
 
 
 class InitialWorldState(FrozenDomainModel):
@@ -412,6 +420,7 @@ class IncidentDefinition(FrozenDomainModel):
     initial_world_state: InitialWorldState
     faults: tuple[FaultInstance, ...] = Field(min_length=1, max_length=2)
     fault_relation: FaultRelation | None = None
+    multi_host_flow: MultiHostIncidentFlow | None = None
     symptoms: tuple[Symptom, ...] = Field(min_length=1, max_length=128)
     objectives: tuple[Objective, ...] = Field(min_length=1, max_length=64)
     capabilities: CapabilitySet

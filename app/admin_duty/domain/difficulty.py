@@ -60,7 +60,7 @@ _DIFFICULTY_PROFILES: Final[Mapping[DifficultyLevel, DifficultyProfile]] = (
             ),
             DifficultyLevel.MEDIUM: DifficultyProfile(
                 level=DifficultyLevel.MEDIUM,
-                min_hosts=3,
+                min_hosts=2,
                 max_hosts=5,
                 min_faults=1,
                 max_faults=1,
@@ -72,7 +72,7 @@ _DIFFICULTY_PROFILES: Final[Mapping[DifficultyLevel, DifficultyProfile]] = (
             ),
             DifficultyLevel.HARD: DifficultyProfile(
                 level=DifficultyLevel.HARD,
-                min_hosts=5,
+                min_hosts=2,
                 max_hosts=8,
                 min_faults=2,
                 max_faults=2,

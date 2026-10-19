@@ -136,6 +136,7 @@ def _profile(
 _SYSTEMD_DIAGNOSTIC = ("systemd.status", "systemd.cat", "journal.read")
 _SYSTEMD_VERIFICATION = ("systemd.status", "systemd.is-active", "journal.read")
 _NETWORK_DIAGNOSTIC = (
+    "network.tcp-probe",
     "network.curl",
     "network.ping",
     "network.getent",
@@ -839,6 +840,7 @@ def _review_commands(
         for profile in profiles
         for capability in profile.diagnostic_capability_ids
     )
+    diagnostic.add("network.tcp-probe")
     repair = set(post_incident.repair_capability_ids) | {
         capability
         for profile in profiles

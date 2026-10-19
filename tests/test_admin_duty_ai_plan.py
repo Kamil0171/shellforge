@@ -4,6 +4,7 @@ from itertools import product
 import pytest
 
 from app.admin_duty.components.scenarios import HARD_COMBINATIONS
+from app.admin_duty.components.scenarios.flows import TWO_HOST_MEDIUM
 from app.admin_duty.domain.ai_plan import (
     EASY_ENVIRONMENTS,
     EASY_FAULTS,
@@ -50,6 +51,8 @@ def make_plan(
         else ("reverse-proxy" if fault in MEDIUM_REVERSE_PROXY_FAULTS else "web-api"),
         dependency_archetype="direct-service"
         if level == "easy"
+        else "proxy-api"
+        if fault in TWO_HOST_MEDIUM
         else "proxy-api-database",
         symptom_archetype=SYMPTOMS[fault],
         seed=seed,
@@ -125,16 +128,21 @@ def test_all_medium_materializations_reuse_fixtures_and_replay(fault):
     materializer = AIIncidentMaterializer()
     draft = materializer.materialize(plan)
     definition = validate_and_convert_draft(protect_public_narrative(draft))
-    assert len(definition.service_dependencies) >= 2
-    assert (
-        len(
-            [
-                r
-                for r in draft.initial_world_state.resources
-                if r.resource_type.value == "host"
-            ]
-        )
-        >= 3
+    assert len(definition.service_dependencies) >= (
+        1 if fault in TWO_HOST_MEDIUM else 2
+    )
+    assert len(
+        [
+            r
+            for r in draft.initial_world_state.resources
+            if r.resource_type.value == "host"
+        ]
+    ) == (
+        2
+        if fault in TWO_HOST_MEDIUM
+        else 4
+        if fault in {"networkmanager-dns-invalid", "external-firewall-mismatch"}
+        else 3
     )
     assert len(definition.faults) == 1
     assert draft == materializer.materialize(plan)
@@ -188,7 +196,7 @@ def test_hard_catalog_is_small_and_contains_only_approved_pairs():
 
     assert len(catalog["hard_pairs"]) == 10
     assert catalog["fault_count"] == 2
-    assert catalog["hosts"] == [5, 5]
+    assert catalog["hosts"] == [2, 5]
     assert len((INSTRUCTION + build_generation_prompt(request)).encode()) < 6144
 
 

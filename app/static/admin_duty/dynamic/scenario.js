@@ -273,8 +273,22 @@
             name.textContent = signal.label;
             heading.append(dot, name);
             const status = document.createElement("span");
-            status.textContent = signal.status;
+            const stateLabels = {
+                healthy: "zdrowy", unhealthy: "zdegradowany", running: "uruchomiony",
+                failed: "błąd", stopped: "zatrzymany", active: "aktywny",
+                unreachable: "nieosiągalny", "http-502": "HTTP 502", present: "dostępny"
+            };
+            status.textContent = stateLabels[signal.status] || signal.status;
             card.append(heading, status);
+            if (signal.process_status) {
+                const layers = document.createElement("small");
+                const healthLabel = (value) => value === "healthy" ? "OK" : "problem";
+                layers.textContent = `Proces: ${stateLabels[signal.process_status] || signal.process_status}` +
+                    (signal.local_health ? ` · Usługa lokalna: ${healthLabel(signal.local_health)}` : "") +
+                    (signal.transport_health ? ` · Transport zależności: ${healthLabel(signal.transport_health)}` : "") +
+                    (signal.downstream_health ? ` · Aplikacje zależne: ${healthLabel(signal.downstream_health)}` : "");
+                card.appendChild(layers);
+            }
             container.appendChild(card);
         });
         const health = document.getElementById("infrastructure-health");

@@ -20,6 +20,7 @@ from app.admin_duty.domain.definition import (
     IncidentDefinition,
     IncidentPresentation,
     InitialWorldState,
+    MultiHostIncidentFlow,
     Objective,
     PackageRequirement,
     PostIncidentDefinition,
@@ -80,6 +81,7 @@ class GeneratedIncidentDraft(FrozenDomainModel):
     initial_world_state: InitialWorldState
     faults: tuple[FaultInstance, ...] = Field(min_length=1, max_length=2)
     fault_relation: FaultRelation | None = None
+    multi_host_flow: MultiHostIncidentFlow | None = None
     symptoms: tuple[Symptom, ...] = Field(min_length=1, max_length=128)
     objectives: tuple[Objective, ...] = Field(min_length=1, max_length=64)
     capabilities: CapabilitySet
@@ -241,6 +243,7 @@ def get_ai_capability_catalog() -> AICapabilityCatalog:
         ),
         supported_package_operations=("info", "install", "list", "remove", "update"),
         supported_network_features=(
+            "tcp-probe",
             "curl",
             "dns",
             "listeners",
@@ -304,6 +307,7 @@ def convert_draft_to_definition(
         initial_world_state=draft.initial_world_state,
         faults=draft.faults,
         fault_relation=draft.fault_relation,
+        multi_host_flow=draft.multi_host_flow,
         symptoms=draft.symptoms,
         objectives=draft.objectives,
         capabilities=draft.capabilities,

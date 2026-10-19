@@ -1,8 +1,15 @@
 from functools import partial
-from ipaddress import ip_address
 from urllib.parse import urlsplit
 
-from app.admin_duty.domain.definition import ResourceType
+from app.admin_duty.domain.dependencies import (
+    _network_is_up,
+    flow_verification_fact,
+    host_reachable,
+    qualifies_flow_verification,
+    resolve_address,
+    tcp_available,
+    transport_service,
+)
 from app.admin_duty.rocky.system import finish
 
 
@@ -12,7 +19,7 @@ def network(
     rocky = state.virtual_rocky
     healthy_endpoint = False
     interfaces = list(rocky.network.interfaces.values())
-    connected = any(item.state == "up" for item in interfaces)
+    connected = _network_is_up(state, state.active_host_id)
     success = True
     if action in {"addr", "link"}:
         lines = ["1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 state UNKNOWN"]
@@ -62,22 +69,10 @@ def network(
             return finish(
                 definition, state, "Brak nazwy hosta.", False, engine=engine, now=now
             )
-        local = host in {"localhost", "127.0.0.1"}
-        dns_ready = any(
-            rocky.network.connection_dns_servers.get(name, ())
-            for name, active in rocky.network.connections.items()
-            if active
+        address, target_host_id, local = resolve_address(
+            state, state.active_host_id, host
         )
-        address = "127.0.0.1" if local else rocky.network.dns_records.get(host)
-        literal_address = False
-        try:
-            address = str(ip_address(host))
-            literal_address = True
-        except ValueError:
-            pass
-        if (not local and not literal_address and not dns_ready) or not address or (
-            not connected and not local
-        ):
+        if not address or (not connected and not local):
             output, success = (
                 f"{action}: {host}: brak trasy lub wpisu DNS w wirtualnej sieci.",
                 False,
@@ -89,7 +84,28 @@ def network(
                 else f"{address} {host}"
             )
         elif action == "ping":
-            output = f"PING {host} ({address}) 56(84) bytes of data.\n64 bytes from {address}: icmp_seq=1 ttl=64 time=0.120 ms\n--- {host} ping statistics ---\n1 packets transmitted, 1 received, 0% packet loss"
+            success = host_reachable(
+                state,
+                state.active_host_id,
+                target_host_id,
+                local=local,
+                address=address,
+            )
+            output = (
+                f"PING {host} ({address}) 56(84) bytes of data.\n64 bytes from {address}: icmp_seq=1 ttl=64 time=0.120 ms\n--- {host} ping statistics ---\n1 packets transmitted, 1 received, 0% packet loss"
+                if success
+                else f"PING {host} ({address}): host nieosiągalny; 100% packet loss"
+            )
+        elif action == "tcp-probe":
+            port = int(arguments[0])
+            success = tcp_available(
+                state, state.active_host_id, target_host_id, port, local=local
+            )
+            output = (
+                f"Połączenie TCP z {host}:{port} dostępne."
+                if success
+                else f"Brak połączenia TCP z {host}:{port}."
+            )
         else:
             parsed = urlsplit(
                 resource_id if "://" in resource_id else "http://" + resource_id
@@ -114,54 +130,26 @@ def network(
                     engine=engine,
                     now=now,
                 )
-            target_host_id = next(
-                (
-                    host_id
-                    for host_id, runtime in state.host_runtimes.items()
-                    if address
-                    in {
-                        interface.address.split("/")[0]
-                        for interface in runtime.network.interfaces.values()
-                    }
-                ),
-                None,
+            service = transport_service(
+                state, state.active_host_id, target_host_id, port, local=local
             )
-            if local:
-                target_host_id = state.active_host_id
-            service = next(
-                (
-                    item
-                    for item in state.world_state.resources.values()
-                    if item.resource_type is ResourceType.SERVICE
-                    and item.current_state == "running"
-                    and item.attributes.get("port", 8080) == port
-                    and item.parent_resource_id == target_host_id
-                ),
-                None,
-            )
-            target_runtime = (
-                state.host_runtimes.get(target_host_id)
-                if target_host_id is not None
-                else None
-            )
-            target_firewall = target_runtime.firewall if target_runtime else None
-            allowed = (
-                local
-                or target_firewall is not None
-                and (
-                    not target_firewall.running
-                    or f"{port}/tcp" in target_firewall.runtime_ports
-                    or (port == 80 and "http" in target_firewall.runtime_services)
-                    or (port == 443 and "https" in target_firewall.runtime_services)
+            if service:
+                healthy = (
+                    service.attributes.get("public_health", "healthy") == "healthy"
                 )
-            )
-            if service and allowed:
-                healthy = service.attributes.get("public_health", "healthy") == "healthy"
                 healthy_endpoint = healthy
-                status_code = 200 if healthy else int(
-                    service.attributes.get("unhealthy_status_code", 503)
+                status_code = (
+                    200
+                    if healthy
+                    else int(service.attributes.get("unhealthy_status_code", 503))
                 )
-                status_text = "OK" if healthy else "Bad Gateway"
+                status_text = (
+                    "OK"
+                    if healthy
+                    else "Service Unavailable"
+                    if status_code == 503
+                    else "Bad Gateway"
+                )
                 output = (
                     f"HTTP/1.1 {status_code} {status_text}\n"
                     "Content-Type: application/json\n\n"
@@ -174,8 +162,16 @@ def network(
                 )
     fact_id = None
     if action == "curl" and "target_host_id" in locals() and target_host_id:
-        fact_prefix = "endpoint-healthy" if healthy_endpoint else "endpoint-checked"
+        fact_prefix = (
+            "endpoint-healthy"
+            if healthy_endpoint and not local and not definition.multi_host_flow
+            else "endpoint-checked"
+        )
         fact_id = f"{fact_prefix}:{target_host_id}:{port}"
+        if healthy_endpoint and qualifies_flow_verification(
+            definition, state, resource_id, target_host_id, port, local
+        ):
+            fact_id = flow_verification_fact(definition.multi_host_flow)
     return finish(
         definition,
         state,
@@ -255,6 +251,7 @@ HANDLERS = {
         "curl",
         "dig",
         "getent",
+        "tcp-probe",
     )
 }
 HANDLERS["networkmanager.command"] = nmcli

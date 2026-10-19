@@ -1,13 +1,16 @@
 import re
 from datetime import timedelta
 from ipaddress import ip_address, ip_interface
+from urllib.parse import urlsplit
 
 from app.admin_duty.domain.definition import (
     ComponentType,
     GenerationSource,
     IncidentDefinition,
+    ObjectiveType,
     ResourceType,
 )
+from app.admin_duty.domain.dependencies import flow_is_healthy, flow_verification_fact
 from app.admin_duty.domain.difficulty import get_difficulty_profile
 from app.admin_duty.domain.objectives import evaluate_objectives
 from app.admin_duty.domain.progress import get_session_progress
@@ -43,6 +46,89 @@ def _require_deterministic_order(items, *, name: str, key) -> None:
 
 def _field_map(fields) -> dict:
     return {field.key: field.value for field in fields}
+
+
+def _symptom_fingerprint(definition, state):
+    resource_ids = {
+        item.source_resource_id
+        for item in definition.symptoms
+        if item.source_resource_id
+    }
+    if definition.multi_host_flow:
+        resource_ids.update(definition.multi_host_flow.service_path)
+    return tuple(
+        (
+            resource_id,
+            state.world_state.resources[resource_id].current_state,
+            *(
+                state.world_state.resources[resource_id].attributes.get(key)
+                for key in (
+                    "public_health",
+                    "local_health",
+                    "transport_health",
+                    "downstream_health",
+                )
+            ),
+        )
+        for resource_id in sorted(resource_ids)
+    )
+
+
+def _validate_multi_host_flow(definition):
+    flow = definition.multi_host_flow
+    if flow is None:
+        return
+    resources = {
+        item.resource_id: item for item in definition.initial_world_state.resources
+    }
+    endpoint = resources.get(flow.entry_endpoint_id)
+    source = resources.get(flow.verification_source_host_id)
+    if endpoint is None or endpoint.resource_type is not ResourceType.ENDPOINT:
+        raise IncidentValidationError("Flow wskazuje nieznany endpoint wejściowy.")
+    if source is None or source.resource_type is not ResourceType.HOST:
+        raise IncidentValidationError("Flow wskazuje nieznany host weryfikacji.")
+    path = [resources.get(item) for item in flow.service_path]
+    if len(set(flow.service_path)) != len(path) or any(
+        item is None or item.resource_type is not ResourceType.SERVICE for item in path
+    ):
+        raise IncidentValidationError("Flow wskazuje nieprawidłową ścieżkę usług.")
+    if endpoint.dependencies != (flow.service_path[0],):
+        raise IncidentValidationError("Endpoint flow nie odpowiada usłudze wejściowej.")
+    try:
+        url = urlsplit(str(_field_map(endpoint.attributes).get("url", "")))
+        if (
+            url.scheme not in {"http", "https"}
+            or not url.hostname
+            or url.hostname in {"localhost", "127.0.0.1", "::1"}
+            or (url.port or (443 if url.scheme == "https" else 80))
+            != _field_map(path[0].attributes).get("port")
+        ):
+            raise ValueError("Nieprawidłowy URL wejściowy.")
+    except ValueError as error:
+        raise IncidentValidationError(
+            "Endpoint flow wymaga publicznego URL właściwej usługi."
+        ) from error
+    for first, second in zip(path, path[1:], strict=False):
+        if first.parent_id == second.parent_id or not any(
+            edge.source_service_id == first.resource_id
+            and edge.target_service_id == second.resource_id
+            and edge.required
+            for edge in definition.service_dependencies
+        ):
+            raise IncidentValidationError(
+                "Ścieżka flow nie istnieje w grafie zależności."
+            )
+    if not any(
+        item.required
+        and item.objective_type is ObjectiveType.VERIFY_END_TO_END
+        and flow_verification_fact(flow) in item.completion_fact_ids
+        and item.completion_condition is not None
+        and item.completion_condition.resource_id == flow.entry_endpoint_id
+        for item in definition.objectives
+    ):
+        raise IncidentValidationError(
+            "Flow wymaga kwalifikowanej weryfikacji endpointu."
+        )
 
 
 def _require_unique(values, *, name: str) -> None:
@@ -215,6 +301,16 @@ def _validate_v3_references(definition: IncidentDefinition) -> None:
             raise IncidentValidationError(
                 "Port dependency nie odpowiada usłudze docelowej."
             )
+        if dependency.port_configuration_file_id is not None:
+            configuration = resource_by_id.get(dependency.port_configuration_file_id)
+            if (
+                configuration is None
+                or configuration.resource_type is not ResourceType.FILE
+                or configuration.parent_id != source.parent_id
+            ):
+                raise IncidentValidationError(
+                    "Konfiguracja portu dependency wskazuje niewłaściwy plik lub host."
+                )
 
     host_addresses: dict[str, str] = {}
     for host_id, host in hosts.items():
@@ -400,14 +496,18 @@ def _validate_hard_contract(definition: IncidentDefinition) -> None:
     dependency_ids = {
         dependency.dependency_id for dependency in definition.service_dependencies
     }
-    if (
-        not {
+    required_dependency_ids = (
+        {"dep-proxy-api"}
+        if combination.dependency_archetype == "proxy-api"
+        else {"dep-proxy-api", "dep-api-database"}
+        if definition.multi_host_flow and combination.combination_id in {"H-04", "H-05"}
+        else {
             "dep-external-proxy",
             "dep-proxy-api",
             "dep-api-database",
         }
-        <= dependency_ids
-    ):
+    )
+    if not required_dependency_ids <= dependency_ids:
         raise IncidentValidationError("Topologia HARD nie zawiera pełnego łańcucha.")
     condition_keys = {
         (
@@ -579,6 +679,7 @@ class IncidentValidator:
             raise IncidentValidationError("Scenariusz AI wymaga nazwy modelu.")
 
         _validate_v3_references(definition)
+        _validate_multi_host_flow(definition)
         _validate_post_incident(definition)
         _validate_hard_contract(definition)
         _validate_ai_public_data(definition)
@@ -669,6 +770,10 @@ class IncidentValidator:
                 )
 
         state = create_session_runtime(definition, now=definition.created_at)
+        if definition.multi_host_flow and flow_is_healthy(definition, state):
+            raise IncidentValidationError(
+                "Endpoint wejściowy flow jest zdrowy w initial state."
+            )
         for requirement in definition.package_requirements:
             if (
                 requirement.package_name
@@ -701,22 +806,19 @@ class IncidentValidator:
 
         service = DynamicCommandService()
         final_progress = get_session_progress(definition, state)
-        initial_symptoms = tuple(
-            (
-                symptom.source_resource_id,
-                state.world_state.resources[symptom.source_resource_id].current_state,
-                state.world_state.resources[symptom.source_resource_id].attributes.get(
-                    "public_health"
-                ),
-            )
-            for symptom in definition.symptoms
-            if symptom.source_resource_id is not None
-        )
+        initial_symptoms = _symptom_fingerprint(definition, state)
         partial_recovery_seen = False
         resolved_order = []
         previous_resolved = frozenset()
         try:
             for index, step in enumerate(definition.solution, start=1):
+                expected_host = _field_map(step.parameters).get("expected_host_id")
+                if (
+                    definition.multi_host_flow or expected_host is not None
+                ) and expected_host != state.active_host_id:
+                    raise IncidentValidationError(
+                        "Reference solution używa niewłaściwego hosta."
+                    )
                 result = service.execute(
                     definition,
                     state,
@@ -751,19 +853,7 @@ class IncidentValidator:
                             raise IncidentValidationError(
                                 "Pierwsza naprawa zakończyła incydent HARD."
                             )
-                        current_symptoms = tuple(
-                            (
-                                symptom.source_resource_id,
-                                state.world_state.resources[
-                                    symptom.source_resource_id
-                                ].current_state,
-                                state.world_state.resources[
-                                    symptom.source_resource_id
-                                ].attributes.get("public_health"),
-                            )
-                            for symptom in definition.symptoms
-                            if symptom.source_resource_id is not None
-                        )
+                        current_symptoms = _symptom_fingerprint(definition, state)
                         if current_symptoms == initial_symptoms:
                             raise IncidentValidationError(
                                 "Partial recovery nie zmienia symptomów ani health."
@@ -787,9 +877,21 @@ class IncidentValidator:
                 raise IncidentReplayError(
                     "Reference solution HARD nie przechodzi przez partial recovery."
                 )
-            if tuple(resolved_order) != (
-                relation.primary_fault_id,
-                relation.secondary_fault_id,
+            from app.admin_duty.components.scenarios.hard import (
+                get_hard_combination_for_pair,
+            )
+
+            fault_by_id = {fault.fault_id: fault for fault in definition.faults}
+            combination = get_hard_combination_for_pair(
+                _fault_category(fault_by_id[relation.primary_fault_id]),
+                _fault_category(fault_by_id[relation.secondary_fault_id]),
+            )
+            if (
+                tuple(
+                    _fault_category(fault_by_id[fault_id])
+                    for fault_id in resolved_order
+                )
+                != combination.reference_repair_order
             ):
                 raise IncidentReplayError(
                     "Reference solution HARD nie zachowuje kolejności napraw."
@@ -801,6 +903,14 @@ class IncidentValidator:
                 raise IncidentReplayError(
                     "Reference solution HARD nie przywraca zdrowia."
                 )
+        if definition.multi_host_flow and (
+            not flow_is_healthy(definition, state)
+            or flow_verification_fact(definition.multi_host_flow)
+            not in state.discovered_fact_ids
+        ):
+            raise IncidentReplayError(
+                "Reference solution nie weryfikuje zdrowej ścieżki flow."
+            )
         if definition.model_dump_json() != before:
             raise IncidentValidationError("Validator zmodyfikował IncidentDefinition.")
         return definition

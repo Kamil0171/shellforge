@@ -1,4 +1,5 @@
 from app.admin_duty.components.maps import instantiate_map_snapshot
+from app.admin_duty.components.scenarios.flows import FLOW_MEDIUM, medium_flow
 from app.admin_duty.domain.definition import (
     CapabilitySet,
     CompletionCondition,
@@ -55,6 +56,11 @@ MEDIUM_SCENARIO_CATEGORIES = (
     *LEGACY_MEDIUM_SCENARIO_CATEGORIES,
     *EXPANDED_MEDIUM_SCENARIO_CATEGORIES,
 )
+
+
+def build_medium_draft(category: str, *, seed: int) -> GeneratedIncidentDraft:
+    draft = _build_medium_draft(category, seed=seed)
+    return medium_flow(draft, category) if category in FLOW_MEDIUM else draft
 
 
 def _fields(**values) -> tuple[DataField, ...]:
@@ -227,7 +233,7 @@ def _components(category, *, version="3.0"):
     )
 
 
-def build_medium_draft(category: str, *, seed: int) -> GeneratedIncidentDraft:
+def _build_medium_draft(category: str, *, seed: int) -> GeneratedIncidentDraft:
     if category not in MEDIUM_SCENARIO_CATEGORIES:
         raise ValueError(f"Nieznana kategoria MEDIUM: {category}.")
     if category in EXPANDED_MEDIUM_SCENARIO_CATEGORIES:
@@ -733,7 +739,7 @@ def _healthy_api_unit() -> str:
 
 
 def _build_expanded_medium_draft(category: str, *, seed: int) -> GeneratedIncidentDraft:
-    base = build_medium_draft("dependency-firewall-blocked", seed=seed)
+    base = _build_medium_draft("dependency-firewall-blocked", seed=seed)
     resources = []
     for resource in base.initial_world_state.resources:
         if resource.resource_id == "host-data-01":

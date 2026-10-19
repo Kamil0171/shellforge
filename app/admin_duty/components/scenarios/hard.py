@@ -3,6 +3,7 @@ from typing import Final
 
 from pydantic import Field, model_validator
 
+from app.admin_duty.components.scenarios.flows import FLOW_HARD, hard_flow
 from app.admin_duty.components.scenarios.medium import (
     _dependency,
     _fields,
@@ -78,10 +79,10 @@ class HardFaultCombination(FrozenDomainModel):
     def validate_pair(self):
         if self.primary_fault_category == self.secondary_fault_category:
             raise ValueError("Kombinacja HARD wymaga dwóch różnych faultów.")
-        if self.reference_repair_order != (
+        if set(self.reference_repair_order) != {
             self.primary_fault_category,
             self.secondary_fault_category,
-        ):
+        }:
             raise ValueError("Kolejność napraw nie odpowiada faultom kombinacji.")
         if tuple(stage.state for stage in self.symptom_progression) != (
             "broken",
@@ -169,19 +170,16 @@ HARD_COMBINATIONS: Final = (
         required_host_roles=(
             "warstwa brzegowa",
             "aplikacja",
-            "baza danych",
-            "DNS",
-            "sonda zewnętrzna",
         ),
         affected_service_archetype="web-api",
-        dependency_archetype=HARD_DEPENDENCY_ARCHETYPE,
+        dependency_archetype="proxy-api",
         relation_type=FaultRelationType.DEPENDENCY_CHAIN,
         symptom_progression=_progression(
-            "API odpowiada bezpośrednio, ale warstwa proxy nadal nie uruchamia się poprawnie."
+            "Proxy przyjmuje żądania, lecz nadal nie może połączyć się z API."
         ),
         reference_repair_order=(
-            "dependency-package-missing",
             "systemd-wrong-exec-start",
+            "dependency-package-missing",
         ),
         required_capabilities=(
             "packages.command",
@@ -200,8 +198,6 @@ HARD_COMBINATIONS: Final = (
             "warstwa brzegowa",
             "aplikacja",
             "baza danych",
-            "DNS",
-            "sonda zewnętrzna",
         ),
         affected_service_archetype="web-api",
         dependency_archetype=HARD_DEPENDENCY_ARCHETYPE,
@@ -226,8 +222,6 @@ HARD_COMBINATIONS: Final = (
             "warstwa brzegowa",
             "aplikacja",
             "baza danych",
-            "DNS",
-            "sonda zewnętrzna",
         ),
         affected_service_archetype="web-api",
         dependency_archetype=HARD_DEPENDENCY_ARCHETYPE,
@@ -502,6 +496,11 @@ def _components(combination: HardFaultCombination) -> tuple[ComponentReference, 
 
 
 def build_hard_draft(combination_id: str, *, seed: int) -> GeneratedIncidentDraft:
+    draft = _build_hard_draft(combination_id, seed=seed)
+    return hard_flow(draft, combination_id) if combination_id in FLOW_HARD else draft
+
+
+def _build_hard_draft(combination_id: str, *, seed: int) -> GeneratedIncidentDraft:
     combination = get_hard_combination(combination_id)
     if combination_id in {"H-06", "H-07", "H-08", "H-09", "H-10"}:
         return _build_expanded_hard_draft(combination, seed=seed)
@@ -1250,7 +1249,7 @@ def build_hard_draft(combination_id: str, *, seed: int) -> GeneratedIncidentDraf
 def _build_expanded_hard_draft(
     combination: HardFaultCombination, *, seed: int
 ) -> GeneratedIncidentDraft:
-    base = build_hard_draft("H-04", seed=seed)
+    base = _build_hard_draft("H-04", seed=seed)
     resources = {
         resource.resource_id: resource
         for resource in base.initial_world_state.resources

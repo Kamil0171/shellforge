@@ -3105,6 +3105,7 @@ body.dynamic-generation-open {
 
 .monitoring-signal {
     display: flex;
+    flex-wrap: wrap;
     min-height: 72px;
     padding: 13px;
     border: 1px solid rgba(100, 116, 139, 0.2);
@@ -3134,6 +3135,13 @@ body.dynamic-generation-open {
 .monitoring-signal.is-critical i { background: #fb7185; box-shadow: 0 0 12px rgba(251, 113, 133, 0.55); }
 .monitoring-signal strong { overflow: hidden; color: #dbeafe; font-size: 0.78rem; text-overflow: ellipsis; white-space: nowrap; }
 .monitoring-signal > span { color: #7890a6; font-family: var(--dynamic-mono); font-size: 0.65rem; }
+
+.monitoring-signal > small {
+    flex-basis: 100%;
+    color: #7890a6;
+    font-size: 0.65rem;
+    line-height: 1.6;
+}
 
 .overlay-help {
     margin: 0;
