@@ -5,7 +5,7 @@
 
 {% block styles %}
 <link rel="stylesheet" href="{{ url_for('static', path='admin_duty/dynamic/dynamic.css') }}?v=gameplay-2">
-<link rel="stylesheet" href="{{ url_for('static', path='admin_duty/dynamic/gameplay.css') }}?v=world-v2-final">
+<link rel="stylesheet" href="{{ url_for('static', path='admin_duty/dynamic/gameplay.css') }}?v=reliability-1">
 {% endblock %}
 
 {% block content %}
@@ -30,7 +30,7 @@
 
     <div id="workspace-error" class="workspace-state-panel" hidden>
         <span class="workspace-state-code">SESSION UNAVAILABLE</span>
-        <h1 id="workspace-error-title">Nie udało się pobrać sesji</h1>
+        <h1 id="workspace-error-title" tabindex="-1">Nie udało się pobrać sesji</h1>
         <p id="workspace-error-message">Sprawdź połączenie i spróbuj ponownie.</p>
         <div class="workspace-state-actions">
             <button id="retry-session-button" class="dynamic-primary-button" type="button">Spróbuj ponownie</button>
@@ -38,6 +38,10 @@
         </div>
     </div>
 
+    <div id="session-sync-warning" role="status" hidden>
+        <span>Nie udało się odświeżyć stanu sesji. Ostatni potwierdzony wynik pozostaje dostępny. Odświeżenie tylko odczytuje stan i nie powtarza operacji.</span>
+        <button id="refresh-session-button" class="dynamic-secondary-button" type="button">Odśwież stan</button>
+    </div>
     <div id="workspace-content" class="gameplay-workspace" hidden>
         <header class="gameplay-topbar">
             <div class="gameplay-brand">
@@ -236,6 +240,7 @@
 <script src="{{ url_for('static', path='admin_duty/dynamic/world-renderers.js') }}?v=world-v2-final"></script>
 <script src="{{ url_for('static', path='admin_duty/dynamic/world-systems.js') }}?v=world-v2-final"></script>
 <script src="{{ url_for('static', path='admin_duty/dynamic/game.js') }}?v=world-v2-final"></script>
-<script src="{{ url_for('static', path='admin_duty/dynamic/terminal.js') }}?v=world-v2-final"></script>
-<script src="{{ url_for('static', path='admin_duty/dynamic/scenario.js') }}?v=world-v2-final"></script>
+<script src="{{ url_for('static', path='admin_duty/dynamic/request.js') }}?v=reliability-1"></script>
+<script src="{{ url_for('static', path='admin_duty/dynamic/terminal.js') }}?v=reliability-1"></script>
+<script src="{{ url_for('static', path='admin_duty/dynamic/scenario.js') }}?v=reliability-1"></script>
 {% endblock %}

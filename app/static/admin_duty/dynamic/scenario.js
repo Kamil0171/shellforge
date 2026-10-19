@@ -32,31 +32,16 @@
     let terminalAnnounced = false;
     let currentInteraction = null;
     let announcementTimer = null;
+    let sessionUnavailable = false;
+    let readSequence = 0;
+    let appliedRead = 0;
+    const syncPanel = document.getElementById("session-sync-warning");
+    const { ApiError, requestJson } = window.ShellForgeDynamicApi;
+    const uncertainMessage = "Wynik operacji jest niepewny. Mogła zostać wykonana. Sprawdź odświeżony stan przed kolejną operacją; nie powtarzaj jej w ciemno.";
 
     const statusLabels = { active: "Aktywny", completed: "Ukończony", ended: "Zakończony" };
     const difficultyLabels = { easy: "Łatwy", medium: "Średni", hard: "Trudny" };
     const resourceTypeLabels = { host: "Host", service: "Usługa", file: "Plik", process: "Proces", listener: "Port", endpoint: "Endpoint", domain: "Domena" };
-
-    class ApiError extends Error {
-        constructor(status, detail) {
-            super(detail || "Żądanie nie powiodło się.");
-            this.status = status;
-        }
-    }
-
-    async function requestJson(url, options = {}) {
-        const response = await fetch(url, options);
-        let data = null;
-        try {
-            data = await response.json();
-        } catch {
-            data = null;
-        }
-        if (!response.ok) {
-            throw new ApiError(response.status, typeof data?.detail === "string" ? data.detail : null);
-        }
-        return data;
-    }
 
     function isDesktopAllowed() {
         const tabletLike = pointerQuery.matches && navigator.maxTouchPoints > 0;
@@ -70,7 +55,8 @@
     }
 
     function createGameIfReady() {
-        if (!sessionData || gameController || !isDesktopAllowed() || currentProgress?.status === "ended") return;
+        if (!sessionData || sessionUnavailable || gameController || !isDesktopAllowed() || currentProgress?.status === "ended") return true;
+        if (!errorPanel.hidden) return false;
         try {
             gameController = window.ShellForgeDynamicGame.createGame({
                 parent: "game-canvas",
@@ -82,8 +68,10 @@
                 onPlayerState: reportPlayerState,
             });
             gameController.setInputLocked(Boolean(activeOverlay));
+            return true;
         } catch (error) {
-            showLoadError(error);
+            showLoadError(error, { gameInitialization: true });
+            return false;
         }
     }
 
@@ -99,7 +87,7 @@
             return;
         }
         window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-        createGameIfReady();
+        if (!createGameIfReady()) return;
         if (sessionData) void refreshSessionProjection();
     }
 
@@ -149,36 +137,10 @@
 
     const terminal = window.ShellForgeDynamicTerminal.createTerminalController({
         async onSaveFile(path, content) {
-            const result = await requestJson("/admin-duty/dynamic/api/file", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ session_id: sessionId, path, content }),
-            });
-            renderProgress(result.progress, { showSuccess: false });
-            await refreshSessionProjection();
-            return result;
+            return executeTerminalOperation("file", { path, content });
         },
         async onSubmit(command) {
-            try {
-                const result = await requestJson("/admin-duty/dynamic/api/command", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ session_id: sessionId, command }),
-                });
-                renderProgress(result.progress, { showSuccess: false });
-                await refreshSessionProjection();
-                if (result.progress.mission_complete) {
-                    window.setTimeout(() => {
-                        terminal.close();
-                        showCompletion(result.progress);
-                    }, 0);
-                }
-                return result;
-            } catch (error) {
-                if (error instanceof ApiError && error.status === 404) showLoadError(error);
-                if (error instanceof ApiError && error.status === 409) void loadSession(false);
-                throw new Error(commandErrorMessage(error));
-            }
+            return executeTerminalOperation("command", { command });
         },
         onOpenChange(open) {
             if (open) {
@@ -192,6 +154,44 @@
             }
         },
     });
+
+    async function recoverMutation(error) {
+        if (error instanceof ApiError && error.status === 404) {
+            showLoadError(error);
+        } else if (error.uncertain || error.status === 409) {
+            await refreshSessionProjection();
+        }
+    }
+
+    async function executeTerminalOperation(endpoint, payload) {
+        let result;
+        try {
+            result = await requestJson(`/admin-duty/dynamic/api/${endpoint}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ session_id: sessionId, ...payload }),
+            }, 20000);
+        } catch (error) {
+            await recoverMutation(error);
+            const failure = new Error(commandErrorMessage(error));
+            failure.uncertain = error.uncertain;
+            throw failure;
+        }
+        if (renderProgress(result.progress, { showSuccess: false })) terminal.setPrompt(result.prompt);
+        return { ...result, synchronization: synchronizeOperation(endpoint === "command") };
+    }
+
+    async function synchronizeOperation(showSuccess) {
+        const synchronized = await refreshSessionProjection();
+        if (showSuccess && currentProgress?.status === "completed" && !sessionUnavailable) {
+            window.setTimeout(() => {
+                if (sessionUnavailable || currentProgress?.status !== "completed") return;
+                terminal.close();
+                showCompletion(currentProgress);
+            }, 0);
+        }
+        return synchronized ? null : "Odpowiedź operacji została odebrana. Nie udało się odświeżyć stanu sesji. Użyj przycisku „Odśwież stan”; operacja nie zostanie powtórzona.";
+    }
 
     function handleGameInteraction(interaction) {
         if (interaction.type === "terminal") {
@@ -361,6 +361,7 @@
     }
 
     function renderProgress(progress, { showSuccess = true } = {}) {
+        if (sessionUnavailable || (currentProgress && progress.revision < currentProgress.revision)) return false;
         currentProgress = progress;
         renderObjectives(progress);
         const label = statusLabels[progress.status] || progress.status;
@@ -377,9 +378,11 @@
         completionBanner.hidden = !progress.mission_complete || progress.status === "ended";
         if (progress.status === "ended") renderSummary(progress);
         if (showSuccess && progress.mission_complete && progress.status === "completed") showCompletion(progress);
+        return true;
     }
 
     function showCompletion(progress) {
+        if (sessionUnavailable) return;
         document.getElementById("completion-score").textContent = progress.score;
         document.getElementById("completion-commands").textContent = progress.commands_used;
         document.getElementById("completion-objectives").textContent = `${progress.completed_objectives} / ${progress.total_objectives}`;
@@ -561,9 +564,11 @@
         const reportPanel = document.getElementById("post-incident-report");
         reportPanel.hidden = !report;
         if (report) renderPostIncidentReport(report);
+        syncPanel.hidden = true;
     }
 
     function showWorkspace(data) {
+        if (sessionUnavailable || (currentProgress && data.progress.revision < currentProgress.revision)) return false;
         sessionData = data;
         currentInfrastructure = data.infrastructure;
         currentMonitoring = data.monitoring;
@@ -587,49 +592,95 @@
             terminal.append("system", sessionGreeting(data.game_map));
             terminalAnnounced = true;
         }
-        createGameIfReady();
+        return createGameIfReady();
     }
 
-    function showLoadError(error) {
+    function handleSessionReadError(error) {
+        const expired = error instanceof ApiError && error.status === 404;
+        if (!expired && sessionData && (!workspace.hidden || !endSummary.hidden)) {
+            showSyncWarning();
+            return;
+        }
+        showLoadError(error);
+    }
+
+    function showLoadError(error, { gameInitialization = false } = {}) {
+        const expired = error instanceof ApiError && error.status === 404;
+        if (expired) sessionUnavailable = true;
         destroyGame();
+        terminal.close();
+        if (activeOverlay) closeOverlay(activeOverlay);
+        setMissionDrawer(false);
+        document.body.classList.remove("dynamic-modal-open");
+        terminal.setAvailable(false, expired ? "Sesja wygasła lub nie istnieje" : "Widok laboratorium niedostępny");
+        syncPanel.hidden = true;
         loadingPanel.hidden = true;
         workspace.hidden = true;
         endSummary.hidden = true;
         errorPanel.hidden = false;
-        const expired = error instanceof ApiError && error.status === 404;
-        document.getElementById("workspace-error-title").textContent = expired ? "Ta sesja wygasła lub nie istnieje" : "Nie udało się pobrać sesji";
-        document.getElementById("workspace-error-message").textContent = expired ? "Rozpocznij nowy incydent, aby wrócić do laboratorium." : "Sprawdź połączenie i spróbuj ponownie. Twój postęp nie został zmieniony.";
+        document.getElementById("workspace-error-title").textContent = expired ? "Ta sesja wygasła lub nie istnieje" : gameInitialization ? "Nie udało się uruchomić gry" : "Nie udało się pobrać sesji";
+        document.getElementById("workspace-error-message").textContent = expired ? "Rozpocznij nowy incydent, aby wrócić do laboratorium." : gameInitialization ? "Spróbuj ponownie. Jeśli problem się powtarza, odśwież stronę. Stan sesji pozostaje zapisany." : "Sprawdź połączenie i spróbuj ponownie. Twój postęp nie został zmieniony.";
         document.getElementById("retry-session-button").hidden = expired;
+        document.getElementById("workspace-error-title").focus({ preventScroll: true });
+    }
+
+    function showSyncWarning() {
+        if (sessionUnavailable) return;
+        syncPanel.hidden = false;
     }
 
     async function loadSession(showLoading = true) {
+        if (sessionUnavailable) return;
+        const sequence = ++readSequence;
         if (showLoading) {
             loadingPanel.hidden = false;
             errorPanel.hidden = true;
         }
         try {
             const data = await requestJson(`/admin-duty/dynamic/api/sessions/${sessionId}`);
-            showWorkspace(data);
+            if (showWorkspace(data)) {
+                appliedRead = Math.max(appliedRead, sequence);
+                syncPanel.hidden = true;
+            } else {
+                loadingPanel.hidden = true;
+                if (!sessionUnavailable && errorPanel.hidden) showSyncWarning();
+            }
         } catch (error) {
-            showLoadError(error);
+            loadingPanel.hidden = true;
+            if (sequence >= appliedRead || error.status === 404) handleSessionReadError(error);
         }
     }
 
     async function refreshSessionProjection() {
-        if (!sessionData) return;
-        const data = await requestJson(`/admin-duty/dynamic/api/sessions/${sessionId}`);
-        sessionData = { ...sessionData, ...data };
-        currentInfrastructure = data.infrastructure;
-        currentMonitoring = data.monitoring;
-        renderHints(data.revealed_hints, data.hint_limit, data.progress);
-        renderMonitoring();
-        renderProgress(data.progress, { showSuccess: false });
-        terminal.setPrompt(data.shell.prompt);
-        gameController?.updateMonitoring(currentMonitoring);
+        if (!sessionData || sessionUnavailable) return false;
+        const sequence = ++readSequence;
+        try {
+            const data = await requestJson(`/admin-duty/dynamic/api/sessions/${sessionId}`);
+            if (sessionUnavailable) return false;
+            if (data.progress.revision < currentProgress.revision) {
+                const synchronized = sessionData.progress.revision >= currentProgress.revision;
+                if (!synchronized) showSyncWarning();
+                return synchronized;
+            }
+            appliedRead = Math.max(appliedRead, sequence);
+            sessionData = { ...sessionData, ...data };
+            currentInfrastructure = data.infrastructure;
+            currentMonitoring = data.monitoring;
+            renderHints(data.revealed_hints, data.hint_limit, data.progress);
+            renderMonitoring();
+            renderProgress(data.progress, { showSuccess: false });
+            terminal.setPrompt(data.shell.prompt);
+            gameController?.updateMonitoring(currentMonitoring);
+            syncPanel.hidden = true;
+            return true;
+        } catch (error) {
+            if (sequence >= appliedRead || error.status === 404) handleSessionReadError(error);
+            return false;
+        }
     }
 
     async function requestHint() {
-        if (hintPending || currentProgress?.status !== "active") return;
+        if (hintPending || sessionUnavailable || currentProgress?.status !== "active") return;
         hintPending = true;
         hintButton.disabled = true;
         hintButton.textContent = "Pobieranie...";
@@ -639,28 +690,29 @@
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ session_id: sessionId }),
-            });
+            }, 20000);
             hintPending = false;
-            renderProgress(result.progress, { showSuccess: false });
-            renderHints(result.revealed_hints, result.hint_limit, result.progress);
-        } catch (error) {
-            hintPending = false;
-            hintError.textContent = error instanceof ApiError ? error.message : "Nie udało się pobrać podpowiedzi.";
-            hintError.hidden = false;
-            if (error instanceof ApiError && [404, 409].includes(error.status)) {
-                await loadSession(false);
-            } else {
-                hintButton.disabled = false;
-                hintButton.textContent = "Pobierz podpowiedź";
+            if (renderProgress(result.progress, { showSuccess: false })) {
+                sessionData = { ...sessionData, revealed_hints: result.revealed_hints, hint_limit: result.hint_limit };
+                renderHints(result.revealed_hints, result.hint_limit, result.progress);
             }
+        } catch (error) {
+            await recoverMutation(error);
+            hintError.textContent = error.uncertain ? uncertainMessage : "Nie udało się pobrać podpowiedzi.";
+            hintError.hidden = false;
+        } finally {
+            hintPending = false;
+            if (sessionData && !sessionUnavailable) renderHints(sessionData.revealed_hints, sessionData.hint_limit, currentProgress);
         }
     }
 
     function commandErrorMessage(error) {
+        if (error.uncertain) return uncertainMessage;
         if (error instanceof ApiError && error.status === 400) return error.message;
         if (error instanceof ApiError && error.status === 422) return "Polecenie ma nieprawidłowy format.";
         if (error instanceof ApiError && error.status === 409) return error.message;
-        return "Nie udało się wykonać polecenia. Możesz spróbować ponownie.";
+        if (error.status === 404) return "Sesja wygasła lub nie istnieje. Rozpocznij nowy incydent.";
+        return "Operacja została odrzucona. Sprawdź stan sesji przed kolejną próbą.";
     }
 
     function showExitConfirmation() {
@@ -674,7 +726,7 @@
     }
 
     async function endSession({ redirectAfterEnd = false } = {}) {
-        if (sessionEnding) return;
+        if (sessionEnding || sessionUnavailable || currentProgress?.status === "ended") return;
         sessionEnding = true;
         ["end-session-button", "banner-end-button", "confirm-exit-button"].forEach((id) => {
             document.getElementById(id).disabled = true;
@@ -684,26 +736,40 @@
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ session_id: sessionId }),
-            });
+            }, 20000);
             if (redirectAfterEnd) {
                 window.location.replace("/admin-duty/dynamic/");
                 return;
             }
-            sessionData = { ...sessionData, post_incident: result.post_incident };
-            renderProgress(result.progress);
+            if (!sessionUnavailable && result.progress.revision >= currentProgress.revision) {
+                sessionData = { ...sessionData, post_incident: result.post_incident };
+                renderProgress(result.progress);
+            }
         } catch (error) {
-            sessionEnding = false;
-            const message = error instanceof ApiError ? error.message : "Nie udało się zakończyć sesji.";
+            await recoverMutation(error);
+            const message = error.uncertain ? uncertainMessage : "Nie udało się zakończyć sesji.";
             document.getElementById("exit-error").textContent = message;
             document.getElementById("exit-error").hidden = exitOverlay.hidden;
             document.getElementById("completion-error").textContent = message;
             document.getElementById("completion-error").hidden = completionOverlay.hidden;
+        } finally {
+            sessionEnding = false;
             ["end-session-button", "banner-end-button", "confirm-exit-button"].forEach((id) => {
-                document.getElementById(id).disabled = false;
+                document.getElementById(id).disabled = sessionUnavailable || currentProgress?.status === "ended";
             });
         }
     }
 
+    document.getElementById("refresh-session-button").addEventListener("click", async () => {
+        const button = document.getElementById("refresh-session-button");
+        if (button.disabled) return;
+        button.disabled = true;
+        try {
+            await loadSession(false);
+        } finally {
+            button.disabled = false;
+        }
+    });
     document.getElementById("retry-session-button").addEventListener("click", () => void loadSession());
     hintButton.addEventListener("click", () => void requestHint());
     document.getElementById("exit-session-button").addEventListener("click", showExitConfirmation);
@@ -729,6 +795,7 @@
     });
 
     document.addEventListener("keydown", (event) => {
+        if (sessionUnavailable) return;
         const missionDrawer = document.getElementById("mission-drawer");
         if (event.key.toLowerCase() === "e" && currentInteraction && !activeOverlay && missionDrawer.classList.contains("is-collapsed")) {
             event.preventDefault();

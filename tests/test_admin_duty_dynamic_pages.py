@@ -29,7 +29,8 @@ def test_dynamic_lobby_renders_difficulty_selection_and_assets():
     )
     assert 'src="http://testserver/static/admin_duty/dynamic/index.js' in response.text
     assert "dynamic.css?v=ai-loading-1" in response.text
-    assert "index.js?v=incident-ai-v1" in response.text
+    assert "index.js?v=reliability-1" in response.text
+    assert response.text.index("dynamic/request.js") < response.text.index("dynamic/index.js")
     assert "Przygotowywanie incydentu…" in response.text
     assert 'id="generation-status"' in response.text
     assert "generation-progress-bar" not in response.text
@@ -76,6 +77,10 @@ def test_dynamic_workspace_bootstraps_only_session_id_and_frontend_containers():
     assert 'id="post-incident-real-world"' in response.text
     assert 'id="rack-overlay"' in response.text
     assert 'id="request-hint-button"' in response.text
+    assert 'id="session-sync-warning"' in response.text
+    assert 'id="refresh-session-button"' in response.text
+    assert 'id="workspace-error-title" tabindex="-1"' in response.text
+    assert response.text.index("dynamic/request.js") < response.text.index("dynamic/scenario.js")
     assert 'id="exit-session-button"' in response.text
     assert 'id="exit-confirmation"' in response.text
     assert (

@@ -36,7 +36,7 @@ def main() -> int:
         print(f"OK  {relative.as_posix()}")
 
     return subprocess.run(
-        [node, "--test", "tests/world_engine.test.js"],
+        [node, "--test", *map(str, sorted((REPOSITORY_ROOT / "tests").glob("*.test.js")))],
         cwd=REPOSITORY_ROOT,
         check=False,
     ).returncode
